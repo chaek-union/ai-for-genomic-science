@@ -1,12 +1,12 @@
 # AI for Genomic Science
 
-![Front Cover](assets/figures/front-cover.png)
-
 Welcome to **AI for Genomic Science**
 
 Author: [*Joon-Yong An*, Korea University](https://joonanlab.github.io/team/)
 
-Version: Draft (Under Construction - probably weekly update by 2026 if I am not lazy enough..)
+*Last Update: 2025/11/2* (Under Construction - probably weekly update by 2026 if I am not lazy enough..)
+
+![Front Cover](assets/figures/front-cover.jpg)
 
 ---
 
