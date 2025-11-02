@@ -98,7 +98,9 @@ Suppose you have data showing:
 **What can you conclude?**
 
 ❌ **WRONG:** "Gene X causes Disease Y"
+
 ❌ **WRONG:** "Targeting Gene X will cure Disease Y"
+
 ✓ **CORRECT:** "Gene X expression and Disease Y are associated"
 
 **Why? Consider these scenarios:**
@@ -119,35 +121,37 @@ Scenario 4: Gene X ← Environmental Factor → Disease Y (common cause)
             [Change environment, not the gene]
 ```
 
-**All four scenarios produce identical correlations, but require completely different interventions!**
+All four scenarios produce identical correlations, but require completely different interventions!
 
 > *"The causes of the data cannot be extracted from the data alone. We need an additional external model, a causal model of some kind."* — Richard McElreath, Statistical Rethinking
 
-**This is why Nancy Cartwright's slogan is so important: "No causes in, no causes out."** You cannot discover causation by data mining alone—you must bring causal assumptions to the data.
+This is why Nancy Cartwright's slogan is so important: "No causes in, no causes out." You cannot discover causation by data mining alone—you must bring causal assumptions to the data.
 
 ### Establishing Causation Requires Molecular Experiments
 
-**The gold standard for causation:**
+Things to prove causation:
 
-1. **Controlled perturbation**
-   - **CRISPR knockout/knockdown**: Use CRISPR gene editing to delete or reduce expression of the target gene, then check if the predicted phenotype appears
-   - **Drug inhibition**: Apply a chemical compound that blocks the protein's function, then verify if the phenotype changes as expected
-   - **Overexpression**: Artificially increase the gene's expression level using expression vectors, then observe if this enhances or triggers the predicted phenotype
+1. Controlled perturbation
+   - CRISPR knockout/knockdown: Use CRISPR gene editing to delete or reduce expression of the target gene, then check if the predicted phenotype appears
+   - Drug inhibition: Apply a chemical compound that blocks the protein's function, then verify if the phenotype changes as expected
+   - Overexpression: Artificially increase the gene's expression level using expression vectors, then observe if this enhances or triggers the predicted phenotype
 
-2. **Observation of effect**
-   - **Phenotype changes?**: Measure whether the observable characteristic (cell growth, morphology, disease marker) actually changes after perturbation
-   - **In predicted direction?**: Confirm the change matches your hypothesis—if you predicted growth reduction, does growth actually decrease?
-   - **In the right context?**: Verify the effect occurs in the relevant cell type, developmental stage, or environmental condition predicted by your model
+2. Observation of effect
+   - Phenotype changes?: Measure whether the observable characteristic (cell growth, morphology, disease marker) actually changes after perturbation
+   - In predicted direction?: Confirm the change matches your hypothesis—if you predicted growth reduction, does growth actually decrease?
+   - In the right context?: Verify the effect occurs in the relevant cell type, developmental stage, or environmental condition predicted by your model
 
-3. **Mechanism validation**
-   - **How does it work?**: Use biochemical assays, imaging, or sequencing to identify the molecular steps—does the gene regulate transcription, bind specific proteins, or alter signaling pathways?
-   - **Is the pathway what you expected?**: Compare the observed molecular mechanism to your predicted pathway—do the right proteins interact, does the right signaling cascade activate?
+3. Mechanism validation
+   - How does it work?: Use biochemical assays, imaging, or sequencing to identify the molecular steps—does the gene regulate transcription, bind specific proteins, or alter signaling pathways?
+   - Is the pathway what you expected?: Compare the observed molecular mechanism to your predicted pathway—do the right proteins interact, does the right signaling cascade activate?
 
-**AI's role:** Predict which of 1000 genes to perturb first
+AI's role: Predict which of 1000 genes to perturb first
 
-**Experiments' role:** Establish that perturbation actually causes the effect
+Experiments' role: Establish that perturbation actually causes the effect
 
-### Causal Inference: A Brief Introduction
+---
+
+## Causal Inference: A Brief Introduction
 
 Modern causal inference uses **Directed Acyclic Graphs (DAGs)** to represent causal relationships. A DAG is a diagram with arrows showing cause-and-effect relationships, where "directed" means arrows have direction (A→B means A causes B) and "acyclic" means no circular loops exist (no A→B→C→A).
 
@@ -176,7 +180,9 @@ This DAG states:
 - Use them to design experiments
 - Don't confuse AI predictions (correlations) with causal claims
 
-### From Null Hypothesis Testing to Comparing Causal Models
+---
+
+## From Null Hypothesis Testing to Comparing Causal Models
 
 Many biology students learn statistics through a flowchart approach:
 ```
@@ -390,7 +396,7 @@ Need to prioritize/predict many things?
 
 ---
 
-## Conceptual Questions
+## Test Your Understanding: Can You Answer These?
 
 <details>
 <summary><strong>1. What is the difference between AI, ML, and DL?</strong></summary>

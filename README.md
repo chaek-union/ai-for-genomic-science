@@ -114,7 +114,7 @@ No software installation required. We'll walk you through everything in Chapter 
 **Part 1: Foundations of AI**
 
 * [Chapter 1: Why AI for Genomic Science?](chapters/chapter1.md)
-* [Chapter 2: Probability Distributions: The Language of Genomics and Deep Learning (Soon!)]
+* [Chapter 2: From Biological Intuition to Deep Learning](chapters/chapter2.md)
 * [Chapter 3: Neural Networks Basics (Soon!)]
 * [Chapter 4: Types of Neural Networks (Soon!)]
 
