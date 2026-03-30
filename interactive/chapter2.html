@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 2 — From Biological Intuition to Deep Learning</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--water:#38bdf8;--land:#7ab648;--red:#f87171;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.6rem,7vw,5.2rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:880px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:520px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+/* Editorial */
+.editorial{position:relative;max-width:1000px;margin:0 auto;padding:0 2rem 2rem}
+.ed-container{position:relative;min-height:850px}
+.ed-container .tl{font:15.5px/26px Georgia,'Noto Serif KR',serif;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Globe widget — holds Three.js canvas + stats */
+.globe-widget{position:absolute;z-index:10;cursor:grab;touch-action:none}
+.globe-widget:active{cursor:grabbing}
+.globe-widget canvas{border-radius:50%;display:block}
+
+/* Stats panel — attached to globe top-right, moves with it */
+.stats-panel{position:absolute;top:-10px;left:calc(100% + 14px);white-space:nowrap;pointer-events:none;z-index:11}
+.sp-map{font:900 3rem/1 'Playfair Display',Georgia,serif;color:var(--gold);letter-spacing:-.02em;transition:.3s}
+.sp-map.has{color:#fff}
+.sp-label{font:600 .7rem/1.2 system-ui;color:var(--muted);margin-top:.15rem;letter-spacing:.05em;text-transform:uppercase}
+.sp-counts{font:600 .82rem/1.3 system-ui;color:var(--muted);margin-top:.55rem}
+.sp-counts .cw{color:var(--water);font-weight:700}.sp-counts .cl{color:var(--land);font-weight:700}
+.sp-ci{font:500 .75rem/1.3 system-ui;color:rgba(255,255,255,.25);margin-top:.2rem}
+.sp-bar{width:100px;height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:.4rem}
+.sp-bar-fill{height:100%;background:var(--gold);transition:width .3s;border-radius:2px}
+
+/* Toss result floating near globe */
+.gw-result{position:absolute;bottom:-36px;left:50%;transform:translateX(-50%);font:700 1.8rem/1 system-ui;text-align:center;min-width:80px}
+.gw-result.w{color:var(--water)}.gw-result.l{color:var(--land)}
+.gw-result.pop{animation:rpop .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes rpop{from{transform:translateX(-50%) scale(.3);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+
+/* Location info */
+.loc-info{position:absolute;bottom:-58px;left:50%;transform:translateX(-50%);font:.7rem/1.2 system-ui;color:var(--muted);text-align:center;white-space:nowrap;opacity:0;transition:opacity .3s}
+.loc-info.show{opacity:1}
+
+.gw-hint{position:absolute;bottom:-80px;left:50%;transform:translateX(-50%);font:.6rem/1 system-ui;color:var(--muted);opacity:.35;white-space:nowrap}
+
+/* Pull quote */
+.pullquote{position:absolute;z-index:5;border-left:2px solid var(--gold);padding:0 0 0 14px;font-style:italic;color:var(--gold);font-size:.92rem;line-height:1.5;max-width:210px;pointer-events:none}
+
+.divider{text-align:center;padding:3rem 2rem;color:var(--muted);font:.82rem/1 system-ui;letter-spacing:.08em}
+.divider .ln{width:50px;height:1px;background:var(--line);margin:0 auto .8rem}
+
+/* Posterior chart */
+.posterior-section{max-width:700px;margin:0 auto;padding:0 2rem 1rem}
+.posterior-section canvas{width:100%;border-radius:10px;display:block;margin-bottom:.5rem}
+.toss-hist{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;max-width:500px;margin:0 auto;min-height:16px}
+.td{width:16px;height:16px;border-radius:50%;font:700 .5rem/16px system-ui;text-align:center;color:#fff;animation:pip .15s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pip{from{transform:scale(0)}to{transform:scale(1)}}
+.td.w{background:var(--water)}.td.l{background:var(--land)}
+
+/* Experiment cards */
+.experiments{max-width:780px;margin:0 auto;padding:1rem 2rem 2rem}
+.exp-card{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:2rem;overflow:hidden}
+.exp-head{padding:1rem 1.3rem;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:.6rem}
+.exp-num{width:26px;height:26px;border-radius:50%;background:var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;font:700 .8rem/1 system-ui;flex-shrink:0}
+.exp-title{font:700 1rem/1.3 system-ui,sans-serif;color:#fff}
+.exp-body{padding:1.3rem}
+.exp-desc{color:var(--muted);font:.85rem/1.55 system-ui,sans-serif;margin-bottom:1rem}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin:.8rem 0;text-align:center}
+.st{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;padding:.45rem .2rem}
+.st-v{font:700 1.1rem/1.3 system-ui;color:var(--gold)}.st-l{font:.68rem/1.2 system-ui;color:var(--muted)}
+canvas.chart{width:100%;border-radius:8px;display:block}
+.btn-row{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin-top:.7rem}
+.btn{padding:.42rem .9rem;border-radius:8px;border:1px solid var(--line);background:0;color:var(--text);font:600 .78rem/1 system-ui;cursor:pointer;transition:.15s}
+.btn:hover{background:rgba(255,255,255,.05)}
+.btn-g{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+.btn-r{border-color:var(--red);color:var(--red)}
+.btn.act{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.sl{margin:.5rem 0}
+.sl label{display:flex;justify-content:space-between;font:600 .8rem/1.3 system-ui;color:var(--muted)}
+.sl .v{color:var(--gold)}
+input[type=range]{width:100%;height:4px;border-radius:2px;-webkit-appearance:none;background:var(--line);outline:0;margin-top:.3rem}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--bg)}
+
+.reads{background:#0d0d18;border-radius:8px;padding:.6rem;font-family:'SF Mono','Fira Code',monospace;max-height:280px;overflow-y:auto;font-size:.65rem}
+.reads::-webkit-scrollbar{width:4px}.reads::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+.rr{display:flex;align-items:center;gap:1px;margin:2px 0;animation:sli .2s ease-out}
+@keyframes sli{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:translateX(0)}}
+.rb{width:15px;height:17px;display:inline-flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;border-radius:2px}
+.rb-ref{background:#1e1e30;color:#6666aa}.rb-alt{background:var(--red);color:#fff}
+.rb-a{color:#6fe06f}.rb-t{color:#ff6f6f}.rb-g{color:#e0e06f}.rb-c{color:#6f6fff}
+.rl{font-size:.55rem;color:#445;width:36px;text-align:right;margin-right:3px}
+.rq{font-size:.55rem;margin-left:3px;font-weight:600}
+.post-bar{height:30px;border-radius:8px;overflow:hidden;display:flex;margin:.6rem 0}
+.pb-r{background:linear-gradient(90deg,#22543d,var(--green));transition:width .4s;display:flex;align-items:center;justify-content:center;color:#fff;font:700 .75rem/1 system-ui}
+.pb-e{background:linear-gradient(90deg,#fca5a5,var(--red));transition:width .4s;display:flex;align-items:center;justify-content:center;color:#fff;font:700 .75rem/1 system-ui}
+.info{background:rgba(196,163,90,.07);border:1px solid rgba(196,163,90,.12);border-radius:8px;padding:.65rem .9rem;font:.8rem/1.45 system-ui,sans-serif;color:var(--gold);margin-top:.7rem}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.col-label{text-align:center;font:600 .8rem/1 system-ui;margin-bottom:.2rem}
+.footer{text-align:center;padding:3rem 2rem;color:var(--muted);font:.75rem/1.4 system-ui;border-top:1px solid var(--line);margin-top:2rem}
+@media(max-width:700px){.ed-container{min-height:600px}.two-col{grid-template-columns:1fr}.pullquote{display:none}.stats-panel{left:auto;right:0;top:auto;bottom:calc(100% + 8px);text-align:right}}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')" id="btn-ko">한국어</button>
+  <button class="lang-btn" onclick="setLang('en')" id="btn-en">EN</button>
+</div>
+
+<section class="hero">
+  <div class="hero-ch">Chapter 02</div>
+  <h1 id="hero-title"></h1>
+  <p class="hero-sub" id="hero-sub"></p>
+  <div class="hero-scroll" onclick="document.querySelector('.editorial').scrollIntoView({behavior:'smooth'})">
+    <span class="i18n" data-ko="스크롤하여 시작" data-en="Scroll to begin"></span><br>↓
+  </div>
+</section>
+
+<section class="editorial">
+  <div class="ed-container" id="ed1">
+    <!-- Globe widget: Three.js canvas + stats panel attached -->
+    <div class="globe-widget" id="gw" style="left:48%;top:40px;">
+      <div id="globe-mount" style="width:340px;height:340px;border-radius:50%;overflow:hidden;"></div>
+      <!-- Stats panel — top-right of globe, moves together -->
+      <div class="stats-panel" id="sp">
+        <div class="sp-map" id="sp-map">—</div>
+        <div class="sp-label">MAP <span class="i18n" data-ko="추정값" data-en="estimate"></span></div>
+        <div class="sp-counts"><span class="cw" id="sp-w">0</span> W &nbsp; <span class="cl" id="sp-l">0</span> L</div>
+        <div class="sp-ci" id="sp-ci">95% CI: —</div>
+        <div class="sp-bar"><div class="sp-bar-fill" id="sp-bar" style="width:50%"></div></div>
+      </div>
+      <div class="gw-result" id="gw-res">&nbsp;</div>
+      <div class="loc-info" id="loc-info"></div>
+      <div class="gw-hint i18n" data-ko="드래그로 이동 · 클릭으로 던지기" data-en="Drag to move · Click to toss"></div>
+    </div>
+    <div class="pullquote" id="pq1" style="right:0;top:520px"></div>
+  </div>
+</section>
+
+<div class="posterior-section">
+  <canvas class="chart" id="cv-globe" height="180"></canvas>
+  <div class="toss-hist" id="g-hist"></div>
+  <div class="btn-row" style="margin-top:.5rem">
+    <button class="btn" onclick="autoToss(10)"><span class="i18n" data-ko="×10 자동 던지기" data-en="Auto ×10"></span></button>
+    <button class="btn" onclick="autoToss(50)"><span class="i18n" data-ko="×50 자동 던지기" data-en="Auto ×50"></span></button>
+    <button class="btn btn-r" onclick="resetGlobe()"><span class="i18n" data-ko="초기화" data-en="Reset"></span></button>
+  </div>
+  <div class="info" id="g-info" style="margin-top:.6rem"></div>
+</div>
+
+<div class="divider"><div class="ln"></div><span class="i18n" data-ko="인터랙티브 실험" data-en="Interactive Experiments"></span></div>
+
+<div class="experiments">
+  <!-- Prior Explorer -->
+  <div class="exp-card">
+    <div class="exp-head"><div class="exp-num">2</div><div class="exp-title i18n" data-ko="사전확률(Prior) 탐색기" data-en="Prior Explorer"></div></div>
+    <div class="exp-body">
+      <p class="exp-desc i18n" data-ko="같은 데이터를 관찰해도 사전확률이 다르면 사후확률이 달라집니다." data-en="Same data, different priors → different posteriors."></p>
+      <div class="btn-row" style="margin-bottom:.8rem">
+        <button class="btn act" onclick="setPrior(1,1,this)"><span class="i18n" data-ko="균일(Uniform)" data-en="Uniform"></span></button>
+        <button class="btn" onclick="setPrior(5,2,this)"><span class="i18n" data-ko="물 많음" data-en="More water"></span></button>
+        <button class="btn" onclick="setPrior(2,5,this)"><span class="i18n" data-ko="땅 많음" data-en="More land"></span></button>
+        <button class="btn" onclick="setPrior(30,30,this)"><span class="i18n" data-ko="반반 확신" data-en="50/50 strong"></span></button>
+      </div>
+      <div class="sl"><label><span class="i18n" data-ko="물(W) 관찰" data-en="Water observed"></span><span class="v" id="pw-v">6</span></label><input type=range id="pw" min=0 max=50 value=6 oninput="updPrior()"></div>
+      <div class="sl"><label><span class="i18n" data-ko="땅(L) 관찰" data-en="Land observed"></span><span class="v" id="pl-v">3</span></label><input type=range id="pl" min=0 max=50 value=3 oninput="updPrior()"></div>
+      <div class="two-col" style="margin-top:.6rem">
+        <div><div class="col-label" style="color:var(--water)"><span class="i18n" data-ko="사전확률(Prior)" data-en="Prior"></span></div><canvas class="chart" id="cv-prior" height="160"></canvas></div>
+        <div><div class="col-label" style="color:var(--red)"><span class="i18n" data-ko="사후확률(Posterior)" data-en="Posterior"></span></div><canvas class="chart" id="cv-post" height="160"></canvas></div>
+      </div>
+      <div class="info" id="p-info"></div>
+    </div>
+  </div>
+  <!-- Data Power -->
+  <div class="exp-card">
+    <div class="exp-head"><div class="exp-num">3</div><div class="exp-title i18n" data-ko="데이터의 힘 — 표본 크기(Sample Size)" data-en="Power of Data — Sample Size"></div></div>
+    <div class="exp-body">
+      <p class="exp-desc i18n" data-ko="RNA-seq에서 n=3과 n=100의 차이를 느껴보세요." data-en="Feel the difference between n=3 and n=100 in RNA-seq."></p>
+      <div class="sl"><label><span class="i18n" data-ko="관찰 횟수(n)" data-en="Observations (n)"></span><span class="v" id="dn-v">9</span></label><input type=range id="dn" min=1 max=500 value=9 oninput="updData()"></div>
+      <div class="sl"><label><span class="i18n" data-ko="실제 비율(p)" data-en="True proportion (p)"></span><span class="v" id="dp-v">0.71</span></label><input type=range id="dp" min=5 max=95 value=71 oninput="updData()"></div>
+      <canvas class="chart" id="cv-data" height="200"></canvas>
+      <div class="stats"><div class="st"><div class="st-v" id="d-map">—</div><div class="st-l">MAP</div></div><div class="st"><div class="st-v" id="d-ci" style="font-size:.9rem">—</div><div class="st-l">95% CI</div></div><div class="st"><div class="st-v" id="d-w">—</div><div class="st-l i18n" data-ko="구간 폭" data-en="Width"></div></div></div>
+      <div class="info" id="d-info"></div>
+    </div>
+  </div>
+  <!-- Variant Calling -->
+  <div class="exp-card">
+    <div class="exp-head"><div class="exp-num">4</div><div class="exp-title i18n" data-ko="변이 판정 시뮬레이터(Variant Calling)" data-en="Variant Calling Simulator"></div></div>
+    <div class="exp-body">
+      <p class="exp-desc i18n" data-ko="WGS에서 변이가 진짜인지 오류인지 판정. DeepVariant 체험!" data-en="Real variant or error? Experience DeepVariant!"></p>
+      <div style="font:.8rem/1.3 system-ui;color:var(--muted);background:rgba(255,255,255,.03);border-radius:8px;padding:.5rem .8rem;margin-bottom:.7rem"><strong style="color:var(--text)">chr7:55,242,466</strong> · Ref: <strong style="color:var(--green)">A</strong> → Alt: <strong style="color:var(--red)">G</strong></div>
+      <div class="reads" id="vc-reads"><div id="vc-ph" style="color:#556;text-align:center;padding:1rem"><span class="i18n" data-ko="리드가 없습니다. 시퀀싱을 시작하세요!" data-en="No reads yet. Start sequencing!"></span></div></div>
+      <div class="stats"><div class="st"><div class="st-v" id="vc-d">0</div><div class="st-l">Depth</div></div><div class="st"><div class="st-v" style="color:var(--red)" id="vc-a">0</div><div class="st-l">Alt</div></div><div class="st"><div class="st-v" id="vc-vaf">—</div><div class="st-l">VAF</div></div></div>
+      <div style="font:600 .78rem/1 system-ui;color:var(--muted);margin:.5rem 0 .2rem"><span class="i18n" data-ko="사후확률: 진짜(Real) vs 오류(Error)" data-en="Posterior: Real vs Error"></span></div>
+      <div class="post-bar"><div class="pb-r" id="vc-pr" style="width:50%">50%</div><div class="pb-e" id="vc-pe" style="width:50%">50%</div></div>
+      <div style="font:600 .75rem/1 system-ui;color:var(--muted);margin:.6rem 0 .3rem"><span class="i18n" data-ko="시나리오" data-en="Scenario"></span></div>
+      <div class="btn-row" style="margin-bottom:.6rem">
+        <button class="btn act" onclick="setVC('het',this)"><span class="i18n" data-ko="이형접합(Het)" data-en="Het A/G"></span></button>
+        <button class="btn" onclick="setVC('hom',this)"><span class="i18n" data-ko="동형접합(Hom)" data-en="Hom G/G"></span></button>
+        <button class="btn" onclick="setVC('err',this)"><span class="i18n" data-ko="오류(Error)" data-en="Error A/A"></span></button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-g" onclick="addR(1)">+1</button><button class="btn btn-g" onclick="addR(5)">+5</button><button class="btn btn-g" onclick="addR(20)">+20</button>
+        <button class="btn btn-r" onclick="resetVC()"><span class="i18n" data-ko="초기화" data-en="Reset"></span></button>
+      </div>
+      <div class="info" id="vc-info"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer"><span class="i18n" data-ko="AI for Genomic Science — 안준용, 고려대학교" data-en="AI for Genomic Science — Joon-Yong An, Korea University"></span></div>
+
+<script>
+/* ================================================================ i18n */
+let L='ko';
+function t(k,e){return L==='ko'?k:e}
+function setLang(l){
+  L=l;document.documentElement.lang=l;
+  document.getElementById('btn-ko').classList.toggle('active',l==='ko');
+  document.getElementById('btn-en').classList.toggle('active',l==='en');
+  document.querySelectorAll('.i18n').forEach(e=>e.textContent=e.dataset[l]||'');
+  document.getElementById('hero-title').textContent=t('생물학적 직관에서\n딥러닝까지','FROM BIOLOGICAL\nINTUITION TO\nDEEP LEARNING');
+  document.getElementById('hero-sub').textContent=t('여러분의 뇌는 이미 베이지안 추론 기계입니다.\n이 장에서는 그 직관이 어떻게 딥러닝과 연결되는지 체험합니다.','Your brain is already a Bayesian inference machine.\nThis chapter shows how that intuition connects to deep learning.');
+  document.getElementById('pq1').innerHTML=t('"사후확률 ∝ 우도 × 사전확률"<br><span style="font-size:.72rem;color:var(--muted);font-style:normal">— 베이즈 정리(Bayes\' Theorem)</span>','"Posterior ∝ Likelihood × Prior"<br><span style="font-size:.72rem;color:var(--muted);font-style:normal">— Bayes\' Theorem</span>');
+  requestAnimationFrame(()=>{layoutEd();drawPosterior();updPrior();updData();updGInfo();updVCInfo()});
+}
+
+/* ================================================================ Math */
+function lgamma(z){if(z<.5)return Math.log(Math.PI/Math.sin(Math.PI*z))-lgamma(1-z);z-=1;const c=[.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-.13857109526572012,9.984369578e-6,1.505632735e-7];let x=c[0];for(let i=1;i<9;i++)x+=c[i]/(z+i);const tt=z+7.5;return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(tt)-tt+Math.log(x)}
+function bpdf(x,a,b){if(x<=0||x>=1)return 0;return Math.exp((a-1)*Math.log(x)+(b-1)*Math.log(1-x)-lgamma(a)-lgamma(b)+lgamma(a+b))}
+function bmode(a,b){return a<=1&&b<=1?.5:a<=1?.001:b<=1?.999:(a-1)/(a+b-2)}
+function bcdf(x,a,b){if(x<=0)return 0;if(x>=1)return 1;const n=100,h=x/n;let s=bpdf(.0001,a,b)+bpdf(x,a,b);for(let i=1;i<n;i++)s+=bpdf(i*h,a,b)*(i%2?4:2);return s*h/3}
+function bq(a,b,p){let lo=0,hi=1;for(let i=0;i<45;i++){const m=(lo+hi)/2;bcdf(m,a,b)<p?lo=m:hi=m}return(lo+hi)/2}
+function bci(a,b){return[bq(a,b,.025),bq(a,b,.975)]}
+
+/* ================================================================
+   Three.js Globe
+   ================================================================ */
+let scene, camera, renderer, earth, globeReady=false;
+const GLOBE_SIZE=340, GLOBE_R=1;
+
+function initThreeGlobe(){
+  const mount=document.getElementById('globe-mount');
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(45,1,.1,100);
+  camera.position.z=2.6;
+
+  renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setSize(GLOBE_SIZE,GLOBE_SIZE);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  mount.appendChild(renderer.domElement);
+  renderer.domElement.style.borderRadius='50%';
+
+  // Lighting
+  const amb=new THREE.AmbientLight(0xffffff,0.6);
+  scene.add(amb);
+  const dir=new THREE.DirectionalLight(0xffffff,0.9);
+  dir.position.set(5,3,5);
+  scene.add(dir);
+
+  // Earth sphere
+  const geo=new THREE.SphereGeometry(GLOBE_R,64,64);
+  const loader=new THREE.TextureLoader();
+  loader.crossOrigin='anonymous';
+
+  // Load NASA Blue Marble texture (local file)
+  const tex=loader.load(
+    '../assets/figures/earth_daymap.jpg',
+    ()=>{globeReady=true},
+    undefined,
+    ()=>{
+      // Fallback: try CDN if local fails
+      const tex2=loader.load(
+        'https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg',
+        ()=>{earth.material.map=tex2;earth.material.needsUpdate=true;globeReady=true},
+        undefined,
+        ()=>{globeReady=true}
+      );
+    }
+  );
+  const mat=new THREE.MeshPhongMaterial({map:tex,shininess:15});
+  earth=new THREE.Mesh(geo,mat);
+  scene.add(earth);
+
+  // Atmosphere glow
+  const atmosGeo=new THREE.SphereGeometry(GLOBE_R*1.03,48,48);
+  const atmosMat=new THREE.MeshBasicMaterial({color:0x38bdf8,transparent:true,opacity:0.06,side:THREE.BackSide});
+  scene.add(new THREE.Mesh(atmosGeo,atmosMat));
+
+  animateGlobe();
+}
+
+let tossSpinFrames=0;
+function animateGlobe(){
+  requestAnimationFrame(animateGlobe);
+  if(tossSpinFrames>0){earth.rotation.y+=0.12;tossSpinFrames--}
+  else earth.rotation.y+=0.003;
+  renderer.render(scene,camera);
+}
+
+// Raycasting: click → lat/lon
+function getLatLonFromClick(e){
+  const mount=document.getElementById('globe-mount');
+  const rect=mount.getBoundingClientRect();
+  const mouse=new THREE.Vector2(
+    ((e.clientX-rect.left)/rect.width)*2-1,
+    -((e.clientY-rect.top)/rect.height)*2+1
+  );
+  const ray=new THREE.Raycaster();
+  ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObject(earth);
+  if(hits.length>0){
+    const p=hits[0].point.clone();
+    // Undo earth rotation to get geographic coordinates
+    const invQ=earth.quaternion.clone().invert();
+    p.applyQuaternion(invQ);
+    const lat=Math.asin(p.y/GLOBE_R)*(180/Math.PI);
+    const lon=Math.atan2(p.x,p.z)*(180/Math.PI);
+    return{lat,lon};
+  }
+  return null;
+}
+
+// Reverse geocode via Nominatim
+let lastGeoTime=0;
+async function reverseGeocode(lat,lon){
+  const now=Date.now();
+  if(now-lastGeoTime<1200)return null; // rate limit
+  lastGeoTime=now;
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=5`,{headers:{'Accept-Language':L}});
+    const d=await r.json();
+    if(d.error)return{name:t('대양(Ocean)','Ocean'),isWater:true};
+    const name=d.address?.country||d.display_name?.split(',').pop().trim()||'';
+    return{name,isWater:false};
+  }catch{return null}
+}
+
+/* ================================================================
+   Text Reflow Engine
+   ================================================================ */
+const ED_TEXT={
+  ko:`여러분의 뇌는 이미 정교한 베이지안 추론 기계입니다. 매일 아침 하늘을 보고 우산을 가져갈지 결정하고, 교수님이 시험이 쉽다고 할 때 과거 경험을 바탕으로 그 말을 평가합니다. PCR이 실패했을 때 원인을 추론하고, RNA-seq 데이터에서 유전자 발현 변화가 보일 때 p-value만이 아니라 그 유전자의 생물학적 맥락을 함께 고려하죠. 이 모든 과정이 베이지안 추론입니다. 사전 지식과 새로운 증거를 결합해 믿음을 업데이트하는 것이죠. 생물학은 근본적으로 확률적입니다. 유전자 발현은 고정된 숫자가 아니라 확률 분포이고, 단백질 구조는 하나의 형태가 아니라 구조적 앙상블입니다. 진화도 베이지안 업데이트입니다. 환경이라는 증거에 따라 개체군의 형질 분포가 세대를 거쳐 변합니다. 면역계도 마찬가지예요. 처음 만나는 병원체에 대해 무작위 항체로 시작하지만, 감염을 겪으며 효과적인 항체가 선별되어 기억 세포로 저장됩니다. 이것이 백신의 원리이기도 합니다. 딥러닝은 이 베이지안 추론의 실용적 근사입니다. 손실 함수는 음의 로그우도이고, 정규화는 사전확률이며, 학습 과정은 최대 사후확률 추정입니다. 오른쪽의 지구본을 클릭해보세요! 물이 나올까요, 땅이 나올까요? 던질 때마다 여러분의 믿음이 업데이트되는 것을 확인할 수 있습니다. 지구본을 드래그해서 텍스트 사이로 옮겨볼 수도 있어요. 알파폴드가 단백질 구조를 예측하고, 딥배리언트가 변이를 판별하고, 단일세포 파운데이션 모델이 세포 유형을 분류할 때, 그 수학적 기반은 여러분이 매일 무의식적으로 하는 베이지안 추론과 동일합니다. 여러분의 직관이 곧 딥러닝의 원리입니다.`,
+  en:`Your brain is already a sophisticated Bayesian inference machine. Every morning you glance at the sky to decide about an umbrella. When your professor says the exam will be easy, you weigh that claim against semesters of past experience. When a PCR fails, you reason through likely causes. When RNA-seq shows a change in gene expression, you consider not just the p-value but the biological context. All of this is Bayesian inference: combining prior knowledge with new evidence to update beliefs. Biology is fundamentally probabilistic. Gene expression is not a fixed number but a probability distribution. Protein structure is not one conformation but a statistical ensemble. Evolution itself is Bayesian updating. Populations shift their trait distributions across generations based on environmental evidence. The immune system works the same way, starting with random antibodies then selecting effective ones through infection. This is why vaccines work. Deep learning is a practical approximation of Bayesian reasoning. The loss function is negative log-likelihood. Regularization encodes prior beliefs. Training finds the maximum a posteriori estimate. Try clicking the globe on the right! Will you get water or land? Each toss updates your belief. You can also drag the globe into this text and watch the words flow around it. When AlphaFold predicts protein structures, when DeepVariant calls variants, when single-cell foundation models classify cell types, the mathematical foundation is identical to the Bayesian inference you perform unconsciously every day. Your intuition is the principle behind deep learning.`
+};
+
+class Reflow{
+  constructor(el){this.el=el;this.lh=26;this.gap=36;this.margin=38;this._c=document.createElement('canvas').getContext('2d');this.excl=[];this.words=[];this.widths=[]}
+  setFont(f){this.font=f;this._c.font=f;this.spW=this._c.measureText(' ').width}
+  setText(txt){this.words=txt.split(/\s+/).filter(Boolean);this.widths=this.words.map(w=>this._c.measureText(w).width);this.render()}
+  render(){
+    const W=this.el.clientWidth,H=this.el.clientHeight;if(!W||!H)return;
+    const cols=W>700?3:W>440?2:1,colW=(W-this.gap*(cols-1))/cols;
+    this.el.querySelectorAll('.tl').forEach(e=>e.remove());
+    let wi=0;
+    for(let c=0;c<cols&&wi<this.words.length;c++){
+      const cx=c*(colW+this.gap);let y=0;
+      while(y<H-this.lh&&wi<this.words.length){
+        let l=cx,r=cx+colW;
+        for(const o of this.excl){
+          const dy=y+this.lh/2-o.y,R=o.r+this.margin;
+          if(Math.abs(dy)<R){const dx=Math.sqrt(R*R-dy*dy),oL=o.x-dx,oR=o.x+dx;
+            if(oL>l&&oR<r){oL-l>r-oR?r=oL:l=oR}else if(oL<=l&&oR>l)l=Math.min(oR,r);else if(oR>=r&&oL<r)r=Math.max(oL,l)}
+        }
+        const av=r-l;if(av<30){y+=this.lh;continue}
+        let lw=0,lws=[];
+        while(wi<this.words.length){const need=lws.length?this.widths[wi]+this.spW:this.widths[wi];if(lw+need>av&&lws.length)break;lws.push(this.words[wi]);lw+=need;wi++}
+        if(lws.length){const d=document.createElement('div');d.className='tl';d.style.cssText=`position:absolute;left:${l}px;top:${y}px;width:${av}px;height:${this.lh}px;line-height:${this.lh}px;`;d.textContent=lws.join(' ');this.el.appendChild(d)}
+        y+=this.lh;
+      }
+    }
+  }
+}
+
+/* ================================================================
+   Globe Widget — drag to move, click to toss
+   ================================================================ */
+let reflow, gwOrb={x:0,y:0,r:190};
+let gW=0,gL=0,isTossing=false;
+const TP=.71;
+
+function initGlobeWidget(){
+  const el=document.getElementById('ed1');
+  reflow=new Reflow(el);
+  reflow.setFont('15.5px Georgia, "Noto Serif KR", serif');
+
+  const gw=document.getElementById('gw');
+  const rect=el.getBoundingClientRect();
+  gw.style.left=(rect.width*.46)+'px';gw.style.top='40px';
+  syncOrb();
+
+  let drag=false,startX,startY,startL,startT,moved;
+  gw.addEventListener('pointerdown',e=>{
+    drag=true;moved=0;
+    const br=gw.getBoundingClientRect(),cr=el.getBoundingClientRect();
+    startX=e.clientX;startY=e.clientY;
+    startL=br.left-cr.left;startT=br.top-cr.top;
+    gw.setPointerCapture(e.pointerId);e.preventDefault();
+  });
+  document.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    const dx=e.clientX-startX,dy=e.clientY-startY;moved=Math.abs(dx)+Math.abs(dy);
+    const cr=document.getElementById('ed1').getBoundingClientRect();
+    let nx=Math.max(0,Math.min(cr.width-360,startL+dx));
+    let ny=Math.max(0,Math.min(cr.height-420,startT+dy));
+    gw.style.left=nx+'px';gw.style.top=ny+'px';
+    syncOrb();reflow.render();
+  });
+  document.addEventListener('pointerup',e=>{
+    if(drag&&moved<8)doToss(e);
+    drag=false;
+  });
+  layoutEd();
+}
+
+function syncOrb(){
+  const gw=document.getElementById('gw');
+  gwOrb.x=parseFloat(gw.style.left)+170;
+  gwOrb.y=parseFloat(gw.style.top)+170;
+  reflow.excl=[gwOrb];
+}
+function layoutEd(){syncOrb();reflow.setText(ED_TEXT[L])}
+
+async function doToss(e){
+  if(isTossing)return;isTossing=true;
+  tossSpinFrames=35;
+  const res=document.getElementById('gw-res');
+  res.innerHTML='&nbsp;';res.className='gw-result';
+  const locEl=document.getElementById('loc-info');
+  locEl.classList.remove('show');
+
+  // Get coordinates from click
+  let coords=null;
+  if(e&&globeReady)coords=getLatLonFromClick(e);
+
+  // Determine water/land: use coordinates + reverse geocode
+  let isWater, locName='';
+  if(coords){
+    const geo=await reverseGeocode(coords.lat,coords.lon);
+    if(geo){isWater=geo.isWater;locName=geo.name}
+    else isWater=Math.random()<TP;
+  }else{
+    isWater=Math.random()<TP;
+  }
+
+  if(isWater)gW++;else gL++;
+
+  setTimeout(()=>{
+    res.textContent=isWater?'🌊 W':'🏔 L';
+    res.className='gw-result pop '+(isWater?'w':'l');
+    if(coords){
+      const latStr=coords.lat.toFixed(1)+'°'+(coords.lat>=0?'N':'S');
+      const lonStr=Math.abs(coords.lon).toFixed(1)+'°'+(coords.lon>=0?'E':'W');
+      locEl.textContent=`${latStr}, ${lonStr}`+(locName?` · ${locName}`:'');
+      locEl.classList.add('show');
+    }
+    const h=document.getElementById('g-hist'),d=document.createElement('div');
+    d.className='td '+(isWater?'w':'l');d.textContent=isWater?'W':'L';h.appendChild(d);
+    if(h.children.length>60)h.removeChild(h.firstChild);
+    updGStats();drawPosterior();updGInfo();
+    isTossing=false;
+  },900);
+}
+
+function autoToss(n){let i=0;const iv=setInterval(()=>{if(i>=n){clearInterval(iv);return}const w=Math.random()<TP;if(w)gW++;else gL++;const h=document.getElementById('g-hist'),d=document.createElement('div');d.className='td '+(w?'w':'l');d.textContent=w?'W':'L';h.appendChild(d);if(h.children.length>60)h.removeChild(h.firstChild);i++;if(i%5===0||i===n){updGStats();drawPosterior();updGInfo()}},35)}
+
+function resetGlobe(){gW=0;gL=0;isTossing=false;tossSpinFrames=0;
+  document.getElementById('gw-res').innerHTML='&nbsp;';document.getElementById('gw-res').className='gw-result';
+  document.getElementById('loc-info').classList.remove('show');
+  document.getElementById('g-hist').innerHTML='';updGStats();drawPosterior();updGInfo()}
+
+function updGStats(){
+  const n=gW+gL,m=n?bmode(1+gW,1+gL):.5;
+  const mapEl=document.getElementById('sp-map');
+  if(n){mapEl.textContent=(m*100).toFixed(1)+'%';mapEl.classList.add('has');
+    const ci=bci(1+gW,1+gL);document.getElementById('sp-ci').textContent=`95% CI: ${(ci[0]*100).toFixed(0)}–${(ci[1]*100).toFixed(0)}%`;
+  }else{mapEl.textContent='—';mapEl.classList.remove('has');document.getElementById('sp-ci').textContent='95% CI: —'}
+  document.getElementById('sp-w').textContent=gW;document.getElementById('sp-l').textContent=gL;
+  document.getElementById('sp-bar').style.width=(m*100)+'%';
+}
+
+/* ================================================================ Charts */
+function initC(id){const c=document.getElementById(id),d=devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;const x=c.getContext('2d');x.scale(d,d);return{x,w:r.width,h:r.height}}
+function drawBeta(id,ds,o={}){
+  const{x:ctx,w,h}=initC(id);const P={t:10,r:12,b:28,l:12},pw=w-P.l-P.r,ph=h-P.t-P.b;ctx.clearRect(0,0,w,h);
+  const N=150;let my=.001;const cv=ds.map(d=>{const p=[];for(let i=0;i<=N;i++){const x=i/N,y=bpdf(x<.001?.001:x>.999?.999:x,d.a,d.b);p.push({x,y});if(isFinite(y)&&y>my)my=y}return p});my*=1.08;
+  ctx.strokeStyle='#1e1e2a';ctx.lineWidth=.5;for(let i=0;i<=4;i++){const gx=P.l+(i/4)*pw;ctx.beginPath();ctx.moveTo(gx,P.t);ctx.lineTo(gx,P.t+ph);ctx.stroke()}
+  if(o.ci){const[lo,hi]=o.ci,idx=o.ciIdx||0;ctx.beginPath();ctx.moveTo(P.l+lo*pw,P.t+ph);cv[idx].forEach(p=>{if(p.x>=lo&&p.x<=hi)ctx.lineTo(P.l+p.x*pw,P.t+ph-Math.min(p.y,my)/my*ph)});ctx.lineTo(P.l+hi*pw,P.t+ph);ctx.closePath();ctx.fillStyle=(ds[idx].c||'#4ade80')+'28';ctx.fill()}
+  if(o.fill!==undefined){const d=cv[o.fill];ctx.beginPath();ctx.moveTo(P.l,P.t+ph);d.forEach(p=>ctx.lineTo(P.l+p.x*pw,P.t+ph-Math.min(p.y,my)/my*ph));ctx.lineTo(P.l+pw,P.t+ph);ctx.closePath();ctx.fillStyle=(ds[o.fill].c||'#4ade80')+'18';ctx.fill()}
+  cv.forEach((pts,i)=>{const d=ds[i];ctx.beginPath();ctx.strokeStyle=d.c||'#4ade80';ctx.lineWidth=d.w||2.5;d.dash?ctx.setLineDash(d.dash):ctx.setLineDash([]);pts.forEach((p,j)=>{const px=P.l+p.x*pw,py=P.t+ph-Math.min(p.y,my)/my*ph;j?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();ctx.setLineDash([])});
+  if(o.map!==undefined){const mx=P.l+o.map*pw;ctx.strokeStyle='#f87171';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(mx,P.t);ctx.lineTo(mx,P.t+ph);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#f87171';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('MAP='+(o.map*100).toFixed(1)+'%',mx,P.t+ph+20)}
+  if(o.truth!==undefined){const tx=P.l+o.truth*pw;ctx.strokeStyle='#f4a261';ctx.lineWidth=1.5;ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(tx,P.t);ctx.lineTo(tx,P.t+ph);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#f4a261';ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText(t('실제값','True'),tx,P.t-1)}
+  ctx.fillStyle='#7a756d';ctx.font='10px system-ui';ctx.textAlign='center';for(let i=0;i<=4;i++)ctx.fillText((i*25)+'%',P.l+(i/4)*pw,P.t+ph+12);
+  if(o.leg){let lx=P.l+3;ctx.font='10px system-ui';o.leg.forEach((lb,i)=>{ctx.fillStyle=ds[i].c||'#4ade80';ctx.fillRect(lx,P.t+1,12,3);ctx.fillStyle='#aaa';ctx.textAlign='left';ctx.fillText(lb,lx+15,P.t+6);lx+=ctx.measureText(lb).width+22})}
+}
+function drawPosterior(){const n=gW+gL,a=1+gW,b=1+gL,o={fill:0};if(n){o.map=bmode(a,b);o.ci=bci(a,b);o.ciIdx=0;o.truth=TP;o.leg=[t('사후확률(Posterior)','Posterior')]}else o.leg=[t('사전확률(Prior)','Prior')];drawBeta('cv-globe',[{a,b,c:'#4ade80',w:2.5}],o)}
+function updGInfo(){const el=document.getElementById('g-info'),n=gW+gL;if(!n){el.textContent=t('💡 위의 지구본을 클릭하거나 자동 던지기를 눌러보세요! 실제 지구 표면의 약 71%가 물입니다.','💡 Click the globe above or use auto-toss! About 71% of Earth is water.');return}const ci=bci(1+gW,1+gL);el.textContent=t(`💡 ${n}번 던짐 | 물 ${gW}번 (${(gW/n*100).toFixed(0)}%) | 95% CI: ${(ci[0]*100).toFixed(0)}–${(ci[1]*100).toFixed(0)}% | 실제: ~71%${n>=30?' — 가까워지고 있죠?':''}`,`💡 ${n} tosses | W ${gW} (${(gW/n*100).toFixed(0)}%) | 95% CI: ${(ci[0]*100).toFixed(0)}–${(ci[1]*100).toFixed(0)}% | True: ~71%${n>=30?' — getting close!':''}`)}
+
+/* ================================================================ Exp 2: Prior */
+let pA=1,pB=1;
+function setPrior(a,b,btn){pA=a;pB=b;btn.parentElement.querySelectorAll('.btn').forEach(x=>x.classList.remove('act'));btn.classList.add('act');updPrior()}
+function updPrior(){const w=+document.getElementById('pw').value,l=+document.getElementById('pl').value;document.getElementById('pw-v').textContent=w;document.getElementById('pl-v').textContent=l;drawBeta('cv-prior',[{a:pA,b:pB,c:'#38bdf8',w:2.5}],{fill:0});const pa=pA+w,pb=pB+l;drawBeta('cv-post',[{a:pa,b:pb,c:'#f87171',w:2.5}],{fill:0,map:bmode(pa,pb)});document.getElementById('p-info').textContent=w+l>=30?t('💡 데이터가 충분하면 Prior의 영향이 줄어듭니다.','💡 With enough data, the prior fades.'):t('💡 데이터가 적으면 Prior가 지배합니다. 프리셋을 바꿔보세요!','💡 With little data, the prior dominates. Try presets!')}
+
+/* ================================================================ Exp 3: Data */
+const DS=Math.random()*1e4;function srng(s){return()=>{s=(s*16807)%2147483647;return s/2147483647}}
+function updData(){const n=+document.getElementById('dn').value,p=+document.getElementById('dp').value/100;document.getElementById('dn-v').textContent=n;document.getElementById('dp-v').textContent=p.toFixed(2);const r=srng(DS);let w=0;for(let i=0;i<n;i++)if(r()<p)w++;const a=1+w,b=1+n-w,m=bmode(a,b),ci=bci(a,b),cw=ci[1]-ci[0];document.getElementById('d-map').textContent=(m*100).toFixed(1)+'%';document.getElementById('d-ci').textContent=(ci[0]*100).toFixed(0)+'–'+(ci[1]*100).toFixed(0)+'%';document.getElementById('d-w').textContent=(cw*100).toFixed(1)+'%';drawBeta('cv-data',[{a:1,b:1,c:'#555',w:1.5,dash:[4,3]},{a,b,c:'#4ade80',w:2.5}],{fill:1,map:m,truth:p,ci,ciIdx:1,leg:[t('Prior','Prior'),t(`Posterior(n=${n})`,`Posterior(n=${n})`)]});document.getElementById('d-info').textContent=n<=5?t('💡 관찰이 매우 적습니다!','💡 Very few observations!'):n<=50?t(`💡 구간 폭: ${(cw*100).toFixed(1)}%. 100 이상으로!`,`💡 CI width: ${(cw*100).toFixed(1)}%. Push past 100!`):t(`💡 n=${n}, 폭 ${(cw*100).toFixed(1)}%. 대규모 연구의 힘!`,`💡 n=${n}, width ${(cw*100).toFixed(1)}%. Power of scale!`)}
+
+/* ================================================================ Exp 4: VC */
+let vcS='het',vcR=[];const ER=.02;
+function setVC(s,btn){vcS=s;btn.parentElement.querySelectorAll('.btn').forEach(x=>x.classList.remove('act'));btn.classList.add('act');resetVC()}
+function addR(n){const ph=document.getElementById('vc-ph');if(ph)ph.remove();for(let i=0;i<n;i++){let isA;if(vcS==='het')isA=Math.random()<.5;else if(vcS==='hom')isA=Math.random()>ER;else isA=Math.random()<ER;const q=isA&&vcS==='err'?~~(Math.random()*15+5):~~(Math.random()*20+20);const B='ACGT',cx=[];for(let j=0;j<15;j++)cx.push(B[~~(Math.random()*4)]);cx[7]=isA?'G':'A';vcR.push({isA,q,cx})}rndrR();updVCS();updVCInfo()}
+function rndrR(){const c=document.getElementById('vc-reads'),s=vcR.slice(-16);c.innerHTML='';const bc={A:'rb-a',T:'rb-t',G:'rb-g',C:'rb-c'};s.forEach((rd,i)=>{const row=document.createElement('div');row.className='rr';const lb=document.createElement('span');lb.className='rl';lb.textContent='R'+(vcR.length-s.length+i+1);row.appendChild(lb);rd.cx.forEach((b,j)=>{const el=document.createElement('span');el.className='rb '+(j===7?(rd.isA?'rb-alt':'rb-ref'):'rb-ref '+(bc[b]||''));el.textContent=b;row.appendChild(el)});const q=document.createElement('span');q.className='rq';q.textContent='Q'+rd.q;q.style.color=rd.q>=20?'#4ade80':'#f4a261';row.appendChild(q);c.appendChild(row)});c.scrollTop=c.scrollHeight}
+function updVCS(){const n=vcR.length,alt=vcR.filter(r=>r.isA).length,vaf=n?alt/n:0;document.getElementById('vc-d').textContent=n;document.getElementById('vc-a').textContent=alt;document.getElementById('vc-vaf').textContent=n?(vaf*100).toFixed(1)+'%':'—';let llR=0,llE=0;vcR.forEach(r=>{llR+=Math.log(.5);llE+=Math.log(r.isA?ER:1-ER)});const mx=Math.max(llR,llE),pR=Math.exp(llR-mx)/(Math.exp(llR-mx)+Math.exp(llE-mx)),rp=Math.max(0,Math.min(100,pR*100)),ep=100-rp;document.getElementById('vc-pr').style.width=rp+'%';document.getElementById('vc-pr').textContent=rp>8?rp.toFixed(0)+'%':'';document.getElementById('vc-pe').style.width=ep+'%';document.getElementById('vc-pe').textContent=ep>8?ep.toFixed(0)+'%':''}
+function updVCInfo(){const el=document.getElementById('vc-info'),n=vcR.length;if(!n){el.textContent=t('💡 시나리오를 바꿔가며 실험해보세요!','💡 Try different scenarios!');return}const vaf=vcR.filter(r=>r.isA).length/n;el.textContent=n<10?t(`💡 Depth ${n}× 부족. 임상 WGS는 30×+.`,`💡 Depth ${n}× is low. Clinical: 30×+.`):vaf>.35&&vaf<.65?t(`💡 VAF ≈ ${(vaf*100).toFixed(0)}% → 이형접합 패턴.`,`💡 VAF ≈ ${(vaf*100).toFixed(0)}% → het pattern.`):vaf>.85?t(`💡 VAF ≈ ${(vaf*100).toFixed(0)}% → 동형접합 패턴.`,`💡 VAF ≈ ${(vaf*100).toFixed(0)}% → hom pattern.`):vaf<.1?t(`💡 VAF ${(vaf*100).toFixed(1)}% → 오류 가능성.`,`💡 VAF ${(vaf*100).toFixed(1)}% → likely error.`):t(`💡 Depth ${n}×, VAF ${(vaf*100).toFixed(1)}%.`,`💡 Depth ${n}×, VAF ${(vaf*100).toFixed(1)}%.`)}
+function resetVC(){vcR=[];document.getElementById('vc-reads').innerHTML=`<div id="vc-ph" style="color:#556;text-align:center;padding:1rem"><span class="i18n" data-ko="리드가 없습니다. 시퀀싱을 시작하세요!" data-en="No reads yet. Start sequencing!"></span></div>`;setLang(L);document.getElementById('vc-d').textContent='0';document.getElementById('vc-a').textContent='0';document.getElementById('vc-vaf').textContent='—';document.getElementById('vc-pr').style.width='50%';document.getElementById('vc-pr').textContent='50%';document.getElementById('vc-pe').style.width='50%';document.getElementById('vc-pe').textContent='50%';updVCInfo()}
+
+/* ================================================================ Init */
+window.addEventListener('load',()=>{initThreeGlobe();initGlobeWidget();setLang('ko')});
+window.addEventListener('resize',()=>requestAnimationFrame(()=>{layoutEd();drawPosterior();updPrior();updData()}));
+</script>
+</body>
+</html>
