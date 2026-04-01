@@ -1,5 +1,7 @@
 # Chapter 2: From Biological Intuition to Deep Learning
 
+**[Interactive Lab: Chapter 2](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter2.html)** — 3D 지구본 던지기, 사전확률 탐색기, 변이 판정 시뮬레이터를 직접 체험해보세요!
+
 You're in your room, and there's a small globe-shaped ball sitting on your desk—one of those foam stress balls shaped like Earth. Out of boredom between problem sets, you toss it in the air and catch it with your eyes closed. Your right index finger lands on... **water**. You try again. **Water**. Again. **Land**. After 9 tosses, you've recorded: **W L W W W L W L W** (6 water, 3 land).
 
 *"So Earth is about 67% water?"* you think.
