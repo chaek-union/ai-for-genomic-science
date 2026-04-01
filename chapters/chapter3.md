@@ -1,6 +1,6 @@
 # Chapter 3: Neural Networks — How Machines Learn Patterns
 
-**[Interactive Lab: Chapter 3](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter3.html)** — 2D 분류기, 활성화 함수 비교, 단일 뉴런 탐색기, 학습 과정 시각화를 직접 체험해보세요!
+**[Interactive Lab: Chapter 3](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter3.html)** — Try the 2D classifier, activation function explorer, single neuron playground, and training visualizer!
 
 You're a second-year biology student staring at 200 DNA sequences, each 20 nucleotides long. Half of them are real splice donor sites (the GT at exon-intron boundaries where your pre-mRNA gets cut), and half are decoy sequences that look similar but aren't functional. Your professor challenges you: *"Can you figure out the rule that separates real splice sites from fake ones?"*
 
