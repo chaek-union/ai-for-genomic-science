@@ -2,15 +2,13 @@
 
 **[Interactive: Chapter 8](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter8.html)**
 
-## Opening Vignette
+For decades, computational biologists wrote rules by hand. They cataloged the DNA sequences where transcription factors were known to bind, assembled them into databases like JASPAR, and built scoring algorithms that measured how closely a new sequence matched these curated patterns. If a sequence looked like a known binding site, it probably was one. The approach had a real logic to it, and it worked — for the patterns that were already known.
 
-Dr. Sarah Chen stares at her screen, reviewing the proposal she's about to submit. Her research question is straightforward: which of the 50,000 candidate regulatory regions in the human genome actually function as enhancers in cardiac muscle cells during development?
+But the genome kept producing surprises. Enhancers that drove powerful tissue-specific expression without matching any motif in any database. Regulatory elements that functioned only at a specific developmental stage, or only in one of two otherwise identical cell types. Noncoding variants that disrupted gene regulation through mechanisms that nobody had articulated, let alone cataloged. The rule-based approach was not wrong so much as incomplete: it could recognize what researchers had already described, but it had no way to discover what they had not yet thought to look for.
 
-She does the mental math. To experimentally test each region, she'd need to clone it into a reporter construct, transfect it into cells, culture them for several days, and measure activity. At one region per day with a success rate of 70%, that's roughly 195 years of continuous work—not counting weekends, holidays, or the inevitable troubleshooting. The budget would exceed $2 million just for reagents and consumables.
+Somewhere around 2015, a quiet revolution began. A handful of groups — working mostly on chromatin accessibility and transcription factor binding — asked a different question. Instead of telling a computer which patterns to look for, what if you showed it millions of sequences with known regulatory activity and let it find the patterns itself? No curated motif database. No manually encoded rules. Just raw DNA sequence as input, experimental measurements as output, and a deep neural network tasked with finding whatever structure connected the two.
 
-Even if she had unlimited time and money, there's a deeper problem: she doesn't just want to know about *these* 50,000 regions in *this* cell type. She wants to understand how regulatory activity changes across 200+ cell types, through developmental stages, and in response to different conditions. That would be 10 million individual experiments.
-
-Yet somewhere in those 50,000 DNA sequences, there must be patterns—motifs, arrangements, contexts—that determine which ones work as enhancers. If a cell can "read" these patterns from raw DNA sequence, perhaps a neural network can too.
+The results were striking. These models learned motifs that matched known transcription factor binding sites — validating that they were capturing real biology — but they also learned patterns that had no name in any database, combinations and spacings and contextual dependencies that rule-based systems had never formalized. The field had a new instrument, and like all new instruments, it was about to reveal things that previous tools simply could not see.
 
 ---
 

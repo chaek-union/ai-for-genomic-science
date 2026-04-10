@@ -2,13 +2,13 @@
 
 **[Interactive: Chapter 15](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter15.html)**
 
-## Opening Vignette: The Hidden Heterogeneity
+Under the microscope, the tumor biopsy looks like a uniform mass of cells. The bulk RNA-seq confirms this impression: moderate upregulation of immune genes, modest changes in metabolic pathways. A seemingly straightforward picture — immune infiltration, metabolic stress, the usual hallmarks. You write it up in your notebook and prepare for the next experiment.
 
-Dr. Kim stares at her bulk RNA-seq results from tumor samples. The data shows modest changes in immune gene expression—a 1.5-fold average increase compared to unaffected tissue. But when her collaborator analyzes the same samples using single-cell RNA-seq, the picture transforms dramatically.
+Then a collaborator runs the same tissue through a single-cell sequencer. The result is a revelation. That "uniform mass" contains at least 15 distinct cell populations. Some T cells are in an exhausted state, their cytotoxic function silenced by chronic antigen exposure. Others are actively proliferating — a completely different biology. Some cancer cells are dividing rapidly, others are quiescent and potentially therapy-resistant. The metabolic "moderate upregulation" was actually two opposing populations averaged together — one dramatically upregulated, the other completely silent. The average was a statistical artifact that described neither population accurately.
 
-Within what appeared to be uniform "immune infiltration," they discover 12 distinct cell populations. Some T cells are actively proliferating, others are exhausted. There are two subsets of macrophages with opposite inflammatory profiles. A rare population of dendritic cells—comprising just 2% of cells—shows the strongest activation signature but was completely invisible in bulk measurements.
+The single-cell data didn't just add resolution. It told an entirely different biological story. The exhausted T cells explain why checkpoint inhibitor therapy might fail in this patient. The quiescent cancer cells explain why the tumor regrows after chemotherapy. The rare dendritic cell population — just 2% of cells, invisible in bulk measurements — shows the strongest activation signature and may be the key to designing a better immunotherapy. None of this was visible at bulk resolution. All of it was present, waiting to be seen.
 
-The bulk average of 1.5-fold increase masked everything important: which cells were responding, how strongly, and what states they occupied. Dr. Kim realizes she's been studying biology with the wrong resolution—like trying to understand a city by only looking at county-level statistics.
+This is the promise — and the challenge — of single-cell omics. The data is richer by orders of magnitude. But a single experiment profiling 50,000 cells produces as much data as 50,000 bulk experiments. Understanding what you've measured requires computational methods as sophisticated as the biology itself.
 
 ---
 

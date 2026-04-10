@@ -2,15 +2,13 @@
 
 **[Interactive: Chapter 16](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter16.html)**
 
-## Opening Vignette
+The download progress bar reads: 2.3 terabytes. 33 million cells. 20,000 genes per cell. The Human Cell Atlas consortium has measured gene expression in every major cell type across the human body, and the dataset has just become publicly available. If you printed each cell's expression profile on a single sheet of paper, the stack would reach from Seoul to Busan.
 
-Dr. Chen has just received scRNA-seq data from 50,000 cells isolated from pancreatic tissue samples collected from patients with type 2 diabetes and unaffected controls. She needs to identify which cells are insulin-producing beta cells, which are in a stressed state, and which show expression patterns associated with the disorder.
+The scale is not just logistically staggering — it breaks traditional analysis pipelines. No graduate student can manually annotate 33 million cells. No standard clustering algorithm scales elegantly to this size. Batch correction across dozens of labs, protocols, and patient cohorts becomes a combinatorial nightmare. And yet, buried somewhere in those 33 million expression profiles are undiscovered cell states, rare populations that appear in disease but not in health, and regulatory programs that no one has described. The data contains answers. The question is how to ask it.
 
-Her graduate student spent three weeks manually annotating 2,000 cells using known marker genes. But the annotations are inconsistent—some cells express both beta cell markers and alpha cell markers. Others show inflammation signatures that don't fit standard categories. And there are dozens of rare cell populations that don't match anything in the literature.
+The solution mirrors what happened in natural language processing when the internet became too large for human curation: stop annotating everything manually, and instead train a model large enough to learn the structure of the data itself. GPT didn't need humans to label every sentence as grammatical or ungrammatical — it learned grammar by reading enough text. A single-cell foundation model doesn't need humans to annotate every cell — it learns what "normal" cell states look like by reading enough expression profiles, so it can spot what's abnormal, incomplete, or novel.
 
-What if she could use a model trained on millions of cells from hundreds of studies? A model that has learned the "language" of gene expression across tissues, conditions, and species? A model that could automatically identify cell types, predict cellular responses to perturbations, and even suggest which genes to target for therapeutic intervention?
-
-This is the promise of single-cell foundation models—AI systems trained on vast amounts of single-cell data that can be applied to new biological questions without retraining from scratch.
+This is the shift this chapter describes: from analysis pipelines that require labeled data at every step, to foundation models that learn a general cellular language and then apply it wherever it's needed — across tissues, diseases, and species they've never seen before.
 
 ---
 

@@ -2,15 +2,15 @@
 
 **[Interactive: Chapter 9](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter9.html)**
 
-## Opening Vignette
+Imagine unrolling a 1,000-nucleotide stretch of DNA across your desk — a long paper ribbon of A's, T's, G's, and C's stretching from one end to the other. You pick up a magnifying glass, a small one, about 8 nucleotides wide, and start sliding it from left to right across the ribbon. At position 14, you notice a pattern: G-A-T-A followed by an A-rich stretch — a GATA motif, a known binding site for a family of transcription factors. You slide on. At position 83, another pattern emerges: a GC-rich cluster with a specific internal spacing. You note each observation on a sticky note and pin it to the wall. By the time the magnifying glass has traveled the full length of the ribbon, the wall is covered: dozens of motif observations, each recording what the glass saw at each position along the way.
 
-Dr. Chen stares at her computer screen, looking at a list of 847 genetic variants identified in patients with developmental disorders. Each variant sits in a noncoding region of the genome—regions that don't code for proteins but might regulate when and where genes are turned on or off.
+Congratulations — you just performed a convolution. A small, fixed-width window, sliding systematically from one end of a sequence to the other, recording local pattern matches at every position. The sticky notes on your wall are a feature map: a compact summary of what each position in the sequence looks like through that particular lens.
 
-She needs to figure out which of these variants actually disrupt gene regulation. The traditional approach would be to test each variant using reporter assays: clone each DNA sequence into a plasmid, introduce it into cells, and measure its regulatory activity. At roughly one week and $500 per variant, testing all 847 would take 16 years and cost over $400,000. And that's just for one cell type—regulatory elements often work differently in neurons versus liver cells versus heart cells.
+A Convolutional Neural Network does exactly this, with two differences in scale and autonomy. First, it does not slide one magnifying glass but hundreds — each one tuned to detect a different pattern, producing hundreds of feature maps simultaneously. Second, and more importantly, it did not arrive with those lenses pre-programmed. It learned which patterns to look for by examining millions of sequences with known regulatory activity, adjusting its filters until the patterns that predict function came into focus. The convolution operation itself is ancient mathematics; the novelty is that the filters are not designed by a biologist but discovered by the network from data.
 
-But here's an even bigger problem: the human genome contains roughly 1 million regulatory elements. Testing them all experimentally across even just 10 cell types would require 10 million experiments. The ENCODE Project spent over a decade and hundreds of millions of dollars mapping regulatory elements in 100+ cell types, yet they still couldn't test every possible variant in every possible condition.
+This chapter opens the hood on that process. We will work through how convolutions are applied to DNA sequences, how filters learn to recognize motifs, how stacked layers build from local patterns to global function, and how models like DeepSEA and Basset put these ideas into practice for predicting regulatory activity across the human genome.
 
-This is where convolutional neural networks come in. By learning patterns from existing experimental data, these models can predict the regulatory activity of any DNA sequence—including sequences that have never been tested in a lab. They can tell Dr. Chen which of her 847 variants are likely to disrupt enhancers, silencers, or other regulatory elements, all within minutes and at essentially zero cost.
+## The Biological Challenge
 
 ## The Biological Challenge
 

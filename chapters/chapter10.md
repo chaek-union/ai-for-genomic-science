@@ -2,17 +2,13 @@
 
 **[Interactive: Chapter 10](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter10.html)**
 
-## Opening Vignette: The Long-Distance Relationship Problem
+Something puzzling is happening in the β-globin locus. A noncoding variant sits 500,000 base pairs from the *GATA1* gene — half a million bases of seemingly irrelevant DNA in between. Yet somehow, this distant variant causes beta-thalassemia. No local gene is disrupted. No protein is directly altered. The variant is whispering instructions across an enormous genomic distance, and the gene on the other end is listening.
 
-Dr. Emily Rodriguez is trying to understand why a genetic variant 500,000 base pairs upstream of the *GATA1* gene causes beta-thalassemia, a blood disorder. The variant doesn't touch the gene itself—it's half a million bases away, roughly the length of 500 average-sized genes laid end-to-end.
+How? The convolutional networks we've studied so far can't answer that question. Their receptive field — the genomic window they can "see" at once — maxes out at roughly 20,000 base pairs, even with many stacked layers. This variant is 25 times beyond that horizon. CNN-based tools like DeepSEA faithfully report the local chromatin state at the variant site, but they're blind to what lies downstream. Asking them about long-range regulation is like asking someone to describe a conversation they can only hear every 25th word of.
 
-Her initial analysis using CNN-based tools like DeepSEA shows the variant sits in an enhancer region with H3K27ac marks, suggesting it's active in red blood cell precursors. But the models struggle to predict the variant's effect on *GATA1* expression. Why? The CNN's receptive field—the genomic distance it can "see" at once—maxes out around 20,000 base pairs, even with many convolutional layers. It's like trying to understand a conversation when you can only hear every 25th word.
+Across a dataset of 127 chromatin loops identified by Hi-C in erythroid cells, 83% involve enhancer-promoter pairs separated by more than 100,000 base pairs. Some stretch beyond 1 million bases. These long-range interactions are not edge cases — they are fundamental to how gene regulation works, especially in development and tissue-specific contexts. A model that cannot see across these distances will always be missing half the story.
 
-Across her dataset of 127 chromatin loops identified by Hi-C in erythroid cells, she finds that 83% involve enhancer-promoter pairs separated by more than 100,000 base pairs. Some stretch beyond 1 million bases. These long-range interactions are fundamental to gene regulation, especially in complex developmental and tissue-specific contexts.
-
-CNNs transformed genomics by learning sequence patterns directly from data. But their architecture has a blind spot: they excel at local patterns but struggle with genomic elements that communicate across vast distances. To understand how a variant 500 kb away affects gene expression, we need models that can integrate information across these long genomic distances while still recognizing the local sequence patterns that matter.
-
-This is exactly the problem transformers were designed to solve—not in genomics initially, but in natural language processing.
+The answer involves an architectural innovation borrowed from machine translation: a mechanism called *attention* that lets a model look at every position in a sequence simultaneously and learn which distant positions talk to each other. This is exactly the problem transformers were designed to solve — not in genomics initially, but in natural language processing. Welcome to transformers.
 
 ---
 

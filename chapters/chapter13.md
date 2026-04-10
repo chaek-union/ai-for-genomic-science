@@ -2,15 +2,13 @@
 
 **[Interactive: Chapter 13](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter13.html)**
 
-## Opening Vignette
+What if you found a book written in a language no one had ever seen? No dictionary, no grammar guide, no Rosetta Stone. Just the raw text — millions of pages of it. Could you figure out what it means? Surprisingly, yes — if you have enough text. By noticing which "words" appear near which other "words," you could discover grammar, syntax, even meaning. The word that always appears between a subject and an object is probably a verb. Words that are interchangeable in context are probably synonyms. This is essentially how modern NLP models cracked human language before anyone handed them a grammar textbook.
 
-Dr. Kim stares at her screen, scrolling through 15,000 newly identified regulatory variants from a GWAS study of autism spectrum disorder. Each variant sits in a non-coding region—no protein changes, no obvious functional clues. Traditional conservation scores flag 3,000 as "potentially important," but that's still far too many to validate experimentally at $500 per variant.
+Now consider DNA. We have 3 billion letters of text per genome, across thousands of species — but no complete dictionary telling us what every sequence means. We know some words: TATAAA is a core promoter motif, AATAAA is a polyadenylation signal. But 98% of the genome is noncoding, and the regulatory logic written there — which sequences bind which transcription factors, which enhancers activate which genes, which variants disrupt which functions — remains largely unread. Traditional tools approach this with fixed rules and small windows. They can tell you if a 6-mer matches a known motif. They cannot tell you what a sequence *means* in context.
 
-She needs to predict which variants actually disrupt gene regulation. Not just whether a sequence looks "conserved" or "accessible," but whether changing a single nucleotide—say, A to G at position 45,832,091 on chromosome 16—will alter transcription factor binding, change chromatin state, or affect gene expression in neurons during development.
+DNA language models take the approach of the linguist with an unknown text: read billions of sequences, learn the statistical patterns, and use those patterns to predict what each sequence does. No labels required during training. No predetermined grammar. Just the raw text of evolution, accumulated over billions of years of selection, and a model large enough to find the signal within it.
 
-Her colleague suggests: "Why not use a language model? We train them on billions of words to understand English grammar. Can't we train one on billions of nucleotides to understand genomic grammar?"
-
-It sounds almost too simple. But what if DNA really is a language—with its own syntax, semantics, and context-dependent meanings? What if a model could learn the "rules" of gene regulation just by reading enough genomic sequences?
+The practical stakes are immediate. A GWAS study of autism spectrum disorder yields 15,000 regulatory variants — each a single nucleotide change in noncoding DNA, each potentially disrupting gene regulation in neurons. Traditional conservation scores narrow the list to 3,000. That's still $1.5 million in experimental validation at $500 per variant. A DNA language model that genuinely understands genomic context can prioritize that list further — not by pattern-matching to known motifs, but by modeling what those sequences are actually saying.
 
 ## The Biological Challenge
 

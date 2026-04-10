@@ -2,15 +2,13 @@
 
 **[Interactive: Chapter 11](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter11.html)**
 
-## Opening Vignette
+Thirty million. That's the number of biomedical research articles indexed in PubMed. If you read one paper per hour, eight hours a day, five days a week, it would take you over 14,000 years to read them all. And while you're reading, another 3,000 papers are published every single day. No human can keep up. The knowledge exists — it's just distributed across a library so vast that no individual scientist can ever walk its full length.
 
-Dr. Kim stares at her screen, frustrated. She's manually reading through 500 papers about the *APOE* gene, trying to understand which genetic variants are discussed in the context of Alzheimer's disorder and which are mentioned for other conditions. Each paper uses slightly different terminology: some call it "APOE ε4," others "rs429358," and still others describe it by the amino acid change "Cys130Arg."
+But what if a computer could read all 30 million papers and actually *understand* them — not just search for keywords, but comprehend that "APOE ε4," "rs429358," and "the Cys130Arg variant" all refer to the same thing? That "upregulated" and "overexpressed" mean the same phenomenon? That a sentence about TP53 in a breast cancer paper is relevant to a lung cancer study? This is precisely the gap between keyword search engines and language models. One matches strings. The other understands meaning.
 
-Her literature review spreadsheet has grown to 47 columns tracking different aspects: paper publication year, whether the study was genomic or proteomic, sample sizes, reported effect sizes, and the specific disorder context. She's three weeks into this task and has only processed 89 papers. At this rate, she'll finish in two months—and by then, dozens of new papers will have been published.
+The challenge isn't unique to literature. UniProt holds functional annotations for over 200 million protein sequences written in natural language. Clinical databases store millions of patient records with textual descriptions of symptoms, treatments, and outcomes. Connecting a GWAS hit to its biological mechanism means linking variant databases to clinical literature to mechanistic papers — all written in the messy, synonym-rich, context-dependent language that humans use. Traditional keyword search fails at every step of that chain.
 
-"There has to be a better way," she thinks. "These papers are just text. The information is there, structured in predictable ways. When a paper mentions 'apolipoprotein E4 carriers' and 'cognitive decline' together, it's clearly discussing a genetic risk factor. Why can't a computer understand that?"
-
-What Dr. Kim needs is a way for computers to understand biological text—not just to search for keywords, but to actually comprehend meaning, context, and relationships. This is exactly what language models do.
+This is what language models do: they learn the statistical structure of language well enough to understand it — synonyms, entity types, relational context, and all. Before we can apply these ideas to DNA sequences in the chapters ahead, we need to understand how they work on human language first. That understanding will make the leap to genomics feel not like a leap at all, but like an obvious next step.
 
 ## The Biological Challenge
 

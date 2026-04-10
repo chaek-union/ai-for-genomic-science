@@ -2,17 +2,23 @@
 
 **[Interactive: Chapter 7](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter7.html)**
 
-## Opening Vignette
+It is 2 PM on a Tuesday, and the weekly lab meeting has turned into a heated debate. A graduate student is presenting a rare variant in *SCN1A* — a sodium channel gene associated with epilepsy — found in a patient with developmental delays and uncontrolled seizures. She pulls up the prediction scores on the projector, and the room erupts.
 
-Dr. Chen stares at her spreadsheet with growing frustration. She's analyzing a variant in the *SCN1A* gene from a patient with developmental delays and seizures. The problem? Every prediction tool is giving her different answers.
+"SIFT says it's tolerated."
 
-SIFT says the variant is "tolerated" (score: 0.12). PolyPhen-2 calls it "probably damaging" (score: 0.89). PhyloP shows moderate conservation (score: 2.1). The variant changes a leucine to proline in a transmembrane domain—clearly important—but it appears once in gnomAD with 125,000 alleles sequenced. Is that "rare enough" to be disorder-causing?
+"But PolyPhen says probably damaging — score of 0.89!"
 
-She has 63 different pieces of information about this single variant: conservation scores from multiple methods, functional predictions, allele frequencies in different populations, proximity to splice sites, predicted protein stability changes, and more. Each tool captures something real about the variant, but they often disagree. Some variants score high on conservation but low on predicted functional impact. Others show the opposite pattern.
+"The CADD score is only 12. That's below the usual cutoff of 15."
 
-What Dr. Chen needs isn't another single prediction tool—she needs a way to combine all these signals intelligently. She needs to know: when SIFT and PolyPhen-2 disagree, which should she trust? When they agree, how much more confident should she be? And can she somehow use all 63 pieces of information together, letting each contribute what it does best?
+"Wait — look at the conservation track. This residue is in a highly constrained region. PhyloP is 4.7."
 
-This is exactly what machine learning ensemble methods were designed to solve.
+"It's a leucine-to-proline substitution in a transmembrane helix. Prolines are helix breakers. Does anyone's structural predictor have an opinion?"
+
+"It appears once in gnomAD out of 125,000 alleles. That's rare, but not absent."
+
+The PI leans back in her chair and looks at the ceiling. "So we have four tools, three contradictory opinions, one structural concern, and a frequency that proves nothing either way. Which do we trust?" A silence settles over the room.
+
+This is the variant interpretation problem at its most honest — and it plays out in research labs and clinical genetics programs every day. No single tool commands enough authority to close the debate, because each tool was built to capture a different signal, each has its own blind spots, and the signals themselves sometimes point in opposite directions. What the field needed was not yet another individual tool, but a principled way to combine them. This chapter is about how machine learning ensemble methods provide exactly that.
 
 ---
 

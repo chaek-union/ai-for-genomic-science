@@ -4,19 +4,15 @@
 
 ---
 
-## Opening Vignette: A Million Questions in One Genome
+**4,100,000.**
 
-Dr. James Park stares at his computer screen, looking at the whole-genome sequencing results from a 6-year-old patient with an undiagnosed developmental disorder. The sequencing ran perfectly—excellent coverage, high quality scores. But now comes the hard part.
+That is approximately how many positions in your DNA differ from the person sitting next to you in class right now. Not approximate — not "a lot" — a specific, enumerable number. If you printed those differences on paper, one variant per line, you would fill 82,000 pages. Stack those pages and the pile would be taller than you are.
 
-The file contains **4.1 million genetic variants** compared to the reference genome. That's 4.1 million differences between this child's DNA and the "standard" human genome sequence. Somewhere in those 4.1 million variants might be the answer to why this child has developmental delays, unusual facial features, and recurrent infections.
+Somewhere in that stack — perhaps on page 47,231 or page 81,003 — there might be a single line that explains why your family has a history of early-onset heart disease, or why you can taste bitter compounds in broccoli that your roommate cannot, or why a drug that works for most people gives you a side effect that mystifies your physician. One line in 82,000 pages. And that is assuming the answer lies in a single variant. Many traits and diseases arise from combinations: two variants that are harmless alone but disruptive together, or a common variant that only matters in a particular environmental context.
 
-But which variant? Or which combination of variants?
+For most of human history, this stack was invisible. We knew that heredity existed, that traits ran in families, that identical twins were more similar than fraternal ones — but the molecular substrate was opaque. The sequencing revolution of the last two decades cracked it open. We can now read every letter of a person's genome in a matter of days, for a cost that continues to fall. The stack has become legible. The problem, now, is navigation.
 
-Most of these 4.1 million variants are common—present in millions of people worldwide—and clearly have no functional impact. Maybe 50,000 are rare enough to be interesting. Of those, perhaps 10,000 fall in protein-coding genes. And maybe 100-200 are the types of variants that could plausibly affect protein function.
-
-Dr. Park needs to narrow down from 4.1 million to a handful of candidates. Fast. The family has been waiting for answers for three years. The traditional approach—looking up each variant manually, checking evolutionary conservation, reading papers about each gene—would take months, even if he worked on nothing else.
-
-This is the computational genomics challenge in its purest form: **finding needles in haystacks, when you have millions of haystacks and you're not entirely sure what the needles look like.**
+This chapter is about the technologies that generate the stack, the types of variants it contains, and the computational strategies that make it navigable. It is the problem that motivates everything that follows in this book — because before AI can help us interpret variation, we need to understand what variation is, how we measure it, and why the sheer scale of it demands something smarter than a manual search.
 
 ---
 

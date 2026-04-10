@@ -4,27 +4,13 @@
 
 ---
 
-## Opening Vignette: Three Datasets, Three Challenges
+Three photographers stand before the same mountain landscape at golden hour. The first uses a macro lens — pressed close to a wildflower in the foreground, resolving every vein in a single petal, the texture of a stamen, the precise arc of a dew drop. The second has a telephoto — trained on the horizon, tracking the V-formation of geese moving south across the ridge, capturing the sweep of their journey but nothing of the flower below. The third holds a fisheye — stepping back until the entire panorama fills the frame: mountain, meadow, birds, flower, sky, all at once, compressed into a single circular window on the world.
 
-Dr. Sarah Chen faces a computational puzzle. Her lab generated three datasets to understand how gene regulation works during T cell differentiation:
+They are standing in the same place, photographing the same scene. Yet each returns with something fundamentally different — not because one is a better photographer, but because their lenses were built for different questions. The macro lens would be useless for tracking migration. The fisheye would dissolve the flower petal into an indistinct smear. The right lens depends entirely on what you are trying to see.
 
-**Dataset 1: ChIP-seq peaks (125,000 genomic regions)**  
-She needs to identify transcription factor binding motifs within these sequences. Each region is 200 base pairs long. The motifs are short (8-15 bp), position-specific patterns buried within the larger sequence. Traditional position weight matrices miss subtle patterns.
+Genomic data presents exactly this problem. A short transcription factor binding motif — 8 nucleotides tucked inside a 200-base-pair regulatory sequence — calls for a macro lens: precise, local, pattern-sensitive. A gene expression time course across T cell activation calls for a telephoto: sequential, history-aware, tracking how the present depends on the past. Long-range chromatin interactions between enhancers and promoters separated by half a megabase call for the fisheye: a view wide enough to see connections that local inspection would miss entirely.
 
-**Dataset 2: RNA-seq time course (20,000 genes × 8 time points)**  
-Gene expression measured every 6 hours during T cell activation. She wants to predict expression at the next time point, but expression at hour 24 depends on what happened at hours 0, 6, 12, and 18—not just the previous measurement.
-
-**Dataset 3: Hi-C chromatin interactions (50,000 genomic loci)**  
-Which distant enhancers physically contact which promoters? An enhancer at position 1,000,000 might regulate a gene at position 1,500,000—500 kilobases away. Local information isn't enough; the model needs to "see" long-range dependencies.
-
-She trained three different neural networks using the techniques from Chapter 3. All failed:
-- The fully-connected network for sequences had 200 × 4 = 800 input features per position, creating millions of parameters. It found no patterns.
-- The network for time series treated each time point independently, ignoring temporal order.  
-- The network for chromatin interactions could only look at nearby regions, missing distant regulatory elements.
-
-**Each dataset has different structure. Why should one architecture work for all of them?**
-
-**Connection to Chapter 2 & 3:** Remember from Chapter 2 that biology is fundamentally probabilistic—gene expression follows distributions, not fixed values. In Chapter 3, we learned how basic neural networks learn through Bayesian updating. But now we face a new challenge: **the structure of biological data matters**. We need architectures that respect this structure.
+In Chapter 3, we learned how neural networks learn in general. This chapter asks a different question: what *shape* should a network take? Convolutional networks, recurrent networks, and Transformers are not interchangeable tools — they are different lenses. Choosing the wrong architecture is not a minor inefficiency; it is like trying to photograph a bird migration with a macro lens. This chapter is about learning to see which lens fits which problem.
 
 ---
 

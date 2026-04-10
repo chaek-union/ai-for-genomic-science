@@ -2,15 +2,13 @@
 
 **[Interactive: Chapter 12](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter12.html)**
 
-## Opening Vignette
+Consider a chef who has spent 20 years cooking every cuisine in the world — French, Japanese, Ethiopian, Peruvian. They've never cooked Korean food. But when they walk into a Korean kitchen for the first time, they don't start from zero. They already understand heat, timing, flavor balance, fermentation. They know that doenjang is in the same family as miso. Their first attempt at kimchi jjigae will be far better than someone who has never cooked at all.
 
-Dr. Chen stares at her RNA-seq data from a rare neurological disorder affecting only 50 patients worldwide. She needs to understand which genes are dysregulated and how these expression changes relate to the condition. The problem? With only 50 samples, training a deep learning model from scratch would be nearly impossible—neural networks typically require thousands or tens of thousands of examples to learn meaningful patterns.
+This is the core idea behind foundation models: train on a massive, diverse dataset to learn *general principles*, then specialize for a new task with very little additional data. The chef's 20 years of broad cooking experience is the pre-training phase. Walking into the Korean kitchen for the first time — and succeeding quickly — is fine-tuning. In genomics, "cooking every cuisine" means pre-training on millions of DNA sequences from across the tree of life. "Walking into a Korean kitchen" means fine-tuning for your specific research question — with perhaps only a hundred labeled examples.
 
-Meanwhile, across the building, her colleague Dr. Rodriguez is analyzing ATAC-seq data from a previously unstudied cell type isolated from pancreatic islets. She has chromatin accessibility measurements for 20,000 genomic regions, but no labeled training data indicating which regions are enhancers, promoters, or silencers. Traditional supervised learning can't help—she doesn't have labels to train on.
+Why does this matter? Because the hardest biological questions are rarely the well-funded ones with thousands of labeled samples. A rare neurological disorder affecting 50 patients worldwide. A previously unstudied cell type from pancreatic islets. A pathogen that no one has sequenced before. In each case, a model trained from scratch would fail — you simply don't have enough data to teach it genomics from the ground up. But a foundation model already knows genomics. You're just teaching it the last mile.
 
-Both researchers face variations of the same fundamental challenge: they have interesting biological questions but insufficient labeled data for standard deep learning approaches. Their data isn't "big data"—it's specialized, rare, and expensive to generate. Yet somewhere in the vast landscape of genomic data already collected by the scientific community, there might be patterns that could help answer their questions.
-
-What if a model could learn general principles of how genomes work from millions of unlabeled sequences, then apply that knowledge to Dr. Chen's 50 samples or Dr. Rodriguez's unlabeled regions? This is exactly what foundation models promise: learn once from massive data, apply everywhere.
+The deep learning models we've encountered so far — DeepSEA, Basenji, Enformer — are powerful but face a critical limitation: every new biological question requires new labeled data and new training. Foundation models break this cycle. They learn the grammar of the genome once, from massive unlabeled sequence data, and transfer that grammar wherever it's needed. This chapter is about how they do it.
 
 ## The Biological Challenge
 

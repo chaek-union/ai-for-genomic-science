@@ -2,15 +2,13 @@
 
 **[Interactive: Chapter 17](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter17.html)**
 
-## Opening Vignette
+You press "Run." On your screen, a virtual *E. coli* cell begins its life cycle. DNA replicates — you watch the replisome fork advance along the circular chromosome in real time. Ribosomes translate mRNA into proteins at rates governed by codon usage and elongation factors. Metabolic enzymes convert glucose into energy, shifting flux through glycolysis as nutrient concentrations change. The cell grows, elongates, and after 45 minutes, divides into two daughter cells. None of this happened in a petri dish. Every molecule, every reaction, every stochastic fluctuation was computed — 28 interconnected mathematical models running simultaneously, passing information to each other at every time step.
 
-Dr. Chen stares at her screen displaying differential gene expression results from her latest experiment. She knocked out a metabolic gene in *E. coli* and measured RNA-seq across 4,000 genes. As expected, the target gene's expression dropped to near zero. But 237 other genes also changed significantly—some up, some down, many in unexpected ways.
+This is the whole-cell model: biology's equivalent of a flight simulator. And just like a flight simulator lets engineers test "what if the left engine fails?" without crashing a real plane, the whole-cell model lets biologists ask "what if we knock out this gene?" without touching a real cell. The answer isn't just "expression of these 237 genes changes" — it's a mechanistic account of *why* they change. Reduced expression of Gene A causes metabolite X to accumulate. Metabolite X allosterically inhibits enzyme Y. Enzyme Y's reduced activity triggers the SOS stress response. The SOS response upregulates the 50 ribosomal genes you see in your RNA-seq data. The whole-cell model traces every link in that chain.
 
-She needs to understand the cascade of effects. Does reduced expression of Gene A lead to metabolite accumulation? Does that trigger stress response pathways? Do those pathways then affect the 50 genes she sees changing in her ribosomal machinery? Which changes are direct biochemical consequences and which are adaptive cellular responses?
+We are not there yet for human cells. The *E. coli* whole-cell model, published in 2012, required a decade of work and comprehensive data on nearly every molecular process in a single bacterium. Human cells are three orders of magnitude more complex. But the trajectory is clear: as AI methods become more capable of integrating heterogeneous biological data — sequences, structures, expression profiles, interaction networks — the distance between today's modular pathway models and tomorrow's whole-cell simulations is shrinking.
 
-Running follow-up experiments to measure protein levels, metabolite concentrations, and regulatory interactions would require months and $80,000 in reagents. Even then, she'd only capture snapshots at specific timepoints, missing the dynamic interplay between transcription, translation, metabolism, and regulation that define how cells actually work.
-
-What she really needs is a computational model of the entire cell—one that integrates genomic sequence, transcriptomic dynamics, proteomic states, metabolic fluxes, and regulatory networks into a single, testable framework. A model where she could simulate her knockout and predict not just which genes change, but *why* they change and *how* the cell adapts.
+This final chapter surveys where that frontier stands today: the existing whole-cell models, the AI methods being developed to extend them, and what it would mean for biology if we could eventually press "Run" on a human cell.
 
 ---
 

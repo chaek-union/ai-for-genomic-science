@@ -2,13 +2,13 @@
 
 **[Interactive: Chapter 14](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter14.html)**
 
-## Opening Vignette
+Start with a single nucleotide — an A at one position in the genome. Now zoom out to 100 bases: you see a transcription factor binding motif. Zoom to 1,000: an exon boundary with splice signals. Zoom to 10,000: a complete gene with its promoter. Zoom to 100,000: an entire regulatory domain with enhancers, insulators, and their target genes interacting across vast distances. Zoom to 1,000,000: a topologically associating domain where the 3D folding of chromatin determines which enhancers can reach which promoters. At every scale, new biology emerges. The genome is not a flat string of letters — it is a deeply hierarchical document, and understanding it requires reading at multiple resolutions simultaneously.
 
-Dr. Kim's research team needs to analyze regulatory variants across the entire human genome—3.2 billion base pairs. Their current Transformer-based model (similar to DNABERT) works beautifully for analyzing individual genes or regulatory regions of a few thousand base pairs. But when they try to scale up to chromosome-level analysis, everything grinds to a halt.
+But until recently, most AI models could only see a few hundred to a few thousand bases at a time — like trying to understand a city by looking through a keyhole. The transformer models from the previous chapter are powerful, but they carry a fundamental computational burden: their attention mechanism has quadratic complexity. Double the sequence length and the computation quadruples. Increase it tenfold and the computation increases a hundredfold. At 1 million base pairs, the attention matrix alone would require a terabyte of GPU memory. The biology demands scale. The architecture forbids it.
 
-The problem is computational: analyzing a sequence of 100,000 base pairs takes 10 times longer than analyzing 10,000 base pairs. But analyzing 1 million base pairs doesn't take 100 times longer—it takes 10,000 times longer. At this rate, scanning just one chromosome would take weeks of GPU time and cost thousands of dollars.
+This collision between biological necessity and computational constraint has driven a new wave of architectural innovation. Researchers have asked: what if we could capture long-range dependencies without computing all pairwise attention? What if the architecture scaled *linearly* with sequence length instead of quadratically? The answer has come from an unlikely direction — state space models and convolution operators originally developed for signal processing, now repurposed to read DNA at scales transformers cannot reach.
 
-Dr. Kim opens a preprint describing a new model called HyenaDNA that claims to analyze sequences up to 1 million base pairs in length—a 100-fold increase over existing models. Even more intriguing, the computational time scales linearly with sequence length instead of quadratically. How is this possible? And what biological insights might we gain from analyzing DNA at such unprecedented scales?
+This chapter is about models that finally open the door: HyenaDNA, Mamba, and Caduceus. They represent not just engineering improvements but a genuine expansion in what questions genomics AI can ask.
 
 ---
 

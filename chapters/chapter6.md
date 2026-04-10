@@ -2,19 +2,13 @@
 
 **[Interactive: Chapter 6](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter6.html)**
 
-## Opening Vignette: The Needle in a Haystack Problem
+In 1975, Mary-Claire King and Allan Wilson published a paper that would quietly reshape how scientists think about the genome. Working with protein sequences from humans and chimpanzees, they found something that startled the field: the two species were, at the protein level, approximately 99% identical. Chimpanzees and humans share roughly the same hemoglobin, the same cytochrome c, the same albumin. By the molecular measure of their proteins, they are barely distinguishable.
 
-Dr. Sarah Chen stares at her screen, looking at whole-genome sequencing results from a 4-year-old patient with severe developmental delays and seizures. The sequencing worked perfectly—excellent coverage, high-quality reads. But now comes the overwhelming part.
+Yet the differences between a human and a chimpanzee — in cognition, in language, in anatomy, in the arc of development from embryo to adult — are not subtle. Something had to explain the gap between molecular similarity and biological divergence. King and Wilson proposed that the answer lay not in the proteins themselves but in *how* and *when* those proteins are expressed — in the regulatory sequences that control gene activity across development. The genes were the same; the instructions for using them were different.
 
-The analysis pipeline identified **4.2 million genetic variants** in this child's genome compared to the reference. That's 4.2 million differences. Somewhere in those millions of variants, there might be one—or maybe a handful—that explain why this child can't walk, can't speak, and has daily seizures.
+This paper planted a seed for a powerful idea that would take decades to fully germinate: **if a sequence is identical across species separated by millions of years of evolution, it must be doing something critically important.** Natural selection is conservative. Change costs something. Mutations that break essential functions disappear because organisms carrying them fail to reproduce. The sequences that persist unchanged across fish, mice, dogs, and humans do so because evolution has had millions of opportunities to alter them, and every time it tried, the result was worse. Unchanged means indispensable.
 
-She filters by frequency first. Removing common variants (those found in more than 1% of the population) drops the count to about **50,000 rare variants**. Better, but still impossible to work with. She then focuses on protein-coding regions, leaving her with roughly **2,500 rare variants** that could potentially change protein sequences.
-
-2,500 variants. Each one could theoretically affect a protein. But which ones actually matter? Which changes are harmless quirks of individual variation, and which ones break something critical?
-
-Here's what Dr. Chen can't do: she can't test all 2,500 variants experimentally. Each functional test—expressing the mutant protein, measuring its activity, testing it in cells or model organisms—takes weeks to months and costs thousands of dollars. Testing 2,500 variants would take decades and millions of dollars. The patient needs answers now, not in 2050.
-
-This is where **evolutionary conservation** becomes her most powerful tool.
+The converse also holds: sequences that vary freely across species are probably tolerant of change. They can be modified without consequence, and so they accumulate differences over time. This asymmetry — conservation as a signal of function, variability as a signal of flexibility — is the foundation of everything in this chapter. It gives us, without a single additional experiment, a way to read the functional importance of any nucleotide directly from the record of life's history.
 
 ---
 
