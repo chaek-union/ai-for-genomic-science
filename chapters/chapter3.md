@@ -16,15 +16,15 @@ The key insight: neural networks aren't magic. They're built from the simplest p
 
 ---
 
-## 학습 목표 (Learning Objectives)
+## Learning Objectives
 
-이 장을 마치면 다음을 할 수 있습니다:
+By the end of this chapter, you will be able to:
 
-- [ ] 인공 뉴런(퍼셉트론)의 구조와 가중합 계산 과정을 설명한다
-- [ ] 활성화 함수(ReLU, sigmoid, tanh)의 역할과 비선형성이 필요한 이유를 논한다
-- [ ] 순전파(forward propagation)를 통해 신경망이 예측값을 계산하는 과정을 따라간다
-- [ ] 손실 함수와 역전파(backpropagation)를 이용해 신경망이 학습하는 원리를 설명한다
-- [ ] 과적합(overfitting)의 원인을 파악하고 정규화, 드롭아웃 등 완화 전략을 적용한다
+- [ ] Describe the structure of an artificial neuron (perceptron) and the process of computing a weighted sum
+- [ ] Discuss the role of activation functions (ReLU, sigmoid, tanh) and why nonlinearity is necessary
+- [ ] Trace through how a neural network computes predictions via forward propagation
+- [ ] Explain the principle by which neural networks learn using loss functions and backpropagation
+- [ ] Identify the causes of overfitting and apply mitigation strategies such as regularization and dropout
 
 ---
 

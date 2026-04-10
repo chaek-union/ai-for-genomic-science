@@ -20,15 +20,15 @@ This is one example of how we can leverage the power of AI in genomics: not repl
 
 ---
 
-## 학습 목표 (Learning Objectives)
+## Learning Objectives
 
-이 장을 마치면 다음을 할 수 있습니다:
+By the end of this chapter, you will be able to:
 
-- [ ] 현대 유전체학이 직면한 데이터 규모 문제와 가설 검증의 병목을 설명한다
-- [ ] AI, 머신러닝, 딥러닝의 개념 계층 구조를 구별하고 예시를 든다
-- [ ] 상관관계와 인과관계의 차이를 설명하고 AI가 인과관계를 입증할 수 없는 이유를 논한다
-- [ ] 유전체 과학에서 AI가 성공적으로 적용된 실제 사례를 최소 세 가지 설명한다
-- [ ] AI 도구를 적절하게 사용해야 하는 상황과 실험적 검증이 필요한 상황을 구분한다
+- [ ] Describe the data scale problem facing modern genomics and the bottleneck in hypothesis validation
+- [ ] Distinguish the conceptual hierarchy of AI, machine learning, and deep learning, and give examples of each
+- [ ] Explain the difference between correlation and causation, and discuss why AI cannot establish causation
+- [ ] Describe at least three real-world examples where AI has been successfully applied in genomic science
+- [ ] Distinguish situations where AI tools should be used appropriately from situations requiring experimental validation
 
 ---
 

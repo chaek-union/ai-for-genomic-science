@@ -87,9 +87,9 @@ insulin - pancreas + liver ≈ glucose
 
 This isn't magic—it's a consequence of how these words are used in text. Papers discussing BRCA1 and breast tissue often have parallel structures to papers discussing BRCA2 and ovarian tissue.
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
-> **Vector Similarity (벡터 유사도)**
+> **Vector Similarity**
 >
 > How do we measure if two word vectors are similar? The most common metric is cosine similarity.
 >
@@ -171,9 +171,9 @@ protein pays attention to:
   The, a, that: 0.02 total (very low - not meaningful)
 ```
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
-> **Computing Attention (어텐션 계산)**
+> **Computing Attention**
 >
 > Attention uses three vectors for each word: Query (Q), Key (K), and Value (V).
 >

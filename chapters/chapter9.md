@@ -371,9 +371,9 @@ Both models use CNNs to predict regulatory function from sequence, but they diff
 - DeepSEA identifies likely regulatory variants → Basenji predicts expression impact
 - Cross-validation of predictions increases confidence
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
-> **Variant Effect Score (변이 효과 점수)**
+> **Variant Effect Score**
 >
 > The basic formula for variant effect prediction:
 >

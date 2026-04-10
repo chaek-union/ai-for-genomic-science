@@ -171,7 +171,7 @@ CADD doesn't just use these 63 features—it learns their relative importance fr
 
 CADD uses a linear classifier that learns weights for each feature and combines them into a final score. You can think of this as a weighted vote: each of the 63 features casts a "vote," and CADD learns how much to trust each voter.
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
 > CADD uses a **Support Vector Machine (SVM)** — a type of linear classifier. An SVM learns weights (*w*) for each feature (*x*) and combines them:
 >

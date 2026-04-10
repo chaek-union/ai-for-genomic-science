@@ -89,7 +89,7 @@ It's like trying to understand English by analyzing individual letters without r
 
 ### K-mer Tokenization: Finding the Words in DNA
 
-> **생물학적 비유 (DNABERT k-mer 토큰화):** DNA를 코돈처럼 읽는 것과 같습니다. 단, 3글자 코돈 대신 6글자씩 겹치는 "단어"를 사용하여 의미 있는 패턴을 포착합니다.
+> **Biological Analogy (DNABERT k-mer tokenization):** Like reading DNA as codons, but instead of 3-letter codons, overlapping 6-letter "words" are used to capture meaningful patterns.
 
 **K-mers** are sequences of k consecutive nucleotides. Instead of reading DNA letter by letter, we read it in chunks:
 
@@ -383,7 +383,7 @@ Compare to embeddings of potential target promoters
 Predict which genes are affected (based on 3D proximity and sequence compatibility)
 ```
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 > ## Math Box: Attention Mechanisms in DNA Language Models
 >
 > All modern DNA language models use **attention mechanisms** to weigh important context. Let's break down how this works.

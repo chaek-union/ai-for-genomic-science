@@ -109,7 +109,7 @@ None of these approaches fundamentally solved the quadratic complexity problem w
 
 ### The Core Innovation
 
-> **생물학적 비유 (HyenaDNA 긴 컨텍스트):** 512bp 창문으로 짧게 읽는 대신, 전체 유전자 좌위(100kb)를 한 번에 읽을 수 있습니다. 멀리 떨어진 인핸서-프로모터 관계를 놓치지 않습니다.
+> **Biological Analogy (HyenaDNA long context):** Instead of reading in short 512 bp windows, the entire genomic locus (100 kb) can be read at once — distant enhancer-promoter relationships are not missed.
 
 HyenaDNA replaces the attention mechanism with a **convolutional operator** that can be computed efficiently using the Fast Fourier Transform (FFT). The key insight: convolutions can capture long-range dependencies through their filter design, and FFT makes them computationally efficient.
 
@@ -180,7 +180,7 @@ Analysis of the trained model revealed it captures:
 
 ---
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 > ## Math Box: FFT and Convolution
 >
 > **Why FFT Makes Convolution Fast**
@@ -252,7 +252,7 @@ Where:
 
 ### Mamba: Selective State Space Models
 
-> **생물학적 비유 (Mamba/상태공간 모델):** 게놈을 읽을 때 단기 기억과 장기 기억을 동시에 가지는 것과 같습니다. 어텐션의 계산 비용 없이 효율적으로 처리합니다.
+> **Biological Analogy (Mamba / state space models):** Like simultaneously holding short-term and long-term memory while reading a genome — processed efficiently without the computational cost of attention.
 
 Mamba improves upon S4 by making the state space parameters **data-dependent**. Instead of fixed A, B, C matrices, Mamba computes them based on the input:
 

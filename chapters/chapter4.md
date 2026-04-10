@@ -49,7 +49,7 @@ By the end of this chapter, you will be able to:
 
 ## 4.1 Convolutional Neural Networks (CNNs): Detecting Local Patterns
 
-> **[생물학적 비유]** CNNs are like scanning a histology slide section by section, detecting cell patterns in small windows—the same pattern detector slides across the entire sample, regardless of position.
+> **[Biological Analogy]** CNNs are like scanning a histology slide section by section, detecting cell patterns in small windows—the same pattern detector slides across the entire sample, regardless of position.
 
 ### The Core Idea: Reusable Pattern Detectors
 
@@ -176,7 +176,7 @@ Flatten → Fully Connected Layer → Output
 - Conv1: Only 8 × 4 × 128 = 4,096 weights (reused at all positions!)
 - Compare to fully-connected: Would need 4000 × hidden_size weights
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 > 
 > At each position *i*, the convolution output is:
 > 
@@ -235,7 +235,7 @@ Flatten → Fully Connected Layer → Output
 
 ## 4.2 Recurrent Neural Networks (RNNs): Processing Sequential Data
 
-> **[생물학적 비유]** RNNs are like reading a protein sequence one amino acid at a time, updating your interpretation as you go—each new residue informs your understanding of the whole chain's function.
+> **[Biological Analogy]** RNNs are like reading a protein sequence one amino acid at a time, updating your interpretation as you go—each new residue informs your understanding of the whole chain's function.
 
 ### The Problem: Time Matters
 
@@ -316,7 +316,7 @@ Target: 5.5  (hour 24)
 
 The final memory contains information about the entire trajectory!
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
 > At each step *t*, the RNN update is:
 >
@@ -347,7 +347,7 @@ RNNs have a serious limitation: **they forget long-term dependencies.**
 
 ## 4.3 Long Short-Term Memory (LSTM): Solving the Memory Problem
 
-> **[생물학적 비유]** LSTMs are like immunological memory—they can retain information about early antigens even after many cell divisions, selectively keeping important signals while discarding noise.
+> **[Biological Analogy]** LSTMs are like immunological memory—they can retain information about early antigens even after many cell divisions, selectively keeping important signals while discarding noise.
 
 ### The Core Idea: Selective Memory with Gates
 
@@ -394,7 +394,7 @@ Hidden state (h): What's currently active/relevant
 
 **The cell state is like a conveyor belt that carries information forward, with gates deciding what gets added or removed along the way.**
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
 > The three gates are computed as:
 >
@@ -492,7 +492,7 @@ A T C G [?] T A G C
 
 ## 4.4 Transformers: Attention is All You Need
 
-> **[생물학적 비유]** The Transformer attention mechanism is like a transcription factor that can "attend" to all accessible chromatin regions simultaneously, not just nearby ones—it can detect a distant enhancer at 50 kb as easily as one at 500 bp.
+> **[Biological Analogy]** The Transformer attention mechanism is like a transcription factor that can "attend" to all accessible chromatin regions simultaneously, not just nearby ones—it can detect a distant enhancer at 50 kb as easily as one at 500 bp.
 
 ### The Problem with RNNs/LSTMs
 
@@ -549,7 +549,7 @@ Position 800: Pays 70% attention to position 500 (enhancer)
 
 **The beautiful part:** The Transformer learns which positions are relevant through training!
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
 > For each position, three vectors are computed: Query (Q), Key (K), Value (V).
 >

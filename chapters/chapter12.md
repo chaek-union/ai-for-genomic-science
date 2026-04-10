@@ -234,7 +234,7 @@ The key is that genomic sequences have structure, and that structure is relevant
 
 The result: a model pretrained to predict masked nucleotides develops internal representations that encode functional properties of genomic sequences, even though those properties were never explicitly labeled during training.
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 > ## Math Box: The Masked Language Modeling Objective
 >
 > Let's formalize the masked language modeling objective mathematically.
@@ -297,7 +297,7 @@ Pretraining is the computationally expensive stage where the model learns genera
 
 **Biological Analogy:** Pretraining is like learning to read and write in your native language. You read thousands of books, articles, and documents. You haven't specifically trained for writing scientific papers, but you've learned grammar, vocabulary, and structure that will help with any writing task.
 
-> **생물학적 비유:** 의대 레지던트 과정과 같습니다. 수년간 다양한 환자를 보며 광범위한 임상 경험을 쌓은 뒤 전공을 선택합니다. 모델은 레이블 없는 수백만 개의 서열을 읽으며 일반적인 생물학적 직관을 키웁니다.
+> **Biological Analogy:** Like a medical residency program: after years of seeing diverse patients and building broad clinical experience, you then choose a specialty. The model reads millions of unlabeled sequences, developing general biological intuition.
 
 ### 4.2 Stage 2: Fine-Tuning
 
@@ -321,7 +321,7 @@ Fine-tuning is the task-specific stage where the pretrained model adapts to your
 
 **Biological Analogy:** Fine-tuning is like taking a general biology course (pretraining) then specializing in neuroscience (fine-tuning). You don't relearn cell biology from scratch—you build on foundation and add specialization.
 
-> **생물학적 비유:** 레지던트 전공 선택과 같습니다. 기초 지식을 바탕으로 특정 과제(예: 변이 효과 예측)에 비교적 적은 레이블 데이터로 전문화할 수 있습니다.
+> **Biological Analogy:** Like choosing a residency specialty: building on foundational knowledge, you can specialize for a specific task (e.g., variant effect prediction) with relatively few labeled examples.
 
 ### 4.3 Fine-Tuning Strategies
 
@@ -410,7 +410,7 @@ Fine-tuning requires some labeled examples. But what if you have almost no label
 
 ### 5.2 Zero-Shot Learning: Using Models Without Fine-Tuning
 
-> **생물학적 비유:** 훈련받은 면역학자가 전에 본 적 없는 새 병원체를 인식하는 것과 같습니다. 이전 지식이 새로운 상황으로 일반화됩니다.
+> **Biological Analogy:** Like a trained immunologist recognizing a pathogen they have never seen before. Prior knowledge generalizes to new situations.
 
 Zero-shot learning is the ability to perform a task without any task-specific training examples. This might seem impossible—how can a model do something it was never trained to do?
 

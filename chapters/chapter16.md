@@ -290,7 +290,7 @@ But these numbers don't tell the full story. Geneformer excels in zero-shot scen
 
 ---
 
-> **[선택: 수식으로 보면] — Attention Mechanisms in Single-Cell Models**
+> **[Optional: The Math] — Attention Mechanisms in Single-Cell Models**
 >
 > The self-attention mechanism is central to all these foundation models. Here's how it works for gene expression:
 >

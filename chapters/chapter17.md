@@ -321,7 +321,7 @@ No current model spans all scales simultaneously. Instead, researchers use scale
 
 ---
 
-> **[선택: 수식으로 보면] — Flux Balance Analysis**
+> **[Optional: The Math] — Flux Balance Analysis**
 >
 > Flux Balance Analysis (FBA) is a constraint-based method for modeling metabolic networks without requiring detailed kinetic parameters.
 >

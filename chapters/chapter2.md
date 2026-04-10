@@ -27,15 +27,15 @@ By understanding this connection, neural networks will transform from mysterious
 
 ---
 
-## 학습 목표 (Learning Objectives)
+## Learning Objectives
 
-이 장을 마치면 다음을 할 수 있습니다:
+By the end of this chapter, you will be able to:
 
-- [ ] 사전확률(prior)과 사후확률(posterior)의 개념을 설명하고 생물학적 추론에 적용한다
-- [ ] 베이즈 추론이 일상적인 과학적 판단과 어떻게 연결되는지 구체적인 예시로 설명한다
-- [ ] 생물학적 측정값이 고정된 수치가 아닌 확률 분포를 따른다는 것을 이해한다
-- [ ] 최대사후확률(MAP) 추정이 딥러닝의 손실 함수 최소화와 어떻게 대응하는지 설명한다
-- [ ] 딥러닝 모델의 예측에 내재된 불확실성과 훈련 데이터 편향을 비판적으로 평가한다
+- [ ] Explain the concepts of prior and posterior probability and apply them to biological reasoning
+- [ ] Describe with concrete examples how Bayesian reasoning connects to everyday scientific judgment
+- [ ] Understand that biological measurements follow probability distributions rather than fixed values
+- [ ] Explain how Maximum A Posteriori (MAP) estimation corresponds to minimizing the loss function in deep learning
+- [ ] Critically evaluate uncertainty and training data bias inherent in deep learning model predictions
 
 ---
 
@@ -63,10 +63,10 @@ You're a student at Korea University. The actual data you observe:
 
 ```
 Weekly schedule includes:
-• Central Plaza (중앙광장): Makgeolli (막걸리, rice wine) gatherings 2x/week
-• Daedongje (대동제, university festival): 3 days of continuous eating and drinking
-• Goyeonjeon (고연전, Korea-Yonsei rivalry game): Epic celebration with traditional Korean food and drinks
-• Late-night 치맥 (chimaek = chicken + beer): Every time you finish an exam
+• Central Plaza: Makgeolli (rice wine) gatherings 2x/week
+• Daedongje (university festival): 3 days of continuous eating and drinking
+• Goyeonjeon (Korea-Yonsei rivalry game): Epic celebration with traditional Korean food and drinks
+• Late-night chimaek (fried chicken + beer): Every time you finish an exam
 • Convenience store ramyeon: 1 AM study fuel
 ```
 
@@ -99,7 +99,7 @@ P(weight loss | college life data) = Very low!
 P(weight gain | college life data) = Very high!
 ```
 
-The evidence (막걸리🍶 at Central Plaza, festival food, late-night 치맥🍻🍗) completely overwhelmed your prior belief. This is Bayesian updating in action—when strong evidence contradicts your prior, you update your beliefs accordingly!😄
+The evidence (makgeolli at Central Plaza, festival food, late-night chimaek) completely overwhelmed your prior belief. This is Bayesian updating in action — when strong evidence contradicts your prior, you update your beliefs accordingly.
 
 Your brain did this automatically. You didn't consciously calculate probabilities, but you naturally weighted the evidence (all those makgeolli nights) against your prior belief (mom's prediction) and reached a new conclusion.
 
@@ -262,7 +262,7 @@ P(Hypothesis | Data) ∝ P(Data | Hypothesis) × P(Hypothesis)
 
 | Situation | Prior | Likelihood | Posterior |
 |-----------|-------|------------|-----------|
-| College weight | Mom says you'll lose weight (65%) | Central Plaza 막걸리, 대동제, 고연전 치맥 | Actually gained weight (85%) |
+| College weight | Mom says you'll lose weight (65%) | Central Plaza makgeolli, Daedongje, Goyeonjeon chimaek | Actually gained weight (85%) |
 | Professor says "easy exam" | Past exams were hard (70%) | Prof said "easy" but was wrong before | Still probably hard (55%) |
 | Gene expression | Pathway expected to respond (60%) | Small fold-change, p=0.048 | Moderately confident (65%) |
 | Called variant | Most positions match reference (99.9%) | 8/10 reads + seen in gnomAD | Likely real (95%) |
@@ -624,7 +624,7 @@ The core idea is simple: for each candidate proportion (p = 0.25, p = 0.50, p = 
 
 The exact calculations behind this (using the **binomial probability formula**) are shown below for those who want the details.
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
 > For each possible proportion p:
 >
@@ -817,7 +817,7 @@ The key intuition is that logarithms flip high confidence into a small number an
 
 Most importantly: **minimizing loss is mathematically identical to maximizing how well the model explains the data.** This connects directly back to the Bayesian likelihood — more on this just below.
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
 > ```
 > Loss = -log P(data | parameters)
@@ -938,7 +938,7 @@ Modified Loss = How wrong the model is + Penalty for complexity
 
 Think of it like a scoring system in a science fair: a project gets points for accuracy, but loses points for being unnecessarily complicated. A model with extreme, bloated weights (like Model B) pays a heavier penalty, even if it fits the training data slightly better. This pushes the model toward simpler, more generalizable solutions — just like Occam's Razor.
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
 > ```
 > Total Loss = Original Loss + λ × (sum of weight magnitudes)

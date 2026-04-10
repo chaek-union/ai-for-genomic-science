@@ -308,7 +308,7 @@ Training follows the standard supervised learning recipe:
 
 The result is a model that can predict regulatory activity for any DNA sequence you give it—even sequences without experimental data.
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
 > Sequence-based models frame regulatory prediction as a binary classification problem: for each genomic region, is a chromatin feature present (1) or absent (0)?
 >

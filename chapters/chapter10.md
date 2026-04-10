@@ -192,7 +192,7 @@ Position 1's representation now incorporates strong information from Position 3 
 
 **The key insight:** This happens in parallel for ALL positions, and they can all attend to each other regardless of distance.
 
-> **[선택: 수식으로 보면]**
+> **[Optional: The Math]**
 >
 > **Attention function:**
 >

@@ -260,7 +260,7 @@ This means standard bulk RNA-seq analysis methods often fail for single-cell dat
 
 ---
 
-> **[선택: 수식으로 보면] — 시퀀싱 깊이와 유전자 검출 확률**
+> **[Optional: The Math] — Sequencing Depth and Gene Detection Probability**
 >
 > For a gene expressed at *m* mRNA copies per cell, the probability of detecting it in scRNA-seq depends on:
 >
