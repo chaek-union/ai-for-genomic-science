@@ -27,6 +27,18 @@ By understanding this connection, neural networks will transform from mysterious
 
 ---
 
+## 학습 목표 (Learning Objectives)
+
+이 장을 마치면 다음을 할 수 있습니다:
+
+- [ ] 사전확률(prior)과 사후확률(posterior)의 개념을 설명하고 생물학적 추론에 적용한다
+- [ ] 베이즈 추론이 일상적인 과학적 판단과 어떻게 연결되는지 구체적인 예시로 설명한다
+- [ ] 생물학적 측정값이 고정된 수치가 아닌 확률 분포를 따른다는 것을 이해한다
+- [ ] 최대사후확률(MAP) 추정이 딥러닝의 손실 함수 최소화와 어떻게 대응하는지 설명한다
+- [ ] 딥러닝 모델의 예측에 내재된 불확실성과 훈련 데이터 편향을 비판적으로 평가한다
+
+---
+
 ## Your Brain Already Does Bayesian Inference
 
 ### You're a Natural Statistician
@@ -608,36 +620,40 @@ More data doesn't just change your point estimate—it **reduces uncertainty**. 
 
 ### The Bayesian Formulation
 
-For those wanting the mathematical details:
+The core idea is simple: for each candidate proportion (p = 0.25, p = 0.50, p = 0.75, etc.), we ask "how consistent is this hypothesis with what we observed?" The hypothesis that best explains the observed pattern of water and land carries the most weight. After 9 tosses (6 water, 3 land), p = 0.75 explains the data far better than p = 0.50 — which is why our belief shifts strongly toward it.
 
-```
-For each possible proportion p, calculate:
+The exact calculations behind this (using the **binomial probability formula**) are shown below for those who want the details.
 
-Posterior(p) ∝ Likelihood(data | p) × Prior(p)
-
-Where Likelihood is the binomial probability:
-L(p | k successes in n trials) = C(n,k) × p^k × (1-p)^(n-k)
-
-C(n,k) = "n choose k" = n! / (k!(n-k)!)
-```
-
-**For our data (6 W in 9 tosses):**
-
-```
-L(p=0.75) = C(9,6) × 0.75^6 × 0.25^3
-          = 84 × 0.178 × 0.0156
-          = 0.234
-
-L(p=0.67) = C(9,6) × 0.67^6 × 0.33^3  
-          = 84 × 0.090 × 0.036
-          = 0.272 (highest!)
-
-L(p=0.50) = C(9,6) × 0.50^6 × 0.50^3
-          = 84 × 0.0156 × 0.125
-          = 0.164
-```
-
-The peak of the likelihood is at p = 6/9 = 0.67, which is the maximum likelihood estimate (MLE). But Bayesian inference gives us the entire distribution, not just the peak!
+> **[선택: 수식으로 보면]**
+>
+> For each possible proportion p:
+>
+> ```
+> Posterior(p) ∝ Likelihood(data | p) × Prior(p)
+>
+> Where Likelihood is the binomial probability:
+> L(p | k successes in n trials) = C(n,k) × p^k × (1-p)^(n-k)
+>
+> C(n,k) = "n choose k" = n! / (k!(n-k)!)
+> ```
+>
+> **For our data (6 W in 9 tosses):**
+>
+> ```
+> L(p=0.75) = C(9,6) × 0.75^6 × 0.25^3
+>           = 84 × 0.178 × 0.0156
+>           = 0.234
+>
+> L(p=0.67) = C(9,6) × 0.67^6 × 0.33^3
+>           = 84 × 0.090 × 0.036
+>           = 0.272 (highest!)
+>
+> L(p=0.50) = C(9,6) × 0.50^6 × 0.50^3
+>           = 84 × 0.0156 × 0.125
+>           = 0.164
+> ```
+>
+> The peak of the likelihood is at p = 6/9 = 0.67, which is the maximum likelihood estimate (MLE). But Bayesian inference gives us the entire distribution, not just the peak!
 
 ---
 
@@ -795,58 +811,52 @@ If model says 10% confident but truth is opposite:
 Loss = -log(0.10) = 2.30 ✗
 ```
 
-**Why negative log?**
+**Why use a logarithm here?**
 
-```
-High probability (0.9) → Small negative log (0.1) → Small loss ✓
-Low probability (0.1) → Large negative log (2.3) → Large loss ✗
+The key intuition is that logarithms flip high confidence into a small number and low confidence into a large number. This converts the problem from "maximize how right I am" into "minimize how wrong I am" — and minimization is something computers do efficiently, like rolling downhill to find the lowest point.
 
-It converts "maximize probability" into "minimize loss"
-(Computers are better at minimizing than maximizing!)
-```
+Most importantly: **minimizing loss is mathematically identical to maximizing how well the model explains the data.** This connects directly back to the Bayesian likelihood — more on this just below.
+
+> **[선택: 수식으로 보면]**
+>
+> ```
+> Loss = -log P(data | parameters)
+>
+> High probability (0.9) → Small negative log (0.1) → Small loss ✓
+> Low probability (0.1) → Large negative log (2.3) → Large loss ✗
+>
+> It converts "maximize probability" into "minimize loss"
+> (Computers are better at minimizing than maximizing!)
+> ```
+>
+> **Three-variant example:**
+>
+> ```
+> Variant 1: True label = Real (1), Model predicts 0.9
+>   Loss₁ = -log(0.9) = 0.105
+>
+> Variant 2: True label = Error (0), Model predicts 0.2
+>   Loss₂ = -log(0.8) = 0.223  [0.2 for "real" means 0.8 for "error"]
+>
+> Variant 3: True label = Real (1), Model predicts 0.7
+>   Loss₃ = -log(0.7) = 0.357
+>
+> Total Loss = 0.105 + 0.223 + 0.357 = 0.685
+> ```
 
 #### Connecting to Bayesian Likelihood
 
-Remember the Bayesian formula?
+Remember the Bayesian formula? We want to find the hypothesis that best explains the observed data — that is, we want to **maximize the likelihood** P(data | hypothesis).
+
+In deep learning, we flip the sign and call this the loss:
 
 ```
-Posterior ∝ Likelihood × Prior
-
-We want to maximize: P(data | hypothesis)
-                      ↑
-                  This is likelihood!
+Minimizing loss = Maximizing likelihood
 ```
 
-**In deep learning:**
+**Same goal, same logic as Bayesian inference — just expressed differently.**
 
-```
-Training objective: Minimize loss across all training examples
-
-Loss = -log P(data | parameters)
-       ↑
-   This is negative log-likelihood!
-
-Minimizing loss = Maximizing likelihood!
-```
-
-**Concrete example:**
-
-You have 3 training variants:
-
-```
-Variant 1: True label = Real (1), Model predicts 0.9
-  Loss₁ = -log(0.9) = 0.105
-
-Variant 2: True label = Error (0), Model predicts 0.2  
-  Loss₂ = -log(0.8) = 0.223  [note: 0.2 for "real" means 0.8 for "error"]
-
-Variant 3: True label = Real (1), Model predicts 0.7
-  Loss₃ = -log(0.7) = 0.357
-
-Total Loss = 0.105 + 0.223 + 0.357 = 0.685
-```
-
-**Goal of training:** Adjust model parameters (weights) to minimize this total loss!
+**Goal of training:** Adjust model parameters (weights) to minimize total loss across all training examples.
 
 When loss is minimized → Model's predictions match the data well → We found the maximum likelihood!
 
@@ -920,29 +930,35 @@ Which do you trust more?
 
 Most scientists (and mathematicians) prefer Model A because of **Occam's Razor**: "Simpler explanations are usually better."
 
-**In deep learning, we implement this preference:**
+**In deep learning, we implement this preference through something called regularization:**
 
 ```
 Modified Loss = How wrong the model is + Penalty for complexity
-
-Total Loss = Original Loss + (small number) × (sum of weight magnitudes)
-                  ↓                              ↓
-            Likelihood term              "Prior" that prefers simplicity
 ```
 
-**Example:**
+Think of it like a scoring system in a science fair: a project gets points for accuracy, but loses points for being unnecessarily complicated. A model with extreme, bloated weights (like Model B) pays a heavier penalty, even if it fits the training data slightly better. This pushes the model toward simpler, more generalizable solutions — just like Occam's Razor.
 
-```
-Model A: Loss = 0.50, Weights = [0.3, -0.2, 0.1]
-  Total = 0.50 + 0.01 × (0.3 + 0.2 + 0.1) = 0.50 + 0.006 = 0.506
-
-Model B: Loss = 0.45, Weights = [25.7, -31.4, 18.9]
-  Total = 0.45 + 0.01 × (25.7 + 31.4 + 18.9) = 0.45 + 0.76 = 1.21
-
-Even though Model B fits data slightly better (0.45 < 0.50),
-Model A wins because it's much simpler!
-Total: 0.506 < 1.21
-```
+> **[선택: 수식으로 보면]**
+>
+> ```
+> Total Loss = Original Loss + λ × (sum of weight magnitudes)
+>                  ↓                          ↓
+>            Likelihood term        "Prior" that prefers simplicity
+> ```
+>
+> **Example with λ = 0.01:**
+>
+> ```
+> Model A: Loss = 0.50, Weights = [0.3, -0.2, 0.1]
+>   Total = 0.50 + 0.01 × (0.3 + 0.2 + 0.1) = 0.50 + 0.006 = 0.506
+>
+> Model B: Loss = 0.45, Weights = [25.7, -31.4, 18.9]
+>   Total = 0.45 + 0.01 × (25.7 + 31.4 + 18.9) = 0.45 + 0.76 = 1.21
+>
+> Even though Model B fits data slightly better (0.45 < 0.50),
+> Model A wins because it's much simpler!
+> Total: 0.506 < 1.21
+> ```
 
 This complexity penalty is like having a **prior belief** that weights should be small!
 
@@ -1272,18 +1288,23 @@ Deep learning isn't magic—it's a practical, scalable implementation of reasoni
 
 ---
 
-## Key Terms
+<details>
+<summary><strong>📖 Key Terms</strong></summary>
 
-- **Bayesian inference:** Updating beliefs about hypotheses using observed data via Bayes' theorem
-- **Prior P(H):** Initial belief about a hypothesis before seeing data
-- **Likelihood P(D|H):** Probability of observing data given a hypothesis is true
-- **Posterior P(H|D):** Updated belief after observing data
-- **Maximum A Posteriori (MAP):** Finding the single most probable hypothesis (what deep learning does)
-- **Probability distribution:** Description of all possible values and their probabilities
-- **Stochastic:** Involving randomness or probability (not deterministic)
-- **Garden of forking paths:** Intuitive visualization of how data arise under different hypotheses
-- **Evidence P(D):** Total probability of observing data across all hypotheses (normalization constant)
-- **Foundation model:** Model pre-trained on massive data, creating an informed prior for downstream tasks
+| Term | Definition |
+|------|-----------|
+| **Bayesian inference** | Updating beliefs about hypotheses using observed data via Bayes' theorem |
+| **Prior P(H)** | Initial belief about a hypothesis before seeing data |
+| **Likelihood P(D\|H)** | Probability of observing data given a hypothesis is true |
+| **Posterior P(H\|D)** | Updated belief after observing data |
+| **Maximum A Posteriori (MAP)** | Finding the single most probable hypothesis (what deep learning does) |
+| **Probability distribution** | Description of all possible values and their probabilities |
+| **Stochastic** | Involving randomness or probability (not deterministic) |
+| **Garden of forking paths** | Intuitive visualization of how data arise under different hypotheses |
+| **Evidence P(D)** | Total probability of observing data across all hypotheses (normalization constant) |
+| **Foundation model** | Model pre-trained on massive data, creating an informed prior for downstream tasks |
+
+</details>
 
 ---
 
@@ -1403,25 +1424,3 @@ But your protein is OUT-OF-DISTRIBUTION:
 
 </details>
 
----
-
-## Coding Lab 2: Bayesian Inference with Globe-Tossing
-
-**Objective:** Implement the globe-tossing example and explore Bayesian inference interactively.
-
-**What You'll Learn:**
-- Calculate and visualize posterior distributions
-- See how beliefs update with each observation
-- Understand the effect of different priors
-- Explore the impact of sample size on confidence
-- Apply Bayesian reasoning to a genomics problem (variant calling)
-
-**Duration:** 60-75 minutes
-
-**You'll implement:**
-1. Globe-tossing with different priors (uniform, informative)
-2. Visualize posterior evolution with sequential data
-3. Compare 9 tosses vs. 100 tosses
-4. Apply to variant calling: Is this a real SNP or sequencing error?
-
-**[Open Coding Lab 2 in Google Colab](https://colab.research.google.com/drive/YOUR_LAB2_LINK_HERE)**

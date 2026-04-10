@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 14 — Next-Generation DNA Models</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2rem,5.5vw,4rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:580px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+#hero-canvas{position:absolute;inset:0;opacity:.25;pointer-events:none}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:680px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:4rem 0;max-width:960px;margin-left:auto;margin-right:auto}
+.plot-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;overflow:hidden}
+.plot-title{font:700 1rem/1.3 system-ui;color:var(--gold);margin-bottom:.4rem}
+.plot-desc{font:.88rem/1.6 system-ui;color:var(--muted);margin-bottom:1.2rem}
+.toggle-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.2rem;align-items:center}
+.toggle-btn{padding:.4rem .95rem;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font:.82rem/1 system-ui;cursor:pointer;transition:.2s}
+.toggle-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+.insight-box{margin-top:1.2rem;padding:1rem 1.2rem;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.18);border-radius:8px;font:.9rem/1.6 system-ui;color:var(--text)}
+.insight-box strong{color:var(--green)}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+.page-footer a:hover{text-decoration:underline}
+
+/* Slider */
+.slider-row{display:flex;gap:1rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap}
+.slider-label{font:.82rem/1 system-ui;color:var(--muted);min-width:110px}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--line);outline:none;flex:1;min-width:160px;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer}
+.slider-value{font:700 .85rem/1 'SF Mono',monospace;color:var(--gold);min-width:70px;text-align:right}
+
+/* Genomic region SVG */
+.region-wrap{overflow:hidden;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid var(--line);margin-bottom:1rem;padding:.6rem .8rem}
+.region-label-row{display:flex;justify-content:space-between;font:.7rem/1 'SF Mono',monospace;color:var(--muted);margin-bottom:.4rem}
+
+/* Architecture panels */
+.arch-panels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+@media(max-width:700px){.arch-panels{grid-template-columns:1fr}}
+.arch-panel{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;padding:.9rem;cursor:pointer;transition:.2s}
+.arch-panel:hover{border-color:rgba(196,163,90,.4)}
+.arch-panel.active{border-color:var(--gold);background:var(--gold-dim)}
+.arch-panel-title{font:700 .85rem/1.3 system-ui;margin-bottom:.4rem}
+.arch-panel-desc{font:.78rem/1.5 system-ui;color:var(--muted)}
+.arch-canvas-wrap{border-radius:6px;overflow:hidden;background:rgba(20,20,31,1);border:1px solid var(--line);margin-top:.8rem}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-ch">Chapter 14</div>
+  <h1 class="t" data-ko="차세대 DNA 모델:<br>HyenaDNA · Mamba · Caduceus" data-en="Next-Generation DNA Models:<br>HyenaDNA · Mamba · Caduceus"></h1>
+  <p class="hero-sub t"
+     data-ko="맥락 창이 클수록 더 멀리 보고, 더 많은 생물학을 이해한다. 수용 영역이 예측 능력을 어떻게 결정하는지 직접 탐색해보세요."
+     data-en="A larger context window sees farther and understands more biology. Explore directly how receptive field size determines predictive power."></p>
+  <div class="hero-scroll" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+    <div class="t" data-ko="스크롤하여 탐색" data-en="scroll to explore">scroll to explore</div>
+    <div style="font-size:1.4rem;margin-top:.4rem">↓</div>
+  </div>
+</section>
+
+<!-- SECTION 1: RECEPTIVE FIELD EXPLORER -->
+<div class="section" id="s1">
+  <div class="section-label t" data-ko="수용 영역 탐색기" data-en="Receptive Field Explorer">Receptive Field Explorer</div>
+  <h2 class="section-title t"
+      data-ko="모델이 '볼 수 있는' 범위가 예측 능력을 결정한다"
+      data-en="How Far the Model 'Sees' Determines What It Can Predict"></h2>
+  <p class="section-body t"
+     data-ko="슬라이더로 모델의 컨텍스트 창 크기를 조절하세요. 창이 작으면 프로모터에서 50kb 떨어진 인핸서를 볼 수 없습니다. 창이 커질수록 더 복잡한 조절 상호작용을 예측할 수 있습니다."
+     data-en="Use the slider to change the model's context window size. A small window cannot see the enhancer 50kb from the promoter. As the window grows, the model can predict increasingly complex regulatory interactions."></p>
+  <div class="plot-card">
+    <div class="slider-row">
+      <span class="slider-label t" data-ko="컨텍스트 창:" data-en="Context window:">컨텍스트 창:</span>
+      <input type="range" id="ctx-slider" min="0" max="5" step="1" value="2" oninput="updateReceptiveField(this.value)">
+      <span class="slider-value" id="ctx-val">10kb</span>
+    </div>
+
+    <div class="region-wrap">
+      <div class="region-label-row">
+        <span>0</span><span>50kb</span><span>100kb</span><span>150kb</span><span>200kb</span>
+      </div>
+      <canvas id="region-canvas" height="80" style="width:100%;display:block"></canvas>
+    </div>
+
+    <div id="plot-receptive" style="height:280px"></div>
+
+    <div class="insight-box t" id="ctx-insight"
+         data-ko="<strong>10kb 컨텍스트:</strong> 국소적인 모티프(TF 결합 사이트, 코어 프로모터)는 검출 가능하지만, 50kb 떨어진 인핸서는 보이지 않습니다. 원거리 조절 상호작용 예측 불가."
+         data-en="<strong>10kb context:</strong> Local motifs (TF binding sites, core promoter) are detectable, but the enhancer 50kb away is invisible. Long-range regulatory interactions cannot be predicted.">
+      10kb 컨텍스트: 국소 모티프 검출 가능, 원거리 인핸서는 보이지 않음.
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: ARCHITECTURE COMPARISON -->
+<div class="section" id="s2">
+  <div class="section-label t" data-ko="아키텍처 메커니즘 비교" data-en="Architecture Mechanism Comparison">Architecture Mechanism Comparison</div>
+  <h2 class="section-title t"
+      data-ko="CNN vs Transformer vs SSM — 정보가 어떻게 흐르는가"
+      data-en="CNN vs Transformer vs SSM — How Information Flows"></h2>
+  <p class="section-body t"
+     data-ko="세 아키텍처가 같은 DNA 서열을 처리하는 방식을 비교하세요. 필터가 슬라이딩하는 CNN, 모든 위치를 연결하는 Transformer, 상태를 흘려보내는 SSM — 각자 다른 방식으로 장거리 맥락을 다룹니다."
+     data-en="Compare how three architectures process the same DNA sequence. A filter sliding in CNN, all positions connected in Transformer, state flowing in SSM — each handles long-range context differently."></p>
+  <div class="plot-card">
+    <div class="arch-panels" id="arch-panels">
+      <div class="arch-panel active" id="arch-cnn" onclick="selectArch('cnn')">
+        <div class="arch-panel-title" style="color:#38bdf8">CNN</div>
+        <div class="arch-panel-desc t" data-ko="필터가 슬라이딩하며 국소 패턴 감지. 팽창 합성곱(dilated conv)으로 수용 영역 확장. O(n)." data-en="Filter slides to detect local patterns. Dilated convolutions (Basenji2) extend receptive field to ~100kb. O(n).">필터가 슬라이딩하며 국소 패턴 감지. 팽창 합성곱으로 수용 영역 확장. O(n).</div>
+      </div>
+      <div class="arch-panel" id="arch-transformer" onclick="selectArch('transformer')">
+        <div class="arch-panel-title" style="color:#c4a35a">Transformer</div>
+        <div class="arch-panel-desc t" data-ko="모든 위치가 서로 어텐션 연결. O(n²) 복잡도 — 100kb 이상 서열에서 메모리 폭발." data-en="Every position attends to every other. O(n²) complexity — memory explodes beyond ~100kb sequences.">모든 위치가 서로 어텐션 연결. O(n²). 100kb 이상에서 비현실적.</div>
+      </div>
+      <div class="arch-panel" id="arch-ssm" onclick="selectArch('ssm')">
+        <div class="arch-panel-title" style="color:#4ade80">SSM / HyenaDNA</div>
+        <div class="arch-panel-desc t" data-ko="Mamba: 입력 의존적 선택 상태 업데이트, O(n). HyenaDNA: FFT 장합성곱, O(n log n). 둘 다 1Mb+ 서열 처리 가능." data-en="Mamba: input-dependent selective state update, O(n). HyenaDNA: FFT long convolution, O(n log n). Both handle 1Mb+ sequences.">Mamba O(n) / HyenaDNA O(n log n). 둘 다 1Mb 서열 처리.</div>
+      </div>
+    </div>
+
+    <div class="arch-canvas-wrap">
+      <canvas id="arch-canvas" height="200" style="width:100%;display:block"></canvas>
+    </div>
+
+    <div id="plot-arch-complexity" style="height:260px;margin-top:1rem"></div>
+
+    <div class="insight-box t" id="arch-insight"
+         data-ko="<strong>CNN:</strong> 필터 폭만큼만 볼 수 있습니다. 레이어를 쌓으면 수용 영역이 늘어나지만 여전히 제한적입니다. 100kb 거리의 인핸서-프로모터 상호작용을 직접 포착할 수 없습니다."
+         data-en="<strong>CNN:</strong> Can only see as far as the filter width. Stacking layers increases the receptive field but it remains limited. Cannot directly capture enhancer-promoter interactions 100kb apart.">
+      <strong>CNN:</strong> 필터 폭만큼만 볼 수 있습니다. 레이어를 쌓으면 수용 영역이 늘어나지만 여전히 제한적입니다.
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: LONG-RANGE PREDICTION -->
+<div class="section" id="s3">
+  <div class="section-label t" data-ko="장거리 예측: 인핸서-프로모터" data-en="Long-Range Prediction: Enhancer–Promoter">Long-Range Prediction: Enhancer–Promoter</div>
+  <h2 class="section-title t"
+      data-ko="긴 맥락이 가능하게 하는 것: 구체적인 생물학적 사례"
+      data-en="What Long Context Enables: A Concrete Biological Example"></h2>
+  <p class="section-body t"
+     data-ko="Shh 지체 인핸서(ZRS)는 목표 유전자에서 약 1Mb 떨어진 곳에 있습니다. 단거리 모델은 인핸서 자체는 감지하지만 어떤 유전자를 조절하는지 예측할 수 없습니다. 긴 맥락 모델만이 전체 그림을 볼 수 있습니다."
+     data-en="The Shh limb enhancer (ZRS) sits ~1Mb from its target gene. A short-context model detects the enhancer itself but cannot predict which gene it regulates. Only a long-context model sees the full picture."></p>
+  <div class="plot-card">
+    <div class="toggle-row">
+      <button class="toggle-btn active t" id="lrp-btn-short" onclick="showLRP('short')"
+              data-ko="단거리 모델 (CNN-like, 10kb)" data-en="Short-context (CNN-like, 10kb)">단거리 모델 (CNN-like, 10kb)</button>
+      <button class="toggle-btn t" id="lrp-btn-long" onclick="showLRP('long')"
+              data-ko="장거리 모델 (HyenaDNA-like, 1Mb)" data-en="Long-context (HyenaDNA-like, 1Mb)">장거리 모델 (HyenaDNA-like, 1Mb)</button>
+    </div>
+
+    <div id="plot-lrp" style="height:400px"></div>
+
+    <div class="insight-box t" id="lrp-insight"
+         data-ko="<strong>단거리 모델:</strong> ZRS 인핸서 영역에서 로컬 신호를 감지하지만, Shh 유전자까지의 거리(~1Mb)가 컨텍스트 창보다 훨씬 길어서 타겟 유전자 발현 예측에 실패합니다."
+         data-en="<strong>Short-context model:</strong> Detects local signal at the ZRS enhancer, but the distance to Shh (~1Mb) far exceeds the context window, so it fails to predict target gene expression.">
+      <strong>단거리 모델:</strong> ZRS 인핸서를 감지하지만 타겟 유전자 발현 예측 실패.
+    </div>
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p class="t" data-ko="AI for Genomic Science — 챕터 14 인터랙티브" data-en="AI for Genomic Science — Chapter 14 Interactive">AI for Genomic Science — Chapter 14 Interactive</p>
+  <p style="margin-top:.5rem"><a href="../chapters/chapter14.md" class="t" data-ko="← 챕터 14 본문으로" data-en="← Back to Chapter 14">← 챕터 14 본문으로</a></p>
+  <p style="margin-top:1.5rem;font-size:.75rem;color:var(--muted);line-height:1.8;max-width:680px;margin-left:auto;margin-right:auto">
+    <strong style="color:var(--gold)">References</strong><br>
+    Nguyen E. et al. (2023) <em>HyenaDNA: Long-Range Genomic Sequence Modeling at Single Nucleotide Resolution.</em> NeurIPS 2023. <a href="https://arxiv.org/abs/2306.15794" style="color:var(--gold)">arXiv:2306.15794</a><br>
+    Gu A. &amp; Dao T. (2023) <em>Mamba: Linear-Time Sequence Modeling with Selective State Spaces.</em> <a href="https://arxiv.org/abs/2312.00752" style="color:var(--gold)">arXiv:2312.00752</a><br>
+    Schiff Y. et al. (2024) <em>Caduceus: Bi-Directional Equivariant Long-Range DNA Sequence Modeling.</em> ICML 2024. <a href="https://arxiv.org/abs/2403.03234" style="color:var(--gold)">arXiv:2403.03234</a><br>
+    Lettice L.A. et al. (2003) A long-range <em>Shh</em> enhancer regulates expression in the developing limb. <em>Science</em> 299:1753–1755.<br>
+    Sagai T. et al. (2005) Elimination of a long-range cis-regulatory module causes complete loss of limb-specific <em>Shh</em> expression and truncation of the mouse limb. <em>Development</em> 132:797–803.
+  </p>
+</footer>
+
+<script>
+// ─── LANGUAGE ────────────────────────────────────────────────────────────────
+let lang = 'ko';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === l.toUpperCase()));
+  document.querySelectorAll('[data-'+l+']').forEach(el => {
+    const v = el.dataset[l];
+    if (!v) return;
+    if (['DIV','P','H1','H2','SPAN','BUTTON'].includes(el.tagName)) el.innerHTML = v;
+    else el.textContent = v;
+  });
+  updatePlotLanguage(l);
+}
+
+const plotLabels = {
+  'plot-receptive': {
+    xaxis:{ko:'컨텍스트 창 크기',en:'Context Window Size'},
+    yaxis:{ko:'예측 정확도 (%)',en:'Prediction Accuracy (%)'}
+  },
+  'plot-arch-complexity': {
+    xaxis:{ko:'서열 길이 (bp)',en:'Sequence Length (bp)'},
+    yaxis:{ko:'연산량 (상대적)',en:'Compute (relative)'}
+  }
+};
+
+function updatePlotLanguage(l) {
+  Object.keys(plotLabels).forEach(divId => {
+    const el = document.getElementById(divId);
+    if (!el || !el.data) return;
+    const lbs = plotLabels[divId];
+    const upd = {};
+    if (lbs.xaxis) upd['xaxis.title.text'] = lbs.xaxis[l];
+    if (lbs.yaxis) upd['yaxis.title.text'] = lbs.yaxis[l];
+    Plotly.relayout(el, upd);
+  });
+  updateReceptiveField(document.getElementById('ctx-slider').value);
+  selectArch(currentArch);
+  showLRP(lrpState);
+}
+
+const PT = {
+  paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(20,20,31,1)',
+  font:{color:'#e4e0d8',family:'system-ui,sans-serif'},
+  xaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  yaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  margin:{t:30,r:20,b:60,l:60}
+};
+
+// ─── HERO CANVAS ──────────────────────────────────────────────────────────────
+(function(){
+  const cv = document.getElementById('hero-canvas'), ctx = cv.getContext('2d');
+  let W, H, lines;
+  function resize(){
+    W = cv.width = cv.offsetWidth; H = cv.height = cv.offsetHeight;
+    lines = Array.from({length:30}, ()=>({
+      x:Math.random()*W, y:Math.random()*H,
+      vx:(Math.random()-.5)*.4, vy:(Math.random()-.5)*.4,
+      len:Math.random()*60+20, angle:Math.random()*Math.PI*2, a:Math.random()
+    }));
+  }
+  window.addEventListener('resize', resize); resize();
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    lines.forEach(d => {
+      d.x+=d.vx; d.y+=d.vy; d.a+=.008;
+      if(d.x<-100||d.x>W+100) d.vx*=-1; if(d.y<-100||d.y>H+100) d.vy*=-1;
+      const alpha = 0.15+0.15*Math.sin(d.a);
+      ctx.strokeStyle=`rgba(196,163,90,${alpha})`;
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x+Math.cos(d.angle)*d.len, d.y+Math.sin(d.angle)*d.len);
+      ctx.stroke();
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ─── PLOT 1: RECEPTIVE FIELD ──────────────────────────────────────────────────
+const CTX_STEPS = [
+  {label:'1kb',   kb:1,    accMotif:58, accTFBS:42, accEnhancer:12, accEP:5,  accTAD:2},
+  {label:'5kb',   kb:5,    accMotif:78, accTFBS:70, accEnhancer:35, accEP:8,  accTAD:4},
+  {label:'10kb',  kb:10,   accMotif:88, accTFBS:82, accEnhancer:55, accEP:15, accTAD:7},
+  {label:'50kb',  kb:50,   accMotif:91, accTFBS:88, accEnhancer:78, accEP:48, accTAD:22},
+  {label:'200kb', kb:200,  accMotif:92, accTFBS:90, accEnhancer:88, accEP:75, accTAD:58},
+  {label:'1Mb',   kb:1000, accMotif:93, accTFBS:91, accEnhancer:91, accEP:88, accTAD:85}
+];
+
+const CTX_INSIGHTS_KO = [
+  '<strong>1kb 컨텍스트:</strong> 개별 뉴클레오타이드 모티프와 간단한 TF 결합 사이트만 감지할 수 있습니다. 국소적인 서열 특징에 매우 제한적입니다.',
+  '<strong>5kb 컨텍스트:</strong> TF 결합 사이트와 코어 프로모터를 더 잘 감지하지만, 원거리 인핸서는 여전히 보이지 않습니다.',
+  '<strong>10kb 컨텍스트:</strong> 국소적인 모티프 검출은 좋지만 50kb 이상 떨어진 인핸서-프로모터 상호작용은 예측 불가입니다.',
+  '<strong>50kb 컨텍스트:</strong> 인핸서 활성을 감지하기 시작하고 일부 E-P 상호작용을 예측할 수 있습니다. TAD 경계는 여전히 어렵습니다.',
+  '<strong>200kb 컨텍스트:</strong> 인핸서-프로모터 상호작용 예측이 크게 향상됩니다. TAD 경계의 일부를 포착할 수 있습니다.',
+  '<strong>1Mb 컨텍스트:</strong> 전체 TAD를 처리합니다. 장거리 조절 상호작용, TAD 경계, 인핸서-프로모터 루프를 모두 예측합니다.'
+];
+const CTX_INSIGHTS_EN = [
+  '<strong>1kb context:</strong> Can only detect individual nucleotide motifs and simple TF binding sites. Very limited to local sequence features.',
+  '<strong>5kb context:</strong> Better TF binding site and core promoter detection, but distant enhancers are still invisible.',
+  '<strong>10kb context:</strong> Good local motif detection, but enhancer-promoter interactions more than 50kb away are unpredictable.',
+  '<strong>50kb context:</strong> Begins to detect enhancer activity and can predict some E-P interactions. TAD boundaries are still difficult.',
+  '<strong>200kb context:</strong> Enhancer-promoter interaction prediction improves dramatically. Can capture some TAD boundaries.',
+  '<strong>1Mb context:</strong> Processes entire TADs. Predicts long-range regulatory interactions, TAD boundaries, and E-P loops.'
+];
+
+function drawRegion(ctxKb) {
+  const canvas = document.getElementById('region-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || canvas.width;
+  canvas.width = W;
+  const H = 80;
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw genomic features (positions in kb, total region = 200kb)
+  const features = [
+    {type:'gene',   start:0,   end:20,  color:'rgba(56,189,248,0.4)',  label:'Gene A', labelColor:'#38bdf8'},
+    {type:'ctcf',   start:22,  end:23,  color:'rgba(167,139,250,0.6)', label:'CTCF',   labelColor:'#a78bfa'},
+    {type:'enh',    start:45,  end:55,  color:'rgba(196,163,90,0.5)',  label:'Enhancer',labelColor:'#c4a35a'},
+    {type:'prom',   start:80,  end:82,  color:'rgba(74,222,128,0.6)',  label:'Prom',   labelColor:'#4ade80'},
+    {type:'gene',   start:82,  end:120, color:'rgba(56,189,248,0.4)',  label:'Gene B', labelColor:'#38bdf8'},
+    {type:'ctcf',   start:122, end:123, color:'rgba(167,139,250,0.6)', label:'CTCF',   labelColor:'#a78bfa'},
+    {type:'enh',    start:150, end:160, color:'rgba(196,163,90,0.5)',  label:'Enhancer',labelColor:'#c4a35a'},
+    {type:'prom',   start:178, end:180, color:'rgba(74,222,128,0.6)',  label:'Prom',   labelColor:'#4ade80'},
+    {type:'gene',   start:180, end:200, color:'rgba(56,189,248,0.4)',  label:'Gene C', labelColor:'#38bdf8'},
+  ];
+
+  const total = 200;
+  const toX = kb => (kb / total) * W;
+
+  // Draw track background
+  ctx.fillStyle = 'rgba(255,255,255,.03)';
+  ctx.fillRect(0, 20, W, 40);
+
+  features.forEach(f => {
+    const x0 = toX(f.start), x1 = toX(f.end);
+    const w = Math.max(x1-x0, 2);
+    const y = f.type==='gene'?22 : f.type==='enh'?28 : f.type==='prom'?22 : 22;
+    const h = f.type==='gene'?36 : f.type==='enh'?20 : 16;
+    ctx.fillStyle = f.color;
+    ctx.beginPath();
+    ctx.roundRect(x0, y, w, h, 3);
+    ctx.fill();
+
+    if (w > 18) {
+      ctx.fillStyle = f.labelColor;
+      ctx.font = '9px SF Mono, monospace';
+      ctx.fillText(f.label, x0+2, y+h-4);
+    }
+  });
+
+  // Draw viewport
+  // Center viewport on Gene B / Enhancer area
+  const centerKb = 80;
+  const halfKb = ctxKb / 2;
+  const vpStart = Math.max(0, centerKb - halfKb);
+  const vpEnd = Math.min(total, centerKb + halfKb);
+  const vx0 = toX(vpStart), vx1 = toX(vpEnd);
+  const vw = Math.max(vx1-vx0, 2);
+
+  // Dim outside
+  ctx.fillStyle = 'rgba(11,11,17,0.65)';
+  ctx.fillRect(0, 0, vx0, H);
+  ctx.fillRect(vx1, 0, W-vx1, H);
+
+  // Viewport border
+  ctx.strokeStyle = '#c4a35a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(vx0, 2, vw, H-4);
+
+  // Viewport label
+  ctx.fillStyle = '#c4a35a';
+  ctx.font = '700 10px system-ui';
+  const label = ctxKb >= 1000 ? '1Mb' : ctxKb >= 1000 ? '1Mb' : ctxKb + 'kb';
+  ctx.fillText(label, vx0+4, 15);
+}
+
+function updateReceptiveField(val) {
+  const i = parseInt(val);
+  const s = CTX_STEPS[i];
+  document.getElementById('ctx-val').textContent = s.label;
+
+  // Draw region
+  drawRegion(s.kb);
+
+  // Bar chart: accuracy per task type
+  const catKo = ['모티프 검출','TFBS 검출','인핸서 활성','E-P 상호작용','TAD 경계'];
+  const catEn = ['Motif Detection','TFBS Detection','Enhancer Activity','E-P Interaction','TAD Boundary'];
+  const cats = lang==='ko' ? catKo : catEn;
+  const vals = [s.accMotif, s.accTFBS, s.accEnhancer, s.accEP, s.accTAD];
+  const cols = ['#38bdf8','#38bdf8','#c4a35a','#c4a35a','#4ade80'];
+
+  const trace = [{
+    type:'bar', x:cats, y:vals,
+    marker:{color:cols, opacity:0.85, line:{color:'rgba(255,255,255,.1)',width:1}},
+    text:vals.map(v=>v+'%'), textposition:'outside', textfont:{color:'#e4e0d8',size:11},
+    hovertemplate:'%{x}: %{y}%<extra></extra>'
+  }];
+  const layout = {
+    ...PT,
+    xaxis:{...PT.xaxis, title:{text:lang==='ko'?'예측 과제 유형':'Prediction Task Type',font:{color:'#7a756d',size:12}}, tickfont:{color:'#e4e0d8',size:10}},
+    yaxis:{...PT.yaxis, title:{text:lang==='ko'?'예측 정확도 (%)':'Prediction Accuracy (%)',font:{color:'#7a756d',size:12}}, range:[0,105], tickfont:{color:'#7a756d',size:10}},
+    showlegend:false, margin:{t:20,r:20,b:90,l:60},
+    title:{text:lang==='ko'?`컨텍스트 창 = ${s.label}`:`Context Window = ${s.label}`, font:{color:'#e4e0d8',size:12}}
+  };
+  Plotly.react('plot-receptive', trace, layout, {displayModeBar:false, responsive:true});
+
+  const box = document.getElementById('ctx-insight');
+  const insights = lang==='ko' ? CTX_INSIGHTS_KO : CTX_INSIGHTS_EN;
+  box.dataset.ko = CTX_INSIGHTS_KO[i];
+  box.dataset.en = CTX_INSIGHTS_EN[i];
+  box.innerHTML = insights[i];
+}
+
+updateReceptiveField(2);
+
+// ─── PLOT 2: ARCHITECTURE COMPARISON ─────────────────────────────────────────
+let currentArch = 'cnn';
+
+function selectArch(arch) {
+  currentArch = arch;
+  ['cnn','transformer','ssm'].forEach(a => {
+    document.getElementById('arch-'+a).classList.toggle('active', a===arch);
+  });
+  drawArchCanvas(arch);
+  renderComplexityPlot(arch);
+
+  const insightData = {
+    cnn: {
+      ko:'<strong>CNN:</strong> 기본 합성곱 필터는 수 bp~수십 bp만 봅니다. Basenji2 같은 현대 게놈 CNN은 <em>팽창 합성곱(dilated convolution)</em>과 잔차 연결로 수용 영역을 ~100kb까지 확장합니다. 연산 복잡도는 O(n)이지만, 1Mb 거리 조절은 직접 포착 불가합니다.',
+      en:'<strong>CNN:</strong> A basic convolution filter sees only a few bp. Modern genomic CNNs like Basenji2 use <em>dilated convolutions</em> and residual connections to extend the receptive field to ~100kb. Compute is O(n), but direct 1Mb-range regulation remains out of reach.'
+    },
+    transformer: {
+      ko:'<strong>Transformer:</strong> 모든 위치가 직접 어텐션으로 연결되어 장거리 상호작용을 즉시 포착합니다. 하지만 연결 수가 n²으로 증가해 >100kb 서열에서 메모리와 연산 비용이 폭발적으로 커집니다. 실용적 한계는 약 100kb입니다.',
+      en:'<strong>Transformer:</strong> All positions are directly connected via attention, immediately capturing long-range interactions. But connections grow as n², making memory and compute costs explode beyond ~100kb. Practical limit is roughly 100kb.'
+    },
+    ssm: {
+      ko:'<strong>SSM / HyenaDNA:</strong> <b>Mamba</b>는 입력에 따라 B, C, Δ 행렬이 달라지는 <em>선택적 상태 공간 모델</em>입니다 — 각 위치에서 무엇을 기억하고 잊을지를 입력이 결정합니다. O(n) 선형 복잡도. <b>HyenaDNA</b>는 FFT로 구현한 장합성곱(long convolution) 연산자를 사용하며 O(n log n) 복잡도로 1Mb 서열을 처리합니다. 어텐션을 전혀 사용하지 않습니다.',
+      en:'<strong>SSM / HyenaDNA:</strong> <b>Mamba</b> is a <em>selective state space model</em> where B, C, and Δ matrices depend on the current input — the model learns what to remember and forget at each position. O(n) linear complexity. <b>HyenaDNA</b> uses FFT-computed long convolution operators, achieving O(n log n) and handling sequences up to 1M bp — no attention mechanism at all.'
+    }
+  };
+  const box = document.getElementById('arch-insight');
+  box.dataset.ko = insightData[arch].ko;
+  box.dataset.en = insightData[arch].en;
+  box.innerHTML = insightData[arch][lang];
+}
+
+function drawArchCanvas(arch) {
+  const canvas = document.getElementById('arch-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || canvas.width;
+  canvas.width = W;
+  const H = 200;
+  ctx.clearRect(0, 0, W, H);
+
+  const seq = 'ATCGCGATCGTATCGTA';
+  const n = seq.length;
+  const boxW = Math.min(30, (W - 40) / n);
+  const boxH = 24;
+  const startX = (W - n * (boxW + 3)) / 2;
+  const seqY = 30;
+  const nucColors = {A:'rgba(74,222,128,.6)',C:'rgba(56,189,248,.6)',G:'rgba(196,163,90,.6)',T:'rgba(248,113,113,.6)'};
+  const nucText = {A:'#4ade80',C:'#38bdf8',G:'#c4a35a',T:'#f87171'};
+
+  // Draw sequence
+  seq.split('').forEach((c, i) => {
+    const x = startX + i * (boxW + 3);
+    ctx.fillStyle = nucColors[c]||'rgba(255,255,255,.2)';
+    ctx.beginPath(); ctx.roundRect(x, seqY, boxW, boxH, 3); ctx.fill();
+    ctx.fillStyle = nucText[c]||'#fff';
+    ctx.font = `700 ${Math.min(11,boxW-2)}px SF Mono, monospace`;
+    ctx.textAlign='center'; ctx.fillText(c, x+boxW/2, seqY+boxH-6);
+  });
+
+  if (arch === 'cnn') {
+    // Draw a sliding filter of width 5 centered at position 7
+    const filterPos = 6;
+    const filterW = 5;
+    const fx = startX + filterPos*(boxW+3) - 2;
+    const fw = filterW*(boxW+3) + 1;
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(fx, seqY-3, fw, boxH+6);
+
+    // Fill filter
+    ctx.fillStyle = 'rgba(56,189,248,0.12)';
+    ctx.fillRect(fx, seqY-3, fw, boxH+6);
+
+    // Label
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '700 11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(lang==='ko'?'필터 (폭=5)':'Filter (width=5)', fx + fw/2, seqY + boxH + 22);
+
+    // Gray out outside
+    ctx.fillStyle = 'rgba(11,11,17,0.5)';
+    ctx.fillRect(startX, seqY-2, fx - startX + 2, boxH+4);
+    const rightStart = fx + fw - 2;
+    ctx.fillRect(rightStart, seqY-2, (startX + n*(boxW+3)) - rightStart, boxH+4);
+
+    // Arrow showing slide direction
+    ctx.strokeStyle = 'rgba(56,189,248,0.5)';
+    ctx.lineWidth = 1.5;
+    const arrowY = seqY - 14;
+    ctx.beginPath();
+    ctx.moveTo(fx, arrowY);
+    ctx.lineTo(fx + fw + 20, arrowY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(fx + fw + 15, arrowY - 5);
+    ctx.lineTo(fx + fw + 20, arrowY);
+    ctx.lineTo(fx + fw + 15, arrowY + 5);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(56,189,248,0.7)';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText(lang==='ko'?'슬라이딩':'slides →', fx + fw + 24, arrowY + 4);
+
+  } else if (arch === 'transformer') {
+    // Draw attention lines from position 8 to all others
+    const focal = 8;
+    const fx = startX + focal*(boxW+3) + boxW/2;
+    const lineY = seqY + boxH + 5;
+    seq.split('').forEach((c, i) => {
+      if (i===focal) return;
+      const ix = startX + i*(boxW+3) + boxW/2;
+      const w = 0.15 + 0.5 * Math.exp(-Math.abs(i-focal)*0.25);
+      ctx.strokeStyle = `rgba(196,163,90,${w})`;
+      ctx.lineWidth = w * 2;
+      ctx.beginPath();
+      ctx.moveTo(fx, lineY);
+      const cy1 = lineY + 20 + Math.abs(i-focal)*3;
+      ctx.quadraticCurveTo((fx+ix)/2, cy1, ix, lineY);
+      ctx.stroke();
+    });
+
+    // Highlight focal
+    ctx.strokeStyle = '#c4a35a';
+    ctx.lineWidth = 2.5;
+    const fx0 = startX + focal*(boxW+3);
+    ctx.strokeRect(fx0-2, seqY-2, boxW+4, boxH+4);
+
+    // n² label
+    ctx.fillStyle = 'rgba(196,163,90,0.8)';
+    ctx.font = '700 11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(lang==='ko'?'모든 위치 쌍 연결 (n² 연결)':'All-pairs attention (n² connections)', W/2, H-10);
+
+  } else { // SSM
+    // Draw flowing state
+    const stateY = seqY + boxH + 20;
+    const stateH = 16;
+    // Draw state boxes with fading
+    seq.split('').forEach((c, i) => {
+      const sx = startX + i*(boxW+3);
+      // importance: stronger at positions 3,7,11 (arbitrary motif positions)
+      const imp = [0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0][i] || 0;
+      const alpha = 0.15 + imp * 0.55;
+      ctx.fillStyle = `rgba(74,222,128,${alpha})`;
+      ctx.fillRect(sx, stateY, boxW, stateH);
+
+      // Arrow between state boxes
+      if (i < n-1) {
+        const ax = sx + boxW + 1;
+        ctx.strokeStyle = 'rgba(74,222,128,0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(ax, stateY + stateH/2);
+        ctx.lineTo(ax+2, stateY + stateH/2);
+        ctx.stroke();
+      }
+    });
+
+    // Memory label
+    ctx.fillStyle = '#4ade80';
+    ctx.font = '700 10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(lang==='ko'?'선택적 상태 업데이트: 입력이 B, C, Δ 결정 → 기억/망각 제어':'Selective state update: input controls B, C, Δ → what to remember/forget', W/2, stateY + stateH + 18);
+
+    // Flow arrow
+    ctx.strokeStyle = 'rgba(74,222,128,0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(startX - 10, stateY + stateH/2);
+    ctx.lineTo(startX + n*(boxW+3) + 5, stateY + stateH/2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(startX + n*(boxW+3), stateY + stateH/2 - 5);
+    ctx.lineTo(startX + n*(boxW+3) + 5, stateY + stateH/2);
+    ctx.lineTo(startX + n*(boxW+3), stateY + stateH/2 + 5);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(74,222,128,0.7)';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText(lang==='ko'?'O(n) →':'O(n) →', startX + n*(boxW+3)+8, stateY + stateH/2 + 4);
+  }
+}
+
+function renderComplexityPlot(arch) {
+  const seqLens = [1000,5000,10000,50000,100000,500000,1000000];
+  const labels = seqLens.map(l => l>=1e6?'1M':l>=1e5?'100k':l>=1e4?'10k':l>=1e3?'1k':'');
+
+  // CNN: O(n) — linear sliding convolution (dilated convolutions stay linear)
+  const cnn_comp    = seqLens.map(n => n * 1.2);
+  // HyenaDNA: O(n log n) — FFT-based long convolution (Nguyen et al. 2023)
+  const hyena_comp  = seqLens.map(n => n * Math.log2(n) * 0.5);
+  // Transformer: O(n²) — all-pairs attention
+  const transf_comp = seqLens.map(n => (n * n) / 1e4);
+  // Mamba SSM: O(n) — selective state space, linear scan (Gu & Dao 2023)
+  const ssm_comp    = seqLens.map(n => n * 0.9);
+
+  // Active arch key: map 'ssm' panel to both ssm and hyena highlighted
+  const archMeta = {
+    cnn:         {label:'CNN — O(n)',             color:'#38bdf8', vals:cnn_comp,    key:'cnn'},
+    hyena:       {label:'HyenaDNA — O(n log n)',  color:'#a78bfa', vals:hyena_comp,  key:'ssm'},
+    transformer: {label:'Transformer — O(n²)',    color:'#c4a35a', vals:transf_comp, key:'transformer'},
+    ssm:         {label:'Mamba SSM — O(n)',        color:'#4ade80', vals:ssm_comp,    key:'ssm'}
+  };
+
+  const traces = Object.entries(archMeta).map(([k,v]) => {
+    const isActive = v.key === arch;
+    return {
+      type:'scatter', mode:'lines+markers', name:v.label,
+      x:seqLens, y:v.vals,
+      line:{color:v.color, width: isActive?3:1.5, dash: isActive?'solid':'dot'},
+      marker:{color:v.color, size: isActive?8:5, opacity: isActive?1:0.5},
+      opacity: isActive?1:0.4,
+      hovertemplate:`${v.label}<br>%{x:,}bp: %{y:.1f}<extra></extra>`
+    };
+  });
+
+  const layout = {
+    ...PT,
+    xaxis:{...PT.xaxis, type:'log', title:{text:lang==='ko'?'서열 길이 (bp)':'Sequence Length (bp)',font:{color:'#7a756d',size:12}},
+      tickvals:seqLens, ticktext:labels, tickfont:{color:'#7a756d',size:10}},
+    yaxis:{...PT.yaxis, type:'log', title:{text:lang==='ko'?'연산량 (상대적)':'Compute (relative)',font:{color:'#7a756d',size:12}}, tickfont:{color:'#7a756d',size:10}},
+    legend:{font:{color:'#e4e0d8',size:11}, bgcolor:'rgba(20,20,31,.85)', bordercolor:'#22222e', borderwidth:1},
+    margin:{t:20,r:20,b:60,l:65}
+  };
+  Plotly.react('plot-arch-complexity', traces, layout, {displayModeBar:false, responsive:true});
+}
+
+selectArch('cnn');
+
+// ─── PLOT 3: LONG-RANGE PREDICTION ───────────────────────────────────────────
+let lrpState = 'short';
+
+function showLRP(state) {
+  lrpState = state;
+  document.getElementById('lrp-btn-short').classList.toggle('active', state==='short');
+  document.getElementById('lrp-btn-long').classList.toggle('active', state==='long');
+
+  // Genomic positions (kb) for Shh locus simplified to 0-200kb range
+  // ZRS enhancer at ~80-90kb, Shh gene at 150-180kb
+  const positions = [];
+  for (let i=0; i<=200; i+=2) positions.push(i);
+
+  // Predicted expression signal at each position
+  const signal = positions.map(p => {
+    // Background noise
+    let s = 0.05 + Math.random() * 0.04;
+    // ZRS enhancer peak (both models detect it)
+    if (p >= 78 && p <= 92) {
+      s += 0.6 * Math.exp(-Math.pow((p-85)/4, 2));
+    }
+    // Limb enhancer elements scattered
+    if (p >= 60 && p <= 75) s += 0.2 * Math.exp(-Math.pow((p-67)/5, 2));
+    // Shh gene body
+    if (p >= 148 && p <= 182) {
+      if (state === 'long') {
+        s += 0.75 * Math.exp(-Math.pow((p-165)/12, 2));
+      } else {
+        s += 0.07 * Math.exp(-Math.pow((p-165)/12, 2)); // barely visible
+      }
+    }
+    return Math.max(0, Math.min(1, s));
+  });
+
+  const titleKo = state==='short' ? '단거리 모델 예측 — Shh 유전자 신호 누락' : '장거리 모델 예측 — Shh 유전자 발현 예측 성공';
+  const titleEn = state==='short' ? 'Short-Context Model — Shh Gene Signal Missing' : 'Long-Context Model — Shh Gene Expression Predicted';
+
+  const traces = [
+    {
+      type:'scatter', mode:'lines', name: lang==='ko'?'예측 신호':'Predicted Signal',
+      x:positions, y:signal,
+      line:{color: state==='short'?'#38bdf8':'#4ade80', width:2},
+      fill:'tozeroy', fillcolor: state==='short'?'rgba(56,189,248,0.1)':'rgba(74,222,128,0.1)',
+      hovertemplate:'%{x}kb: %{y:.2f}<extra></extra>'
+    }
+  ];
+
+  const annotations = [
+    {x:85, y:0.72, text: lang==='ko'?'ZRS 인핸서':'ZRS Enhancer', showarrow:true, arrowhead:2,
+     arrowcolor:'#c4a35a', font:{color:'#c4a35a',size:11}, ax:40, ay:-30},
+    {x:165, y: state==='long'?0.82:0.14,
+     text: lang==='ko'? (state==='long'?'Shh 유전자 (예측 성공)':'Shh 유전자 (신호 없음)')
+                      : (state==='long'?'Shh Gene (predicted)':'Shh Gene (no signal)'),
+     showarrow:true, arrowhead:2,
+     arrowcolor: state==='long'?'#4ade80':'#f87171',
+     font:{color:state==='long'?'#4ade80':'#f87171',size:11}, ax:-50, ay:-30}
+  ];
+
+  if (state === 'long') {
+    // Draw connection arc annotation — real ZRS is ~1Mb from Shh; diagram is schematic
+    annotations.push({
+      x:125, y:0.55,
+      text: lang==='ko'?'장거리 조절 (실제 ~1Mb, 도식 단순화)':'Long-range regulation (real distance ~1Mb; diagram schematic)',
+      showarrow:false, font:{color:'rgba(74,222,128,0.7)',size:10},
+      xanchor:'center'
+    });
+  }
+
+  const layout = {
+    ...PT,
+    title:{text: lang==='ko'?titleKo:titleEn, font:{color:'#e4e0d8',size:12}},
+    xaxis:{...PT.xaxis, title:{text:lang==='ko'?'게놈 위치 (kb)':'Genomic Position (kb)',font:{color:'#7a756d',size:12}}, tickfont:{color:'#7a756d',size:10}},
+    yaxis:{...PT.yaxis, title:{text:lang==='ko'?'예측 활성':'Predicted Activity',font:{color:'#7a756d',size:12}}, range:[0,1.05], tickfont:{color:'#7a756d',size:10}},
+    annotations,
+    showlegend:false, margin:{t:50,r:20,b:60,l:65}
+  };
+  Plotly.react('plot-lrp', traces, layout, {displayModeBar:false, responsive:true});
+
+  const box = document.getElementById('lrp-insight');
+  if (state==='short') {
+    box.dataset.ko = '<strong>단거리 모델:</strong> ZRS 인핸서 영역에서 로컬 신호를 감지하지만, Shh 유전자까지의 실제 거리(~1Mb)가 컨텍스트 창보다 훨씬 길어서 타겟 유전자 발현 예측에 실패합니다. ZRS는 마우스/인간 게놈 7번 염색체에서 Shh 프로모터로부터 ~1Mb 떨어진 LMBR1 인트론 5에 위치합니다.';
+    box.dataset.en = '<strong>Short-context model:</strong> Detects local signal at the ZRS enhancer, but the real distance to Shh (~1Mb) far exceeds the context window — the target gene expression peak is completely missed. The ZRS sits in intron 5 of LMBR1, ~1Mb from the Shh promoter on chromosome 7.';
+  } else {
+    box.dataset.ko = '<strong>장거리 모델 (HyenaDNA-like, 1Mb 컨텍스트):</strong> 실제 ~1Mb 거리를 한 번에 처리합니다(도식은 단순화). ZRS 인핸서 활성이 Shh 유전자 발현 피크와 연결됩니다. ZRS는 사지 발달에서 Shh의 시공간적 발현을 제어하는 가장 잘 알려진 장거리 인핸서입니다(Lettice et al. 2003; Sagai et al. 2005).';
+    box.dataset.en = '<strong>Long-context model (HyenaDNA-like, 1Mb context):</strong> Processes the full ~1Mb distance in one pass (diagram is schematic). ZRS enhancer activity is linked to the predicted Shh expression peak. The ZRS is one of the best-characterized long-range enhancers in vertebrate development, controlling spatiotemporal Shh expression in the limb bud (Lettice et al. 2003; Sagai et al. 2005).';
+  }
+  box.innerHTML = box.dataset[lang];
+}
+
+showLRP('short');
+
+// Redraw canvas on window resize
+window.addEventListener('resize', () => {
+  updateReceptiveField(document.getElementById('ctx-slider').value);
+  drawArchCanvas(currentArch);
+});
+
+document.addEventListener('DOMContentLoaded', () => setLang('ko'));
+</script>
+</body>
+</html>

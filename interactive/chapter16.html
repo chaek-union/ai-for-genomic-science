@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 16 — Single-Cell Foundation Models</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.2rem,5.5vw,4.2rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:580px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+#hero-canvas{position:absolute;inset:0;opacity:.35;pointer-events:none}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:680px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 auto;max-width:960px}
+.chart-wrap{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem}
+.plot-container{width:100%}
+.annotation-box{margin-top:1rem;padding:1rem 1.2rem;background:rgba(255,255,255,.03);border-left:2px solid var(--gold);border-radius:0 6px 6px 0;font:.9rem/1.6 system-ui;color:var(--muted)}
+.view-toggle{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.view-btn{padding:.55rem 1.4rem;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:.88rem/1 system-ui;cursor:pointer;transition:.2s}
+.view-btn.active{border-color:var(--gold);background:var(--gold-dim);color:var(--gold)}
+/* Pipeline widget */
+.pipeline{display:flex;flex-direction:column;gap:1rem}
+.pipe-step{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;transition:.3s}
+.pipe-step.active{border-color:var(--gold);background:var(--gold-dim)}
+.pipe-step-header{display:flex;align-items:center;gap:.8rem;margin-bottom:.6rem}
+.pipe-step-num{width:24px;height:24px;border-radius:50%;background:var(--gold);color:#0b0b11;font:700 .75rem/1 system-ui;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pipe-step-title{font:600 .95rem/1.3 system-ui;color:#fff}
+.pipe-step-body{font:.85rem/1.6 system-ui;color:var(--muted);margin-bottom:.8rem}
+.gene-bars{display:flex;gap:3px;align-items:flex-end;height:60px;margin-bottom:.5rem}
+.gene-bar{flex:1;min-width:8px;border-radius:2px 2px 0 0;transition:.4s;cursor:pointer;position:relative}
+.gene-bar:hover{opacity:.8;transform:scaleY(1.05);transform-origin:bottom}
+.gene-bar-label{font:600 .6rem/1 system-ui;color:var(--muted);text-align:center;margin-top:3px;white-space:nowrap;overflow:hidden}
+.gene-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center}
+.rank-list{display:flex;gap:4px;flex-wrap:wrap}
+.rank-chip{padding:.2rem .5rem;border-radius:4px;font:.7rem/1 'SF Mono',monospace;border:1px solid var(--line);color:var(--text)}
+.token-strips{display:flex;gap:4px;flex-wrap:wrap}
+.token-strip{width:28px;height:28px;border-radius:4px;transition:.4s}
+.attn-note{font:.8rem/1.5 system-ui;color:var(--muted)}
+.embed-strip{display:flex;gap:2px;height:24px;margin-top:.5rem}
+.embed-cell{flex:1;border-radius:2px;transition:.4s}
+.controls-row{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1.2rem}
+.ctrl-label{font:.82rem/1 'SF Mono',monospace;color:var(--muted);flex-shrink:0}
+select.gene-select{background:var(--card);border:1px solid var(--line);color:var(--text);padding:.4rem .8rem;border-radius:6px;font:.88rem/1 system-ui;cursor:pointer;outline:none}
+select.gene-select:focus{border-color:var(--gold)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+@media(max-width:640px){.two-col{grid-template-columns:1fr}}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+.page-footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-ch">Chapter 16</div>
+  <h1 class="t" data-ko="단일세포 파운데이션 모델" data-en="Single-Cell Foundation Models"></h1>
+  <p class="hero-sub t"
+     data-ko="유전자 발현에서 임베딩까지 — AI가 세포를 '이해'하는 전체 파이프라인을 단계별로 조작하며 배웁니다."
+     data-en="From gene expression to embedding — learn the complete pipeline by which AI 'understands' a cell, one step at a time.">
+  </p>
+  <div class="hero-scroll" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+    <div class="t" data-ko="스크롤하여 탐색" data-en="scroll to explore"></div>
+    <div style="font-size:1.4rem;margin-top:.4rem">↓</div>
+  </div>
+</section>
+
+<!-- SECTION 1: EMBEDDING PIPELINE -->
+<div class="section" id="s1">
+  <div class="section-label t" data-ko="임베딩 파이프라인" data-en="The Embedding Pipeline"></div>
+  <h2 class="section-title t" data-ko="발현 → 랭킹 → 토큰 → 어텐션 → 임베딩" data-en="Expression → Ranking → Tokens → Attention → Embedding"></h2>
+  <p class="section-body t"
+     data-ko="파운데이션 모델이 하나의 세포를 처리하는 전체 과정입니다. 유전자 바를 클릭해 발현량을 바꾸면 — 랭킹, 토큰, 어텐션, 최종 임베딩이 모두 실시간으로 바뀝니다. 이것이 Geneformer가 하는 일입니다."
+     data-en="The complete pipeline by which a foundation model processes one cell. Click any gene bar to toggle its expression — the ranking, tokens, attention, and final embedding all update in real time. This is what Geneformer does.">
+  </p>
+  <div class="chart-wrap">
+    <!-- Step 1: Gene expression input -->
+    <div class="pipe-step active" id="step1">
+      <div class="pipe-step-header">
+        <div class="pipe-step-num">1</div>
+        <div class="pipe-step-title t" data-ko="입력: 세포의 유전자 발현 프로파일" data-en="Input: Cell's Gene Expression Profile"></div>
+      </div>
+      <div class="pipe-step-body t" data-ko="각 막대를 클릭해 유전자 발현을 높음/낮음으로 전환하세요. 모든 하위 단계가 업데이트됩니다." data-en="Click each bar to toggle gene expression high/low. All downstream steps update."></div>
+      <div class="gene-bars" id="gene-bars-input"></div>
+      <div style="display:flex;gap:3px" id="gene-labels-input"></div>
+    </div>
+
+    <!-- Step 2: Gene ranking -->
+    <div class="pipe-step" id="step2">
+      <div class="pipe-step-header">
+        <div class="pipe-step-num">2</div>
+        <div class="pipe-step-title t" data-ko="랭크 값 인코딩: 코퍼스 중앙값 기준 발현 순위" data-en="Rank Value Encoding: Expression Rank Relative to Corpus Median"></div>
+      </div>
+      <div class="pipe-step-body t" data-ko="Geneformer의 핵심 혁신 — 발현 절대값이 아닌 '순위'를 입력으로 씁니다. 각 유전자의 발현량을 Genecorpus-30M(~3천만 인간 단일세포)의 코퍼스 중앙값과 비교해 정규화한 뒤, 발현 순위가 높은 유전자부터 낮은 유전자 순으로 정렬된 토큰 시퀀스가 실제 모델 입력이 됩니다. 하우스키핑 유전자(항상 높게 발현)는 코퍼스 스케일링으로 순위가 낮아지고, 희귀하지만 세포 상태를 구분하는 전사인자는 순위가 높아집니다." data-en="Geneformer's core innovation — the model never sees raw expression values. Each gene's expression is normalized against its median across ~30M human single cells in Genecorpus-30M, then genes are sorted highest-to-lowest rank to form an ordered token sequence. This 'rank value encoding' deprioritizes ubiquitously expressed housekeeping genes (scaled to lower rank) and elevates rare transcription factors that distinguish cell state (scaled to higher rank)."></div>
+      <div class="rank-list" id="rank-list"></div>
+    </div>
+
+    <!-- Step 3: Token embeddings -->
+    <div class="pipe-step" id="step3">
+      <div class="pipe-step-header">
+        <div class="pipe-step-num">3</div>
+        <div class="pipe-step-title t" data-ko="토큰 임베딩: 각 유전자가 학습된 벡터로" data-en="Token Embeddings: Each Gene Becomes a Learned Vector"></div>
+      </div>
+      <div class="pipe-step-body t" data-ko="각 유전자 토큰은 사전학습으로 학습된 고정 차원 벡터(gene token embedding)로 변환됩니다. 발현량에 비례하는 것이 아니라, 유전자 정체성 자체가 벡터에 인코딩됩니다 — NLP에서 단어 임베딩과 동일한 원리입니다. 색깔은 각 토큰 벡터의 차원 값을 나타냅니다." data-en="Each gene token is converted to a fixed-dimensional vector learned during pre-training (gene token embedding). The vector encodes gene identity itself — not proportional to expression level — the same principle as word embeddings in NLP. Colors represent values across the token embedding dimensions."></div>
+      <div class="token-strips" id="token-strips"></div>
+    </div>
+
+    <!-- Step 4: Attention heatmap (Plotly) -->
+    <div class="pipe-step" id="step4">
+      <div class="pipe-step-header">
+        <div class="pipe-step-num">4</div>
+        <div class="pipe-step-title t" data-ko="트랜스포머 어텐션: 어떤 유전자가 어떤 유전자를 '봅니까'" data-en="Transformer Attention: Which Gene 'Attends' to Which"></div>
+      </div>
+      <div class="pipe-step-body t" data-ko="높은 발현 유전자들이 서로 강하게 어텐션합니다. 발현량을 바꾸면 어텐션 패턴이 바뀌어 다른 유전자 간의 관계가 강조됩니다." data-en="Highly expressed genes attend strongly to each other. Change expression and the attention pattern shifts — different gene-gene relationships get emphasized."></div>
+      <div id="plot-attention" style="width:100%;height:280px"></div>
+    </div>
+
+    <!-- Step 5: Output embedding + UMAP position -->
+    <div class="pipe-step" id="step5">
+      <div class="pipe-step-header">
+        <div class="pipe-step-num">5</div>
+        <div class="pipe-step-title t" data-ko="출력 임베딩 & UMAP 위치" data-en="Output Embedding & UMAP Position"></div>
+      </div>
+      <div class="pipe-step-body t" data-ko="트랜스포머의 CLS 토큰이 세포 전체의 밀집 표현(임베딩)이 됩니다. 이 벡터가 UMAP에서 세포의 위치를 결정합니다." data-en="The transformer's CLS token becomes the cell's dense representation (embedding). This vector determines where the cell lands on the UMAP."></div>
+      <div class="two-col">
+        <div>
+          <div style="font:.8rem/1.4 'SF Mono',monospace;color:var(--muted);margin-bottom:.4rem" class="t" data-ko="임베딩 벡터 (첫 40차원):" data-en="Embedding vector (first 40 dims):"></div>
+          <div class="embed-strip" id="embed-strip"></div>
+        </div>
+        <div>
+          <div style="font:.8rem/1.4 'SF Mono',monospace;color:var(--muted);margin-bottom:.4rem" class="t" data-ko="UMAP 위치 (세포 유형 공간):" data-en="UMAP position (cell type space):"></div>
+          <div id="plot-umap-pos" style="width:100%;height:140px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annotation-box t" id="pipeline-annotation"
+       data-ko="유전자 발현을 바꾸면 랭킹이 재정렬되고, 어텐션 패턴이 변하며, 임베딩이 이동하고, UMAP 위치가 달라집니다. 이것이 파운데이션 모델이 세포 정체성을 인코딩하는 방식입니다."
+       data-en="Change gene expression → ranking reshuffles → attention pattern shifts → embedding moves → UMAP position changes. This is how foundation models encode cell identity.">
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: EMBEDDING DISTANCE EXPLORER -->
+<div class="section" id="s2">
+  <div class="section-label t" data-ko="임베딩 거리 탐색기" data-en="Embedding Distance Explorer"></div>
+  <h2 class="section-title t" data-ko="임베딩 유사도 = 생물학적 유사성" data-en="Embedding Similarity = Biological Similarity"></h2>
+  <p class="section-body t"
+     data-ko="UMAP에서 세포를 클릭하면 임베딩 공간에서 가장 가까운 이웃 세포들이 표시됩니다. 이웃 세포들이 공유하는 유전자 프로그램도 같이 보입니다. 임베딩 유사도가 생물학적 유사성을 포착하는 방식을 이해합니다."
+     data-en="Click any cell on the UMAP to see its nearest neighbors in embedding space. The shared gene programs are shown alongside. Understand how embedding similarity captures biological similarity.">
+  </p>
+  <div class="two-col">
+    <div>
+      <div class="chart-wrap" style="padding:1rem">
+        <div id="plot-embed-umap" style="width:100%;height:380px"></div>
+      </div>
+      <div class="annotation-box t" id="embed-click-note"
+           data-ko="세포를 클릭하면 가장 가까운 이웃이 강조됩니다." data-en="Click a cell to highlight its nearest neighbors.">
+      </div>
+    </div>
+    <div>
+      <div class="chart-wrap" style="padding:1rem">
+        <div style="font:.82rem/1.4 'SF Mono',monospace;color:var(--gold);margin-bottom:.8rem" id="neighbor-title">
+          <span class="t" data-ko="이웃 세포 유전자 프로파일" data-en="Neighbor Cell Gene Profiles"></span>
+        </div>
+        <div id="plot-neighbors" style="width:100%;height:340px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: PERTURBATION PREDICTION -->
+<div class="section" id="s3">
+  <div class="section-label t" data-ko="유전자 섭동 예측" data-en="Gene Perturbation Prediction"></div>
+  <h2 class="section-title t" data-ko="유전자를 녹아웃하면 세포에 무슨 일이 일어납니까" data-en="What Happens to the Cell When You Knock Out a Gene?"></h2>
+  <p class="section-body t"
+     data-ko="Geneformer의 인실리코 섭동 메커니즘: 유전자를 녹아웃할 때 연속적인 발현값을 0으로 바꾸는 것이 아닙니다. 대신 해당 유전자 토큰을 랭크 리스트에서 완전히 제거(delete)하거나 리스트의 하위 사분위수로 이동(inhibit)시킵니다. 이렇게 변형된 토큰 시퀀스를 모델에 다시 통과시켜 임베딩 벡터의 이동 방향과 크기로 섭동 효과를 측정합니다."
+     data-en="Geneformer's in silico perturbation mechanism: knocking out a gene does NOT set a continuous expression value to zero. Instead, the gene token is either fully deleted from the ranked list, or shifted to the lower quartile (inhibit). This modified token sequence is passed back through the model, and the direction and magnitude of the resulting embedding shift predicts the perturbation effect on downstream gene networks.">
+  </p>
+  <div class="controls-row">
+    <span class="ctrl-label t" data-ko="녹아웃 유전자:" data-en="Knock out gene:"></span>
+    <select class="gene-select" id="ko-gene-select" onchange="applyKnockout(this.value)">
+      <option value="none" class="t" data-ko="(선택 없음)" data-en="(none selected)">(선택 없음)</option>
+      <option value="TP53">TP53 (종양 억제 / tumor suppressor)</option>
+      <option value="MYC">MYC (세포 증식 / cell proliferation)</option>
+      <option value="GATA1">GATA1 (적혈구 분화 / erythroid differentiation)</option>
+      <option value="FOXP3">FOXP3 (Treg 정체성 / Treg identity)</option>
+      <option value="PAX5">PAX5 (B 세포 분화 / B cell differentiation)</option>
+    </select>
+  </div>
+  <!-- Rank list deletion panel -->
+  <div class="chart-wrap" id="ko-rank-panel" style="margin-bottom:1rem;padding:1rem 1.2rem">
+    <div style="font:.8rem/1.4 'SF Mono',monospace;color:var(--gold);margin-bottom:.6rem" class="t" data-ko="Geneformer 인실리코 섭동: 랭크 리스트에서 토큰 제거" data-en="Geneformer In Silico Perturbation: Token Removal from Ranked List"></div>
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:1;min-width:200px">
+        <div style="font:.72rem/1.3 'SF Mono',monospace;color:var(--muted);margin-bottom:.4rem" class="t" data-ko="녹아웃 전 (원래 랭크 시퀀스):" data-en="Before KO (original rank sequence):"></div>
+        <div class="rank-list" id="ko-rank-before" style="gap:4px"></div>
+      </div>
+      <div style="display:flex;align-items:center;padding-top:1.2rem;font-size:1.4rem;color:var(--gold)">→</div>
+      <div style="flex:1;min-width:200px">
+        <div style="font:.72rem/1.3 'SF Mono',monospace;color:var(--muted);margin-bottom:.4rem" class="t" data-ko="녹아웃 후 (토큰 제거됨):" data-en="After KO (token deleted):"></div>
+        <div class="rank-list" id="ko-rank-after" style="gap:4px"></div>
+      </div>
+    </div>
+    <div style="font:.75rem/1.5 system-ui;color:var(--muted);margin-top:.8rem;border-top:1px solid var(--line);padding-top:.6rem" class="t"
+         data-ko="제거된 토큰(빨간 취소선)이 시퀀스에서 빠지면 트랜스포머가 다시 실행되고, 임베딩 벡터의 이동 방향·크기로 섭동 효과를 측정합니다."
+         data-en="The deleted token (red strikethrough) is absent from the sequence. The transformer re-runs on this shorter list; the direction and magnitude of the embedding vector shift measures the perturbation effect."></div>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="chart-wrap" style="padding:1rem">
+        <div id="plot-ko-expr" style="width:100%;height:360px"></div>
+      </div>
+    </div>
+    <div>
+      <div class="chart-wrap" style="padding:1rem">
+        <div id="plot-ko-umap" style="width:100%;height:180px"></div>
+        <div style="margin-top:.8rem">
+          <div id="plot-ko-waterfall" style="width:100%;height:160px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annotation-box t" id="ko-annotation"
+       data-ko="유전자를 선택해 녹아웃 효과를 예측합니다. Geneformer는 해당 유전자 토큰을 랭크 리스트에서 제거한 뒤 임베딩 이동 방향으로 다운스트림 효과를 추정합니다 (Theodoris et al., 2023)."
+       data-en="Select a gene to predict its knockout effect. Geneformer removes the gene token from the ranked list, then measures the embedding shift direction and magnitude to estimate downstream regulatory effects (Theodoris et al., 2023).">
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p class="t" data-ko="AI for Genomic Science — 챕터 16 인터랙티브" data-en="AI for Genomic Science — Chapter 16 Interactive"></p>
+  <p style="margin-top:.5rem"><a href="../chapters/chapter16.md" class="t" data-ko="← 챕터 16 본문으로" data-en="← Back to Chapter 16">← 챕터 16 본문으로</a></p>
+  <p class="source-note" style="font-size:.75rem;color:var(--muted);margin-top:1rem">
+    Based on: Theodoris et al. (2023) Geneformer, Nature; Cui et al. (2024) scGPT, Nature Methods; Fan et al. (2022) scBERT, Nature Machine Intelligence
+  </p>
+</footer>
+
+<script>
+// ─── LANGUAGE ────────────────────────────────────────────────────────────────
+let lang = 'ko';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===l.toUpperCase()));
+  document.querySelectorAll('[data-'+l+']').forEach(el=>{
+    if(el.tagName!=='BUTTON'&&el.tagName!=='INPUT'&&el.tagName!=='SELECT'&&el.tagName!=='OPTION') el.textContent=el.dataset[l];
+  });
+  updatePlotLanguage(l);
+}
+function updatePlotLanguage(l) {
+  renderPipeline();
+  buildEmbedUMAP();
+  buildKORankPanel(currentKO);
+  buildKOExpr(currentKO);
+  buildKOUMAP(currentKO);
+  buildKOWaterfall(currentKO);
+}
+
+// ─── HERO CANVAS ─────────────────────────────────────────────────────────────
+(function(){
+  const c=document.getElementById('hero-canvas'),ctx=c.getContext('2d');
+  let W,H,dots;
+  function resize(){W=c.width=c.offsetWidth;H=c.height=c.offsetHeight;dots=Array.from({length:160},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+.4,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,a:Math.random()}));}
+  window.addEventListener('resize',resize);resize();
+  (function draw(){ctx.clearRect(0,0,W,H);dots.forEach(d=>{d.x+=d.vx;d.y+=d.vy;if(d.x<0)d.x=W;if(d.x>W)d.x=0;if(d.y<0)d.y=H;if(d.y>H)d.y=0;ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,Math.PI*2);ctx.fillStyle=`rgba(196,163,90,${d.a*.6})`;ctx.fill();});requestAnimationFrame(draw);})();
+})();
+
+// ─── PLOTLY DARK BASE ─────────────────────────────────────────────────────────
+const db={paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(20,20,31,1)',font:{color:'#e4e0d8',family:'system-ui'},xaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},yaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},margin:{t:30,r:20,b:40,l:50},legend:{bgcolor:'rgba(0,0,0,0)',bordercolor:'#22222e',borderwidth:1}};
+
+// ─── SECTION 1: PIPELINE ────────────────────────────────────────────────────
+const GENES = ['CD3E','CD4','MS4A1','CD14','NKG7','FOXP3','GZMB','IL7R','LYZ','MKI67','HLA-DRA','CD79A'];
+const GENE_COLORS = ['#38bdf8','#0ea5e9','#4ade80','#f87171','#a78bfa','#fbbf24','#fb923c','#34d399','#94a3b8','#f472b6','#67e8f9','#86efac'];
+
+// Initial expression: T cell profile
+let geneExpr = [9,7,1,1,3,1,2,6,1,1,1,1];
+
+function gaussRnd(m,s){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+function toggleGene(i){
+  geneExpr[i] = geneExpr[i] > 4 ? 1 : 9;
+  renderPipeline();
+}
+
+function getRanking() {
+  return geneExpr.map((v,i)=>({i,v})).sort((a,b)=>b.v-a.v).map((x,rank)=>({...x,rank:rank+1}));
+}
+
+function getAttentionMatrix(ranking) {
+  // Attention weight between gene i and j ~ product of their normalized ranks (higher = more attention)
+  const n=GENES.length;
+  const rankScore = new Array(n).fill(0);
+  ranking.forEach(r=>{ rankScore[r.i] = 1 - (r.rank-1)/(n-1); });
+  const mat=[];
+  for(let i=0;i<n;i++){
+    const row=[];
+    for(let j=0;j<n;j++){
+      // Self attention + cross attention based on expression proximity
+      const sim = i===j ? 1 : rankScore[i]*rankScore[j]*0.8 + Math.random()*0.05;
+      row.push(parseFloat(sim.toFixed(3)));
+    }
+    mat.push(row);
+  }
+  return mat;
+}
+
+function getEmbedding(ranking) {
+  // Simulated 40-dim embedding: top-ranked genes activate more dimensions
+  const dims=40;
+  const embed=[];
+  for(let d=0;d<dims;d++){
+    let val=0;
+    ranking.forEach(r=>{
+      val += (geneExpr[r.i]/10) * Math.sin(r.i*d*0.7+d) * 0.3;
+    });
+    embed.push(val);
+  }
+  return embed;
+}
+
+function getUMAPPosition(ranking) {
+  // Derive UMAP position from dominant genes
+  const topGenes = ranking.slice(0,3).map(r=>r.i);
+  // T cell markers: 0,1,7; B cell: 2,11; Mono: 3,8,10; NK: 4,6
+  let tScore=0,bScore=0,mScore=0,nkScore=0;
+  topGenes.forEach(g=>{
+    if([0,1,7].includes(g))tScore++;
+    if([2,11].includes(g))bScore++;
+    if([3,8,10].includes(g))mScore++;
+    if([4,6].includes(g))nkScore++;
+  });
+  const centers={t:[-4,2],b:[3.5,2],m:[1,-3.5],nk:[-4.5,-2]};
+  if(tScore>=bScore&&tScore>=mScore&&tScore>=nkScore) return {x:centers.t[0]+gaussRnd(0,0.3),y:centers.t[1]+gaussRnd(0,0.3),ct:lang==='ko'?'T 세포':'T cell'};
+  if(bScore>tScore&&bScore>=mScore&&bScore>=nkScore) return {x:centers.b[0]+gaussRnd(0,0.3),y:centers.b[1]+gaussRnd(0,0.3),ct:lang==='ko'?'B 세포':'B cell'};
+  if(mScore>tScore&&mScore>bScore&&mScore>=nkScore) return {x:centers.m[0]+gaussRnd(0,0.3),y:centers.m[1]+gaussRnd(0,0.3),ct:lang==='ko'?'단핵구':'Monocyte'};
+  return {x:centers.nk[0]+gaussRnd(0,0.3),y:centers.nk[1]+gaussRnd(0,0.3),ct:lang==='ko'?'NK 세포':'NK cell'};
+}
+
+function renderPipeline() {
+  const ranking = getRanking();
+
+  // Step 1: Gene bars
+  const barsEl=document.getElementById('gene-bars-input');
+  const labelsEl=document.getElementById('gene-labels-input');
+  barsEl.innerHTML=''; labelsEl.innerHTML='';
+  const maxExpr=Math.max(...geneExpr);
+  GENES.forEach((g,i)=>{
+    const heightPct=(geneExpr[i]/maxExpr*100);
+    const wrap=document.createElement('div'); wrap.className='gene-bar-wrap';
+    const bar=document.createElement('div'); bar.className='gene-bar';
+    bar.style.cssText=`height:${heightPct}%;background:${GENE_COLORS[i]};opacity:${0.5+geneExpr[i]/maxExpr*0.5}`;
+    bar.title=`${g}: ${geneExpr[i]}`;
+    bar.onclick=()=>toggleGene(i);
+    const lbl=document.createElement('div'); lbl.className='gene-bar-label'; lbl.textContent=g;
+    lbl.style.fontSize='.55rem';
+    wrap.appendChild(bar); wrap.appendChild(lbl);
+    barsEl.appendChild(wrap);
+  });
+
+  // Step 2: Ranking
+  const rankEl=document.getElementById('rank-list');
+  rankEl.innerHTML='';
+  ranking.forEach((r,ri)=>{
+    const chip=document.createElement('div'); chip.className='rank-chip';
+    chip.textContent=`#${r.rank} ${GENES[r.i]}`;
+    chip.style.borderColor=GENE_COLORS[r.i];
+    chip.style.color=GENE_COLORS[r.i];
+    chip.style.opacity=1-ri*0.06;
+    rankEl.appendChild(chip);
+  });
+
+  // Step 3: Token strips
+  const stripEl=document.getElementById('token-strips');
+  stripEl.innerHTML='';
+  ranking.forEach((r,ri)=>{
+    const strip=document.createElement('div'); strip.className='token-strip';
+    const intensity=1-ri/(GENES.length-1);
+    const col=GENE_COLORS[r.i];
+    strip.style.background=col;
+    strip.style.opacity=0.3+intensity*0.7;
+    strip.title=`${GENES[r.i]} (rank ${r.rank})`;
+    // Mini label
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px';
+    const lbl=document.createElement('div');
+    lbl.style.cssText=`font:.5rem/1 'SF Mono',monospace;color:${col};opacity:${0.3+intensity*0.7};text-align:center;max-width:28px;overflow:hidden`;
+    lbl.textContent=GENES[r.i].slice(0,4);
+    wrap.appendChild(strip); wrap.appendChild(lbl);
+    stripEl.appendChild(wrap);
+  });
+
+  // Step 4: Attention heatmap
+  const attn=getAttentionMatrix(ranking);
+  Plotly.react('plot-attention',[{
+    z:attn, type:'heatmap',
+    x:GENES, y:GENES,
+    colorscale:[[0,'#0b0b11'],[0.5,'#1e3a5f'],[1,'#38bdf8']],
+    zmin:0,zmax:1,
+    hovertemplate:'<b>%{y} → %{x}</b><br>Attention: %{z:.3f}<extra></extra>',
+    colorbar:{len:0.7,title:'Attn',titlefont:{color:'#e4e0d8',size:9},tickfont:{color:'#7a756d',size:8}}
+  }],{
+    ...db,
+    title:{text:lang==='ko'?'유전자 간 어텐션 가중치 (트랜스포머 헤드)':'Gene-to-Gene Attention Weights (Transformer Head)',font:{size:11,color:'#e4e0d8'}},
+    xaxis:{...db.xaxis,tickfont:{size:8},tickangle:-45,automargin:true},
+    yaxis:{...db.yaxis,tickfont:{size:8},automargin:true},
+    margin:{t:40,r:80,b:90,l:80}
+  },{responsive:true,displayModeBar:false});
+
+  // Step 5: Embedding strip
+  const embed=getEmbedding(ranking);
+  const stripEl2=document.getElementById('embed-strip');
+  stripEl2.innerHTML='';
+  embed.forEach(v=>{
+    const c=document.createElement('div'); c.className='embed-cell';
+    const norm=(v+1)/2; // roughly -1..1 -> 0..1
+    const r=Math.round(norm*56+(1-norm)*11);
+    const g2=Math.round(norm*189+(1-norm)*11);
+    const b2=Math.round(norm*248+(1-norm)*17);
+    c.style.background=`rgb(${r},${g2},${b2})`;
+    c.style.opacity=0.6+Math.abs(v)*0.4;
+    stripEl2.appendChild(c);
+  });
+
+  // Step 5: UMAP position mini-plot
+  const pos=getUMAPPosition(ranking);
+  const bgCells=[
+    {x:[-4,-3.8,-4.2],y:[2,2.4,1.7],col:'#38bdf8',ct:'T'},
+    {x:[3.5,3.3,3.7],y:[2,2.3,1.8],col:'#4ade80',ct:'B'},
+    {x:[1,0.8,1.2],y:[-3.5,-3.3,-3.7],col:'#f87171',ct:'M'},
+    {x:[-4.5,-4.3,-4.7],y:[-2,-1.8,-2.2],col:'#a78bfa',ct:'NK'},
+  ];
+  const bgTraces=bgCells.map(bc=>({
+    x:bc.x,y:bc.y,mode:'markers',type:'scatter',
+    marker:{color:bc.col,size:5,opacity:0.35},showlegend:false,
+    hoverinfo:'skip'
+  }));
+  bgTraces.push({
+    x:[pos.x],y:[pos.y],mode:'markers+text',type:'scatter',
+    marker:{color:'#c4a35a',size:12,symbol:'star',line:{color:'#fff',width:1.5}},
+    text:[pos.ct],textposition:'top center',textfont:{color:'#c4a35a',size:10},
+    name:lang==='ko'?'현재 세포':'This cell',
+    hovertemplate:`<b>${lang==='ko'?'현재 세포':'This cell'}</b><br>(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})<br>${pos.ct}<extra></extra>`
+  });
+  Plotly.react('plot-umap-pos',bgTraces,{
+    ...db,
+    title:{text:'UMAP',font:{size:10,color:'#e4e0d8'}},
+    xaxis:{...db.xaxis,showticklabels:false,zeroline:false,range:[-6,6]},
+    yaxis:{...db.yaxis,showticklabels:false,zeroline:false,range:[-5,5]},
+    margin:{t:25,r:5,b:10,l:5},showlegend:false
+  },{responsive:true,displayModeBar:false});
+}
+
+// ─── SECTION 2: EMBEDDING DISTANCE EXPLORER ──────────────────────────────────
+function gaussRnd2(m,s){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+const embedCellDefs=[
+  {name_ko:'CD4+ T 세포',name_en:'CD4+ T cell',color:'#38bdf8',n:60,cx:-4,cy:2,cr:0.8,genes:{CD3E:8,CD4:7,MS4A1:0.3,CD14:0.3,NKG7:2}},
+  {name_ko:'B 세포',name_en:'B cell',color:'#4ade80',n:55,cx:3.5,cy:2,cr:0.8,genes:{CD3E:0.3,CD4:0.3,MS4A1:8,CD14:0.3,NKG7:0.3}},
+  {name_ko:'단핵구',name_en:'Monocyte',color:'#f87171',n:50,cx:1,cy:-3.5,cr:0.8,genes:{CD3E:0.3,CD4:0.3,MS4A1:0.3,CD14:8,NKG7:0.3}},
+  {name_ko:'NK 세포',name_en:'NK cell',color:'#a78bfa',n:45,cx:-4.5,cy:-2,cr:0.7,genes:{CD3E:2,CD4:0.3,MS4A1:0.3,CD14:0.3,NKG7:8}},
+];
+
+let embedCells=[];
+embedCellDefs.forEach((cd,ci)=>{
+  for(let i=0;i<cd.n;i++){
+    const noise=()=>gaussRnd2(0,0.2);
+    embedCells.push({
+      x:gaussRnd2(cd.cx,cd.cr),y:gaussRnd2(cd.cy,cd.cr),
+      type:ci,name_ko:cd.name_ko,name_en:cd.name_en,color:cd.color,
+      genes:Object.fromEntries(Object.entries(cd.genes).map(([k,v])=>[k,Math.max(0,v+noise()*2)]))
+    });
+  }
+});
+
+let selectedEmbedIdx = -1;
+
+function buildEmbedUMAP() {
+  const traces=embedCellDefs.map((cd,ci)=>{
+    const cells=embedCells.filter(c=>c.type===ci);
+    return {
+      x:cells.map(c=>c.x), y:cells.map(c=>c.y),
+      mode:'markers',type:'scatter',
+      name:lang==='ko'?cd.name_ko:cd.name_en,
+      marker:{color:cd.color,size:6,opacity:0.65,line:{color:'rgba(0,0,0,0.2)',width:0.5}},
+      customdata:cells.map((_,i)=>embedCells.indexOf(cells[i])),
+      hovertemplate:`<b>${lang==='ko'?cd.name_ko:cd.name_en}</b><br>x:%{x:.2f} y:%{y:.2f}<extra></extra>`
+    };
+  });
+  const layout={
+    ...db,
+    title:{text:lang==='ko'?'임베딩 공간 (UMAP) — 세포를 클릭하세요':'Embedding Space (UMAP) — Click a Cell',font:{size:12,color:'#e4e0d8'}},
+    xaxis:{...db.xaxis,title:'UMAP 1',zeroline:false},
+    yaxis:{...db.yaxis,title:'UMAP 2',zeroline:false},
+    margin:{t:40,r:10,b:50,l:50},
+    hovermode:'closest'
+  };
+  Plotly.react('plot-embed-umap',traces,layout,{responsive:true,displayModeBar:false});
+  document.getElementById('plot-embed-umap').on('plotly_click',function(data){
+    const pt=data.points[0];
+    const idx=pt.customdata;
+    selectedEmbedIdx=idx;
+    showNeighbors(idx);
+    highlightCell(idx);
+  });
+  showNeighbors(-1);
+}
+
+function embDist(a,b){
+  // Distance in 2D UMAP space as proxy for embedding distance
+  return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);
+}
+
+function showNeighbors(idx) {
+  if(idx<0){
+    Plotly.react('plot-neighbors',[],[{...db,title:{text:lang==='ko'?'세포를 클릭하세요':'Click a cell',font:{size:11,color:'#7a756d'}},margin:{t:30,r:10,b:30,l:50}}],{responsive:true,displayModeBar:false});
+    return;
+  }
+  const cell=embedCells[idx];
+  // Find 4 nearest neighbors
+  const dists=embedCells.map((c,i)=>({i,d:embDist(cell,c)})).filter(x=>x.i!==idx).sort((a,b)=>a.d-b.d).slice(0,4);
+  const geneKeys=Object.keys(cell.genes);
+  const selectedGenes=geneKeys;
+
+  const traces=[{
+    x:selectedGenes,
+    y:selectedGenes.map(g=>cell.genes[g]||0),
+    type:'bar',
+    name:lang==='ko'?'선택된 세포':'Selected cell',
+    marker:{color:'#c4a35a',opacity:0.9},
+    hovertemplate:'%{x}: %{y:.1f}<extra></extra>'
+  }];
+  const nbColors=['#38bdf8','#4ade80','#f87171','#a78bfa'];
+  dists.forEach((nb,ni)=>{
+    const nc=embedCells[nb.i];
+    traces.push({
+      x:selectedGenes,
+      y:selectedGenes.map(g=>nc.genes[g]||0),
+      type:'scatter',mode:'lines+markers',
+      name:`${lang==='ko'?nc.name_ko:nc.name_en} (d=${nb.d.toFixed(1)})`,
+      marker:{color:nbColors[ni],size:5},
+      line:{color:nbColors[ni],width:1.5,dash:'dot'},
+      opacity:0.6,
+      hovertemplate:'%{x}: %{y:.1f}<extra></extra>'
+    });
+  });
+  Plotly.react('plot-neighbors',traces,{
+    ...db,
+    title:{text:lang==='ko'?`${lang==='ko'?cell.name_ko:cell.name_en} 및 가장 가까운 이웃 4개`:`${cell.name_en} and 4 nearest neighbors`,font:{size:11,color:'#e4e0d8'}},
+    xaxis:{...db.xaxis,tickfont:{size:9}},
+    yaxis:{...db.yaxis,title:lang==='ko'?'발현량':'Expression',range:[0,10]},
+    barmode:'overlay',
+    margin:{t:40,r:10,b:50,l:55}
+  },{responsive:true,displayModeBar:false});
+  document.getElementById('embed-click-note').textContent=lang==='ko'
+    ?`${cell.name_ko} 선택됨 — 임베딩이 가장 유사한 세포들이 같은 유전자 프로그램을 공유합니다.`
+    :`${cell.name_en} selected — cells closest in embedding space share the same gene programs.`;
+}
+
+function highlightCell(idx) {
+  const cell=embedCells[idx];
+  const update={marker:{color:'#c4a35a',size:12,symbol:'star',line:{color:'#fff',width:1.5},opacity:1}};
+  // Re-add highlight trace
+  const allTraces=embedCellDefs.length;
+  Plotly.deleteTraces('plot-embed-umap',allTraces>embedCellDefs.length?[allTraces-1]:[]);
+  Plotly.addTraces('plot-embed-umap',{
+    x:[cell.x],y:[cell.y],mode:'markers',type:'scatter',
+    marker:{color:'#c4a35a',size:14,symbol:'star',line:{color:'#fff',width:2}},
+    name:lang==='ko'?'선택된 세포':'Selected',showlegend:false,
+    hovertemplate:`<b>${lang==='ko'?cell.name_ko:cell.name_en}</b><extra></extra>`
+  });
+}
+
+// ─── SECTION 3: PERTURBATION PREDICTION ────────────────────────────────────
+
+// Simulated representative rank order for a B cell (PAX5 context)
+const KO_RANK_SEQUENCE = ['PAX5','MS4A1','CD79A','IGHM','EBF1','IRF4','IKZF1','RAG1','BCL6','BACH2'];
+const KO_RANK_COLORS   = ['#a78bfa','#4ade80','#38bdf8','#fbbf24','#f87171','#34d399','#fb923c','#67e8f9','#94a3b8','#86efac'];
+
+function buildKORankPanel(gene) {
+  const beforeEl = document.getElementById('ko-rank-before');
+  const afterEl  = document.getElementById('ko-rank-after');
+  beforeEl.innerHTML = '';
+  afterEl.innerHTML  = '';
+
+  KO_RANK_SEQUENCE.forEach((g, i) => {
+    const isKO = (g === gene);
+    // Before chip
+    const chipB = document.createElement('div');
+    chipB.className = 'rank-chip';
+    chipB.textContent = `#${i+1} ${g}`;
+    chipB.style.borderColor = KO_RANK_COLORS[i];
+    chipB.style.color = isKO ? '#f87171' : KO_RANK_COLORS[i];
+    if (isKO) {
+      chipB.style.borderColor = '#f87171';
+      chipB.style.textDecoration = 'line-through';
+      chipB.style.opacity = '1';
+    }
+    beforeEl.appendChild(chipB);
+
+    // After chip — skip the knocked-out gene, renumber
+    if (!isKO) {
+      const afterRank = KO_RANK_SEQUENCE.slice(0, i+1).filter(x => x !== gene).length;
+      const chipA = document.createElement('div');
+      chipA.className = 'rank-chip';
+      chipA.textContent = `#${afterRank} ${g}`;
+      chipA.style.borderColor = KO_RANK_COLORS[i];
+      chipA.style.color = KO_RANK_COLORS[i];
+      afterEl.appendChild(chipA);
+    }
+  });
+
+  // If no KO selected, show placeholder
+  if (gene === 'none') {
+    const placeholder = document.createElement('div');
+    placeholder.style.cssText = 'font:.8rem/1.5 system-ui;color:var(--muted);font-style:italic';
+    placeholder.textContent = lang === 'ko' ? '유전자를 선택하면 랭크 리스트가 표시됩니다.' : 'Select a gene to see the rank list.';
+    beforeEl.appendChild(placeholder);
+  }
+}
+
+const koGenes=['CD3E','CD4','MS4A1','CD14','NKG7','FOXP3','MYC','HLA-DRA','CD79A','IL7R','LYZ','MKI67'];
+const koBaseExpr = {
+  TP53:  {TP53:8,MYC:7,CDKN1A:1,MDM2:1,BCL2:6,CASP3:1,p21:1,BAX:1},
+  MYC:   {MYC:8,CDK4:5,CCND1:6,E2F1:4,MKI67:5,TP53:3,BCL2:4,PCNA:6},
+  GATA1: {GATA1:8,HBB:6,HBA1:5,KLF1:5,ALAS2:4,EPOR:5,CD71:4,GPA:3},
+  FOXP3: {FOXP3:8,IL2RA:6,CTLA4:5,TGFB1:4,IL10:3,IKZF2:5,TNFRSF9:4,TIGIT:5},
+  PAX5:  {PAX5:8,MS4A1:7,CD79A:6,IGHM:5,EBF1:5,IRF4:4,IKZF1:5,RAG1:3}
+};
+const koEffects = {
+  TP53:  {TP53:-8,MYC:+3,CDKN1A:-2,MDM2:+2,BCL2:+2,CASP3:-1,p21:-3,BAX:-2},
+  MYC:   {MYC:-8,CDK4:-3,CCND1:-4,E2F1:-3,MKI67:-4,TP53:+2,BCL2:-2,PCNA:-3},
+  GATA1: {GATA1:-8,HBB:-5,HBA1:-4,KLF1:-3,ALAS2:-3,EPOR:-2,CD71:-3,GPA:-2},
+  FOXP3: {FOXP3:-8,IL2RA:-3,CTLA4:-4,TGFB1:-2,IL10:-2,IKZF2:-3,TNFRSF9:-2,TIGIT:-4},
+  PAX5:  {PAX5:-8,MS4A1:-5,CD79A:-4,IGHM:-4,EBF1:-3,IRF4:-2,IKZF1:-3,RAG1:-5}
+};
+const koUMAPShift = {
+  none: {x:3.5,y:2.0,label:''},
+  TP53: {x:3.0,y:-1.5,label_ko:'이상 세포 방향',label_en:'toward aberrant state'},
+  MYC:  {x:2.5,y:3.5,label_ko:'증식 상태',label_en:'proliferative state'},
+  GATA1:{x:1.5,y:0.5,label_ko:'분화 억제',label_en:'differentiation blocked'},
+  FOXP3:{x:4.5,y:1.0,label_ko:'Treg → 일반 T 세포',label_en:'Treg → effector T'},
+  PAX5: {x:2.0,y:-0.5,label_ko:'B 세포 정체성 상실',label_en:'B cell identity lost'}
+};
+
+let currentKO = 'none';
+
+function applyKnockout(gene) {
+  currentKO = gene;
+  buildKORankPanel(gene);
+  buildKOExpr(gene);
+  buildKOUMAP(gene);
+  buildKOWaterfall(gene);
+  const msgs={
+    ko:{
+      none:'유전자를 선택해 녹아웃 효과를 예측합니다.',
+      TP53:'TP53 녹아웃: 종양 억제가 해제됩니다. MDM2 증가, p21 감소, 세포 사멸 경로 약화.',
+      MYC:'MYC 녹아웃: 세포 증식이 멈춥니다. 세포 주기 유전자(CDK4, CCND1) 감소, MKI67 하락.',
+      GATA1:'GATA1 녹아웃: 적혈구 분화가 차단됩니다. HBB, HBA1 등 헤모글로빈 유전자 대폭 감소.',
+      FOXP3:'FOXP3 녹아웃: Treg 정체성이 사라집니다. CTLA4, IL2RA 등 억제 마커 감소.',
+      PAX5:'PAX5 녹아웃: B 세포 발달이 멈춥니다. MS4A1, CD79A, IGHM 등 B 세포 마커 대폭 감소.'
+    },
+    en:{
+      none:'Select a gene to predict its knockout effect.',
+      TP53:'TP53 KO: Tumor suppression released. MDM2 increases, p21 decreases, apoptosis weakened.',
+      MYC:'MYC KO: Cell proliferation halts. Cell cycle genes (CDK4, CCND1) drop, MKI67 falls.',
+      GATA1:'GATA1 KO: Erythroid differentiation blocked. Hemoglobin genes HBB, HBA1 dramatically reduced.',
+      FOXP3:'FOXP3 KO: Treg identity lost. Suppressive markers CTLA4, IL2RA decrease.',
+      PAX5:'PAX5 KO: B cell development blocked. B cell markers MS4A1, CD79A, IGHM massively reduced.'
+    }
+  };
+  document.getElementById('ko-annotation').textContent=msgs[lang][gene]||msgs[lang]['none'];
+}
+
+function buildKOExpr(gene) {
+  const base=gene!=='none'?koBaseExpr[gene]:{CD3E:8,CD4:6,MS4A1:0.3,CD14:0.3,NKG7:2,FOXP3:1,MYC:3,HLA:1,CD79A:0.3,IL7R:5,LYZ:0.5,MKI67:2};
+  const gKeys=Object.keys(base);
+  const bVals=gKeys.map(k=>base[k]);
+  const koVals=gene!=='none'?gKeys.map(k=>Math.max(0,(base[k]||0)+(koEffects[gene][k]||0))):bVals;
+  const traces=[
+    {x:gKeys,y:bVals,type:'bar',name:lang==='ko'?'녹아웃 전 (기준)':'Before KO (baseline)',marker:{color:'#38bdf8',opacity:0.7},hovertemplate:'%{x}: %{y:.1f}<extra></extra>'},
+    {x:gKeys,y:koVals,type:'bar',name:lang==='ko'?'녹아웃 후':'After KO',marker:{color:gene!=='none'?'#f87171':'#38bdf8',opacity:gene!=='none'?0.9:0.7},hovertemplate:'%{x}: %{y:.1f}<extra></extra>'}
+  ];
+  Plotly.react('plot-ko-expr',traces,{
+    ...db,
+    title:{text:gene!=='none'?(lang==='ko'?`${gene} 녹아웃: 유전자 발현 변화`:`${gene} Knockout: Expression Changes`):(lang==='ko'?'기준 발현 프로파일 (녹아웃 없음)':'Baseline expression (no KO)'),font:{size:12,color:'#e4e0d8'}},
+    barmode:'group',
+    xaxis:{...db.xaxis,tickfont:{size:9},tickangle:-35,automargin:true},
+    yaxis:{...db.yaxis,title:lang==='ko'?'발현량':'Expression',range:[0,11]},
+    margin:{t:45,r:10,b:80,l:60}
+  },{responsive:true,displayModeBar:false});
+}
+
+function buildKOUMAP(gene) {
+  const pos=koUMAPShift[gene]||koUMAPShift['none'];
+  const bgCells=[
+    {x:[-4,-3.8,-4.2],y:[2,2.4,1.7],col:'#38bdf8'},
+    {x:[3.5,3.3,3.7],y:[2,2.3,1.8],col:'#4ade80'},
+    {x:[1,0.8,1.2],y:[-3.5,-3.3,-3.7],col:'#f87171'},
+  ];
+  const traces=bgCells.map(bc=>({x:bc.x,y:bc.y,mode:'markers',type:'scatter',marker:{color:bc.col,size:5,opacity:0.25},showlegend:false,hoverinfo:'skip'}));
+  // Original position (B cell before KO)
+  traces.push({
+    x:[3.5],y:[2.0],mode:'markers',type:'scatter',
+    marker:{color:'#4ade80',size:10,symbol:'circle',line:{color:'#fff',width:1.5}},
+    name:lang==='ko'?'녹아웃 전':'Before KO',
+    hovertemplate:`<b>${lang==='ko'?'녹아웃 전':'Before KO'}</b><extra></extra>`
+  });
+  if(gene!=='none'){
+    // Arrow via annotation, new position
+    traces.push({
+      x:[pos.x],y:[pos.y],mode:'markers+text',type:'scatter',
+      marker:{color:'#f87171',size:10,symbol:'x',line:{color:'#fff',width:1.5}},
+      text:[lang==='ko'?pos.label_ko:pos.label_en],textposition:'top right',textfont:{color:'#f87171',size:9},
+      name:lang==='ko'?'녹아웃 후':'After KO',
+      hovertemplate:`<b>${lang==='ko'?'녹아웃 후':'After KO'}</b><br>(${pos.x.toFixed(1)},${pos.y.toFixed(1)})<extra></extra>`
+    });
+  }
+  Plotly.react('plot-ko-umap',traces,{
+    ...db,
+    title:{text:lang==='ko'?'UMAP 위치 변화':'UMAP Position Shift',font:{size:11,color:'#e4e0d8'}},
+    xaxis:{...db.xaxis,showticklabels:false,zeroline:false,range:[-6,6]},
+    yaxis:{...db.yaxis,showticklabels:false,zeroline:false,range:[-5,5]},
+    margin:{t:30,r:5,b:10,l:5}
+  },{responsive:true,displayModeBar:false});
+}
+
+function buildKOWaterfall(gene) {
+  if(gene==='none'){
+    Plotly.react('plot-ko-waterfall',[],[{...db,title:{text:lang==='ko'?'유전자 변화 폭포 차트':'Gene Change Waterfall',font:{size:10,color:'#7a756d'}},margin:{t:25,r:5,b:30,l:50}}],{responsive:true,displayModeBar:false});
+    return;
+  }
+  const eff=koEffects[gene];
+  const sorted=Object.entries(eff).sort((a,b)=>a[1]-b[1]);
+  const gns=sorted.map(x=>x[0]);
+  const vals=sorted.map(x=>x[1]);
+  Plotly.react('plot-ko-waterfall',[{
+    x:gns,y:vals,type:'bar',
+    marker:{color:vals.map(v=>v<0?'#f87171':'#4ade80'),opacity:0.85},
+    hovertemplate:'<b>%{x}</b><br>%{y:+.1f}<extra></extra>'
+  }],{
+    ...db,
+    title:{text:lang==='ko'?`${gene} KO — 발현 변화`:` ${gene} KO — Expression Changes`,font:{size:10,color:'#e4e0d8'}},
+    xaxis:{...db.xaxis,tickfont:{size:9}},
+    yaxis:{...db.yaxis,title:'ΔExpr',zeroline:true,zerolinecolor:'#444'},
+    margin:{t:30,r:5,b:40,l:50}
+  },{responsive:true,displayModeBar:false});
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  setLang('ko');
+  renderPipeline();
+  buildEmbedUMAP();
+  buildKORankPanel('none');
+  buildKOExpr('none');
+  buildKOUMAP('none');
+  buildKOWaterfall('none');
+});
+</script>
+</body>
+</html>

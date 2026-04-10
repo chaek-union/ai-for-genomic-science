@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 1 — Why AI for Genomic Science?</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.4rem,6.5vw,5rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:560px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+.section{padding:5rem 2rem;max-width:900px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:700px;margin-bottom:2rem}
+.insight-box{background:rgba(196,163,90,.06);border:1px solid rgba(196,163,90,.2);border-radius:10px;padding:1.2rem 1.5rem;margin:1.5rem 0;font:.95rem/1.7 Georgia,serif;color:var(--text)}
+.insight-box strong{color:var(--gold)}
+hr.divider{border:none;border-top:1px solid var(--line);margin:5rem 0}
+
+.plot-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2rem 2rem 1.5rem;margin-bottom:2rem;overflow:hidden}
+.plot-caption{font:.88rem/1.6 system-ui;color:var(--muted);margin-top:1rem;padding-top:1rem;border-top:1px solid var(--line)}
+
+.run-btn{display:inline-flex;align-items:center;gap:.5rem;margin:1.5rem 0;padding:.7rem 1.6rem;border-radius:8px;border:1px solid var(--gold);background:var(--gold-dim);color:var(--gold);font:600 .9rem/1 system-ui;cursor:pointer;transition:.2s}
+.run-btn:hover{background:rgba(196,163,90,.22);transform:translateY(-1px)}
+.run-btn.ran{border-color:var(--green);color:var(--green);background:rgba(74,222,128,.08)}
+
+.quiz-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2.5rem 2rem}
+.quiz-q{font:600 1.05rem/1.6 Georgia,serif;color:var(--text);margin-bottom:1.5rem}
+.quiz-options{display:flex;flex-direction:column;gap:.6rem}
+.quiz-opt{display:flex;align-items:flex-start;gap:1rem;padding:.9rem 1.1rem;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.02);cursor:pointer;transition:.2s;text-align:left}
+.quiz-opt:hover{border-color:rgba(196,163,90,.4);background:var(--gold-dim)}
+.quiz-opt.correct{border-color:var(--green);background:rgba(74,222,128,.08)}
+.quiz-opt.wrong{border-color:var(--red);background:rgba(248,113,113,.08)}
+.opt-letter{font:700 .85rem/1 'SF Mono',monospace;color:var(--gold);flex-shrink:0;padding-top:.1rem;width:1.2rem}
+.opt-text{font:.93rem/1.5 system-ui;color:var(--text)}
+.quiz-fb{display:none;margin-top:1.2rem;padding:1rem 1.2rem;border-radius:8px;font:.92rem/1.6 system-ui}
+.quiz-fb.show{display:block}
+.quiz-fb.ok{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);color:#d1fae5}
+.quiz-fb.bad{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);color:#fee2e2}
+.quiz-nav{display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;flex-wrap:wrap;gap:.5rem}
+.quiz-prog{font:.8rem/1 'SF Mono',monospace;color:var(--muted)}
+.nav-btn{padding:.5rem 1.1rem;border-radius:7px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:.85rem/1 system-ui;cursor:pointer;transition:.2s}
+.nav-btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+.nav-btn:disabled{opacity:.3;cursor:default}
+
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-ch">Chapter 1</div>
+  <h1 data-ko="왜 유전체학에 AI인가?" data-en="Why AI for Genomic Science?"></h1>
+  <p class="hero-sub" data-ko="인간 게놈은 30억 개의 염기쌍을 담고 있습니다. 전통적 통계로는 그 복잡성을 온전히 포착할 수 없습니다." data-en="The human genome holds 3 billion base pairs. Traditional statistics alone cannot capture its full complexity."></p>
+  <div class="hero-scroll" onclick="document.querySelector('.section').scrollIntoView({behavior:'smooth'})">↓<br><span data-ko="아래로 스크롤" data-en="Scroll down"></span></div>
+</section>
+
+<!-- SECTION 1: Variant Filtering Pipeline -->
+<section class="section">
+  <h2 class="section-title" data-ko="변이체 필터링 파이프라인" data-en="The Variant Filtering Pipeline"></h2>
+  <p class="section-body" data-ko="전장 유전체 시퀀싱(WGS)을 하면 처음에는 수백만 개의 변이체가 발견됩니다. 이를 단계별로 필터링하여 임상적으로 의미 있는 변이체 2~3개로 좁히는 과정이 변이체 필터링 파이프라인입니다. 아래의 'Run Pipeline' 버튼을 클릭하면 각 단계가 애니메이션으로 진행됩니다." data-en="Whole-genome sequencing initially yields millions of variant calls. Through a multi-step filtering pipeline, we narrow this down to 2–3 clinically actionable variants. Click 'Run Pipeline' to see each filtering step animate."></p>
+
+  <div class="plot-card">
+    <div id="funnel-plot" style="height:380px;"></div>
+    <div class="plot-caption" data-ko="각 막대는 해당 단계를 통과한 변이체 수를 나타냅니다. 변이체 품질 필터(VQSR)에서 대부분이 제거되고, 희귀 변이 필터와 기능적 영향 분류를 거쳐 최종 후보군이 선별됩니다." data-en="Each bar represents variants passing that filtering stage. VQSR removes most low-quality calls; rare variant filters and functional impact scoring narrow candidates to a manageable set for clinical review."></div>
+  </div>
+
+  <button class="run-btn" id="run-btn" onclick="runPipeline()">
+    <span>▶</span>
+    <span data-ko="파이프라인 실행" data-en="Run Pipeline"></span>
+  </button>
+
+  <div class="insight-box" data-ko="<strong>핵심 포인트:</strong> 4,500,000개에서 2개로 — 이 필터링 과정에서 AI 기반 병원성 예측 모델(CADD, REVEL 등)이 마지막 단계에서 결정적 역할을 합니다. 전통적 규칙 기반 필터는 기능 미지 변이체를 처리하지 못합니다." data-en="<strong>Key insight:</strong> From 4,500,000 to 2 — AI-based pathogenicity predictors (CADD, REVEL) play a decisive role in the final steps. Rule-based filters alone fail on variants of uncertain significance."></div>
+</section>
+
+<hr class="divider">
+
+<!-- SECTION 2: AI Impact by Numbers -->
+<section class="section">
+  <h2 class="section-title" data-ko="AI의 영향: 숫자로 보다" data-en="AI Success Stories — Impact by Numbers"></h2>
+  <p class="section-body" data-ko="신약 개발에서 AI 증강 접근법은 전통적 방법과 비교해 시간, 비용, 성공률 세 가지 지표 모두를 극적으로 개선합니다. 아래 차트는 가상 화합물 스크리닝 파이프라인의 비교 데이터입니다." data-en="In drug discovery, AI-augmented pipelines dramatically outperform traditional approaches across time, cost, and hit rate. The chart below compares a traditional high-throughput screen versus an AI-guided virtual screening pipeline."></p>
+
+  <div class="plot-card">
+    <div id="impact-plot" style="height:400px;"></div>
+    <div class="plot-caption" data-ko="전통적 방식: 10,000개 화합물 물리적 스크리닝, $5천만, 2년, 5~10개 히트 후보. AI 증강: 1억 개 가상 스크리닝 → 1,000개 물리적 검증, $500만, 6개월, 20~30개 히트 후보." data-en="Traditional: 10K compounds screened physically, $50M, 2 years, 5–10 hits. AI-augmented: 100M virtual → 1K physical, $5M, 6 months, 20–30 hits."></div>
+  </div>
+
+  <div class="insight-box" data-ko="<strong>주목할 점:</strong> AI는 단순히 빠른 것이 아닙니다. 탐색 공간(search space)을 10,000배 확장하면서도 비용은 10분의 1로 줄입니다. 이것이 <em>패러다임 전환</em>입니다." data-en="<strong>Notice:</strong> AI doesn't just speed things up — it expands the search space 10,000× while reducing cost by 10×. This is a <em>paradigm shift</em>, not a marginal improvement."></div>
+</section>
+
+<hr class="divider">
+
+<!-- SECTION 3: When Should You Use AI? -->
+<section class="section">
+  <h2 class="section-title" data-ko="언제 AI를 써야 하는가?" data-en="When Should You Use AI?"></h2>
+  <p class="section-body" data-ko="AI가 항상 정답은 아닙니다. 데이터 크기와 패턴 복잡도에 따라 적절한 방법론이 달라집니다. 아래 산점도에서 각 점 위에 마우스를 올려 실제 유전체학 예제를 확인하세요." data-en="AI is not always the right tool. The appropriate methodology depends on dataset size and pattern complexity. Hover over each point below to see real genomics examples in each quadrant."></p>
+
+  <div class="plot-card">
+    <div id="quadrant-plot" style="height:480px;"></div>
+    <div class="plot-caption" data-ko="x축: 데이터셋 크기 (로그 스케일). y축: 패턴 복잡도 점수. 색상이 다른 사분면은 권장 방법론을 나타냅니다. 실제 유전체학 예제를 호버하여 확인하세요." data-en="x-axis: dataset size (log scale). y-axis: pattern complexity score. Different-colored quadrants indicate recommended methodology. Hover over real genomics examples."></div>
+  </div>
+
+  <div class="insight-box" data-ko="<strong>실용적 지침:</strong> 데이터가 작고 패턴이 단순하다면 로지스틱 회귀나 Fisher's exact test로 시작하세요. 샘플 수가 수만 개 이상이고 비선형 패턴이 예상될 때 딥러닝을 고려하세요." data-en="<strong>Practical rule:</strong> Start with logistic regression or Fisher's exact test when data is small and patterns simple. Consider deep learning when sample sizes exceed tens of thousands and non-linear patterns are expected."></div>
+</section>
+
+<hr class="divider">
+
+<!-- SECTION 4: Quiz -->
+<section class="section">
+  <div class="section-label" data-ko="지식 확인" data-en="Knowledge Check"></div>
+  <h2 class="section-title" data-ko="상관관계 vs. 인과관계" data-en="Correlation vs. Causation"></h2>
+  <p class="section-body" data-ko="AI 모델이 찾아내는 패턴이 반드시 인과관계를 의미하지는 않습니다. 아래 퀴즈로 이 핵심 개념을 점검해 보세요." data-en="Patterns discovered by AI models do not necessarily imply causation. Test your understanding of this critical concept below."></p>
+
+  <div class="quiz-card" id="quiz-card">
+    <!-- questions injected by JS -->
+  </div>
+</section>
+
+<footer class="page-footer">
+  <p data-ko="AI for Genomic Science · Chapter 1" data-en="AI for Genomic Science · Chapter 1"></p>
+  <p style="margin-top:.5rem"><a href="chapter2.html" data-ko="다음 챕터: 생물학적 직관에서 딥러닝으로 →" data-en="Next: From Biological Intuition to Deep Learning →"></a></p>
+</footer>
+
+<script>
+/* ── LANGUAGE TOGGLE ── */
+let currentLang = 'ko';
+function setLang(l){
+  currentLang = l;
+  document.querySelectorAll('[data-ko]').forEach(el=>{
+    el.innerHTML = l==='ko' ? el.dataset.ko : el.dataset.en;
+  });
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.lang-btn:${l==='ko'?'first':'last'}-child`).classList.add('active');
+  updatePlotLanguage(l);
+}
+// init
+document.querySelectorAll('[data-ko]').forEach(el=>{ el.innerHTML = el.dataset.ko; });
+
+/* ── BILINGUAL PLOT LABELS ── */
+const plotLabels = {
+  funnelPlot: {
+    xaxis: { ko: '변이체 수 (로그 스케일)', en: 'Variant Count (log scale)' },
+    stages: [
+      { ko: '원시 변이체 호출', en: 'Raw variant calls' },
+      { ko: '품질 필터 (VQSR)', en: 'Quality filter (VQSR)' },
+      { ko: '희귀 변이 (MAF<1%)', en: 'Rare variants (MAF<1%)' },
+      { ko: '코딩·스플라이싱 영역', en: 'Coding / splicing' },
+      { ko: 'AI 병원성 예측 통과', en: 'High-impact (AI scored)' },
+      { ko: '유전 분리 확인', en: 'Segregation check' },
+      { ko: '임상 후보 변이체', en: 'Clinical candidate' }
+    ]
+  },
+  impactPlot: {
+    yaxis: { ko: '상대 점수 (정규화)', en: 'Relative Score (normalized)' },
+    traces: [
+      { ko: '전통적 방식', en: 'Traditional' },
+      { ko: 'AI 증강', en: 'AI-Augmented' }
+    ],
+    annotations: [
+      { ko: '★ 탐색 공간<br>10,000배 확장', en: '★ 10,000× larger<br>search space' }
+    ]
+  },
+  quadrantPlot: {
+    xaxis: { ko: '데이터셋 크기 (로그 스케일)', en: 'Dataset Size (log scale)' },
+    yaxis: { ko: '패턴 복잡도', en: 'Pattern Complexity' },
+    traces: [
+      { ko: '전통 통계', en: 'Traditional Stats' },
+      { ko: '단순 ML', en: 'Simple ML' },
+      { ko: '딥러닝', en: 'Deep Learning' },
+      { ko: '데이터 부족', en: 'Need More Data' }
+    ],
+    annotations: [
+      { ko: '전통 통계', en: 'Traditional Stats' },
+      { ko: '단순 ML', en: 'Simple ML' },
+      { ko: '딥러닝', en: 'Deep Learning' },
+      { ko: '데이터 부족', en: 'Need More Data' }
+    ]
+  }
+};
+
+function updatePlotLanguage(l){
+  // funnel-plot
+  const fp = document.getElementById('funnel-plot');
+  if(fp && fp.data && fp.data.length){
+    Plotly.relayout(fp, {
+      'xaxis.title.text': plotLabels.funnelPlot.xaxis[l]
+    });
+    const stageLabels = plotLabels.funnelPlot.stages.map(s=>s[l]);
+    Plotly.restyle(fp, { y: [stageLabels] }, [0]);
+    // update hovertemplates
+    const ht = funnelStages.map((s,i)=>`<b>${stageLabels[i]}</b><br>${l==='ko'?'수':'Count'}: ${s.count.toLocaleString()}<br>${l==='ko'?'도구':'Tool'}: ${s.tool}<extra></extra>`);
+    Plotly.restyle(fp, { hovertemplate: [ht] }, [0]);
+  }
+
+  // impact-plot
+  const ip = document.getElementById('impact-plot');
+  if(ip && ip.data && ip.data.length){
+    Plotly.relayout(ip, {
+      'yaxis.title.text': plotLabels.impactPlot.yaxis[l],
+      annotations: [{
+        x:0, y:101, xref:'x', yref:'y',
+        text: plotLabels.impactPlot.annotations[0][l],
+        showarrow:true, arrowhead:2, arrowcolor:'#c4a35a',
+        font:{color:'#c4a35a', size:11},
+        ax:60, ay:-40
+      }]
+    });
+    plotLabels.impactPlot.traces.forEach((t,i)=>{
+      Plotly.restyle(ip, { name: t[l] }, [i]);
+    });
+  }
+
+  // quadrant-plot
+  const qp = document.getElementById('quadrant-plot');
+  if(qp && qp.data && qp.data.length){
+    Plotly.relayout(qp, {
+      'xaxis.title.text': plotLabels.quadrantPlot.xaxis[l],
+      'yaxis.title.text': plotLabels.quadrantPlot.yaxis[l],
+      annotations: plotLabels.quadrantPlot.annotations.map((a,i)=>{
+        const positions = [
+          {x:Math.log10(200),y:8,color:'#4ade80'},
+          {x:Math.log10(200000),y:8,color:'#38bdf8'},
+          {x:Math.log10(400000),y:78,color:'#c4a35a'},
+          {x:Math.log10(100),y:78,color:'#f87171'}
+        ];
+        return {x:positions[i].x, y:positions[i].y, text:a[l], showarrow:false, font:{color:positions[i].color,size:12}};
+      })
+    });
+    plotLabels.quadrantPlot.traces.forEach((t,i)=>{
+      Plotly.restyle(qp, { name: t[l] }, [i]);
+    });
+  }
+}
+
+/* ── PLOTLY THEME ── */
+const THEME = {
+  paper_bgcolor:'rgba(0,0,0,0)',
+  plot_bgcolor:'rgba(20,20,31,1)',
+  font:{color:'#e4e0d8', family:'system-ui, Georgia, serif'},
+  xaxis:{gridcolor:'#22222e', zerolinecolor:'#22222e'},
+  yaxis:{gridcolor:'#22222e', zerolinecolor:'#22222e'},
+  margin:{t:40,b:60,l:60,r:40}
+};
+const CFG = {responsive:true, displayModeBar:false};
+
+/* ── PLOT 1: VARIANT FUNNEL ── */
+const funnelStages = [
+  {label:'Raw variant calls\n원시 변이체 호출', count:4500000, color:'#64748b', tool:'GATK HaplotypeCaller'},
+  {label:'Quality filter (VQSR)\n품질 필터 (VQSR)', count:280000, color:'#6366f1', tool:'Variant Quality Score Recalibration'},
+  {label:'Rare variants (MAF<1%)\n희귀 변이 (MAF<1%)', count:12000, color:'#d97706', tool:'gnomAD population frequency'},
+  {label:'Coding / splicing\n코딩·스플라이싱 영역', count:420, color:'#059669', tool:'VEP annotation'},
+  {label:'High-impact (AI scored)\nAI 병원성 예측 통과', count:70, color:'#38bdf8', tool:'CADD ≥ 20, REVEL ≥ 0.5'},
+  {label:'Segregation check\n유전 분리 확인', count:10, color:'#a78bfa', tool:'Trio / family analysis'},
+  {label:'Clinical candidate\n임상 후보 변이체', count:2, color:'#c4a35a', tool:'Manual review + ACMG'}
+];
+
+function buildFunnelPlot(animated=false){
+  const counts = animated ? funnelStages.map(s=>s.count) : funnelStages.map(()=>0);
+  const stageLabels = plotLabels.funnelPlot.stages.map(s=>s[currentLang]);
+  const trace = {
+    type:'bar',
+    orientation:'h',
+    y: stageLabels,
+    x: counts,
+    marker:{color: funnelStages.map(s=>s.color)},
+    text: funnelStages.map(s=>s.count.toLocaleString()),
+    textposition:'outside',
+    hovertemplate: funnelStages.map((s,i)=>`<b>${stageLabels[i]}</b><br>${currentLang==='ko'?'수':'Count'}: ${s.count.toLocaleString()}<br>${currentLang==='ko'?'도구':'Tool'}: ${s.tool}<extra></extra>`),
+    customdata: funnelStages.map(s=>s.tool)
+  };
+  const layout = {
+    ...THEME,
+    margin:{t:20,b:60,l:220,r:100},
+    xaxis:{...THEME.xaxis, type:'log', title:plotLabels.funnelPlot.xaxis[currentLang], tickfont:{size:11}},
+    yaxis:{...THEME.yaxis, tickfont:{size:11}, autorange:'reversed'},
+    bargap:.35,
+    height:380
+  };
+  Plotly.newPlot('funnel-plot', [trace], layout, CFG);
+}
+
+buildFunnelPlot(false);
+
+let pipelineRan = false;
+function runPipeline(){
+  const btn = document.getElementById('run-btn');
+  if(pipelineRan){
+    // reset
+    pipelineRan = false;
+    btn.classList.remove('ran');
+    btn.querySelector('span:last-child').innerHTML = currentLang==='ko' ? '파이프라인 실행' : 'Run Pipeline';
+    buildFunnelPlot(false);
+    setTimeout(()=>runPipeline(), 100);
+    return;
+  }
+  pipelineRan = true;
+  btn.classList.add('ran');
+  btn.querySelector('span:last-child').innerHTML = currentLang==='ko' ? '다시 실행' : 'Run Again';
+
+  const maxC = funnelStages[0].count;
+  let step = 0;
+  function animateStep(){
+    if(step >= funnelStages.length) return;
+    const counts = funnelStages.map((s,i)=> i<=step ? s.count : 0);
+    const stageLabels = plotLabels.funnelPlot.stages.map(s=>s[currentLang]);
+    Plotly.react('funnel-plot',[{
+      type:'bar', orientation:'h',
+      y: stageLabels,
+      x: counts,
+      marker:{color: funnelStages.map(s=>s.color)},
+      text: funnelStages.map((s,i)=> i<=step ? s.count.toLocaleString() : ''),
+      textposition:'outside',
+      hovertemplate: funnelStages.map((s,i)=>`<b>${stageLabels[i]}</b><br>${currentLang==='ko'?'수':'Count'}: ${s.count.toLocaleString()}<br>${currentLang==='ko'?'도구':'Tool'}: ${s.tool}<extra></extra>`)
+    }],[{
+      ...THEME,
+      margin:{t:20,b:60,l:220,r:100},
+      xaxis:{...THEME.xaxis, type:'log', title:plotLabels.funnelPlot.xaxis[currentLang], tickfont:{size:11}},
+      yaxis:{...THEME.yaxis, tickfont:{size:11}, autorange:'reversed'},
+      bargap:.35, height:380
+    }], CFG);
+    step++;
+    setTimeout(animateStep, 450);
+  }
+  animateStep();
+}
+
+/* ── PLOT 2: AI IMPACT ── */
+(function(){
+  const categories = ['Search Space\n탐색 공간', 'Compounds\nScreened\n화합물 수', 'Cost\n비용 ($M)', 'Time\n소요 시간\n(months)', 'Hit Rate\n성공률 (%)'];
+  // normalized values for display on same scale (0-100)
+  const trad_norm = [0.01, 10, 50, 24, 7.5];   // actual: 10K, 10K, $50M, 24mo, 7.5%
+  const ai_norm   = [100,   1,  5,  6, 25];      // actual: 100M virtual/1K physical, $5M, 6mo, 25%
+  const trad_text = ['10,000', '10,000', '$50M', '24 mo', '7.5%'];
+  const ai_text   = ['100M virtual', '1,000', '$5M', '6 mo', '25%'];
+
+  const t1 = {
+    type:'bar', name:plotLabels.impactPlot.traces[0][currentLang],
+    x: categories.map(c=>c.split('\n')[0]),
+    y: trad_norm,
+    text: trad_text, textposition:'outside',
+    marker:{color:'#64748b', opacity:.85},
+    hovertemplate:`<b>${plotLabels.impactPlot.traces[0][currentLang]}</b><br>%{text}<extra></extra>`
+  };
+  const t2 = {
+    type:'bar', name:plotLabels.impactPlot.traces[1][currentLang],
+    x: categories.map(c=>c.split('\n')[0]),
+    y: ai_norm,
+    text: ai_text, textposition:'outside',
+    marker:{color:'#c4a35a', opacity:.9},
+    hovertemplate:`<b>${plotLabels.impactPlot.traces[1][currentLang]}</b><br>%{text}<extra></extra>`
+  };
+
+  const layout = {
+    ...THEME,
+    barmode:'group',
+    legend:{orientation:'h', y:1.08, x:.5, xanchor:'center', font:{size:12}},
+    yaxis:{...THEME.yaxis, title:plotLabels.impactPlot.yaxis[currentLang], tickfont:{size:11}},
+    xaxis:{...THEME.xaxis, tickfont:{size:11}},
+    height:400,
+    annotations:[{
+      x:0, y:101, xref:'x', yref:'y',
+      text:plotLabels.impactPlot.annotations[0][currentLang],
+      showarrow:true, arrowhead:2, arrowcolor:'#c4a35a',
+      font:{color:'#c4a35a', size:11},
+      ax:60, ay:-40
+    }]
+  };
+  Plotly.newPlot('impact-plot',[t1,t2],layout,CFG);
+})();
+
+/* ── PLOT 3: WHEN TO USE AI (QUADRANT) ── */
+(function(){
+  const points = [
+    // Traditional stats quadrant (low data, low complexity)
+    {name:'Hardy-Weinberg test', x:200, y:5, q:0, desc:'Small cohort, simple frequency test'},
+    {name:'Fisher\'s exact (eQTL)', x:500, y:12, q:0, desc:'Targeted variant-expression association'},
+    {name:'Linkage analysis', x:300, y:18, q:0, desc:'Family-based, simple linear model'},
+    // Simple ML (high data, low complexity)
+    {name:'GWAS linear model', x:500000, y:15, q:1, desc:'500K SNPs, linear additive model works well'},
+    {name:'Polygenic Risk Score', x:200000, y:20, q:1, desc:'Weighted sum of variants — linear by design'},
+    {name:'Logistic GWAS', x:100000, y:22, q:1, desc:'Case-control, well-powered, simple features'},
+    // Deep learning (high data, high complexity)
+    {name:'Protein structure (AlphaFold)', x:170000, y:92, q:2, desc:'Complex 3D folding patterns'},
+    {name:'Single-cell RNA-seq', x:1000000, y:85, q:2, desc:'High-dim, non-linear cell-type clusters'},
+    {name:'DNA sequence → function', x:800000, y:88, q:2, desc:'Regulatory grammar, motif combinations'},
+    {name:'Variant pathogenicity (DL)', x:400000, y:75, q:2, desc:'Multi-modal: conservation + structure + sequence'},
+    // Need more data (low data, high complexity)
+    {name:'Rare disease (n=50)', x:50, y:80, q:3, desc:'Complex phenotype, insufficient samples'},
+    {name:'Novel cancer subtype', x:120, y:70, q:3, desc:'High complexity, small cohort — needs more data'},
+  ];
+
+  const qColors = ['#4ade80','#38bdf8','#c4a35a','#f87171'];
+  const qNames  = ['Traditional Stats','Simple ML','Deep Learning','Need More Data'];
+  const qText   = ['Traditional\nStats','Simple\nML','Deep\nLearning','Need More\nData'];
+
+  // background quadrant rectangles via shapes
+  const shapes = [
+    {type:'rect',x0:10,x1:5000,y0:0,y1:50,fillcolor:'rgba(74,222,128,.05)',line:{width:0}},
+    {type:'rect',x0:5000,x1:2000000,y0:0,y1:50,fillcolor:'rgba(56,189,248,.05)',line:{width:0}},
+    {type:'rect',x0:5000,x1:2000000,y0:50,y1:100,fillcolor:'rgba(196,163,90,.05)',line:{width:0}},
+    {type:'rect',x0:10,x1:5000,y0:50,y1:100,fillcolor:'rgba(248,113,113,.05)',line:{width:0}},
+  ];
+
+  const annotations = [
+    {x:Math.log10(200),y:8,text:plotLabels.quadrantPlot.annotations[0][currentLang],showarrow:false,font:{color:'#4ade80',size:12}},
+    {x:Math.log10(200000),y:8,text:plotLabels.quadrantPlot.annotations[1][currentLang],showarrow:false,font:{color:'#38bdf8',size:12}},
+    {x:Math.log10(400000),y:78,text:plotLabels.quadrantPlot.annotations[2][currentLang],showarrow:false,font:{color:'#c4a35a',size:12}},
+    {x:Math.log10(100),y:78,text:plotLabels.quadrantPlot.annotations[3][currentLang],showarrow:false,font:{color:'#f87171',size:12}},
+  ];
+
+  const traces = [0,1,2,3].map(q=>{
+    const pts = points.filter(p=>p.q===q);
+    return {
+      type:'scatter', mode:'markers+text',
+      name: plotLabels.quadrantPlot.traces[q][currentLang],
+      x: pts.map(p=>Math.log10(p.x)),
+      y: pts.map(p=>p.y),
+      text: pts.map(p=>p.name),
+      textposition:'top center',
+      textfont:{size:9, color:'rgba(228,224,216,.6)'},
+      marker:{color:qColors[q], size:12, opacity:.85, line:{color:'rgba(0,0,0,.4)',width:1}},
+      customdata: pts.map(p=>p.desc),
+      hovertemplate:'<b>%{text}</b><br>%{customdata}<extra></extra>'
+    };
+  });
+
+  const layout = {
+    ...THEME,
+    shapes,
+    annotations,
+    xaxis:{
+      ...THEME.xaxis,
+      title:plotLabels.quadrantPlot.xaxis[currentLang],
+      tickvals:[1,2,3,4,5,6],
+      ticktext:['10','100','1K','10K','100K','1M'],
+      range:[1,6.5],
+      tickfont:{size:11}
+    },
+    yaxis:{...THEME.yaxis, title:plotLabels.quadrantPlot.yaxis[currentLang], range:[0,100], tickfont:{size:11}},
+    legend:{orientation:'h', y:1.06, x:.5, xanchor:'center', font:{size:11}},
+    height:480
+  };
+  Plotly.newPlot('quadrant-plot', traces, layout, CFG);
+})();
+
+/* ── QUIZ ── */
+const quizData = [
+  {
+    ko_q:'한 연구에서 아이스크림 판매량과 상어 공격 건수가 높은 양의 상관관계(r=0.87)를 보였습니다. 이 결과의 올바른 해석은?',
+    en_q:'A study finds a strong positive correlation (r=0.87) between ice cream sales and shark attacks. The correct interpretation is:',
+    options:{
+      ko:['아이스크림이 상어 공격을 유발한다','제3의 변수(여름 날씨)가 두 변수를 동시에 높인다','아이스크림 판매를 줄이면 상어 공격이 감소할 것이다','상관관계가 충분히 높으면 인과관계로 볼 수 있다'],
+      en:['Ice cream causes shark attacks','A third variable (summer weather) drives both simultaneously','Reducing ice cream sales would prevent shark attacks','Correlation this high is sufficient evidence for causation']
+    },
+    correct:1,
+    ko_fb:'정답입니다! 여름에는 기온이 올라 아이스크림 소비도 늘고 해수욕도 증가합니다. 교란 변수(confounder)가 두 현상을 함께 올리는 전형적인 예입니다.',
+    en_fb:'Correct! Summer heat simultaneously increases ice cream consumption and beach activity. This is a classic confounder — a third variable driving both outcomes.'
+  },
+  {
+    ko_q:'GWAS에서 SNP A가 유방암과 p=1×10⁻⁹의 연관성을 보입니다. 이 SNP이 암을 "일으킨다"고 결론 내릴 수 있습니까?',
+    en_q:'A GWAS finds SNP A associated with breast cancer at p=1×10⁻⁹. Can we conclude this SNP "causes" cancer?',
+    options:{
+      ko:['예, p값이 매우 작으므로 인과관계가 증명됨','아니오, 연관 불평형(LD) 때문에 진짜 인과 변이체가 다를 수 있음','예, GWAS는 항상 인과 변이체를 찾아냄','아니오, p<0.05가 아니므로 유의하지 않음'],
+      en:['Yes, the p-value is very small so causation is proven','No, LD means the true causal variant may be a different SNP in the same block','Yes, GWAS always identifies the causal variant','No, p<0.05 so this is not significant']
+    },
+    correct:1,
+    ko_fb:'정답! GWAS 연관성은 연관 불평형(LD) 블록 내의 어떤 변이체와도 통계적으로 연관될 수 있습니다. 인과 변이체를 찾으려면 파인매핑(fine-mapping)과 기능 실험이 필요합니다.',
+    en_fb:'Correct! GWAS association reflects statistical linkage within an LD block. The index SNP may simply be a proxy. Fine-mapping and functional experiments are needed to identify the causal variant.'
+  },
+  {
+    ko_q:'AI 모델이 게놈 시퀀스에서 "전사인자 결합 모티프"를 학습했습니다. 이 모델이 높은 정확도를 보일 때 우리가 확인해야 할 가장 중요한 사항은?',
+    en_q:'An AI model has learned "transcription factor binding motifs" from genomic sequences with high accuracy. The most important thing to verify is:',
+    options:{
+      ko:['훈련 데이터와 테스트 데이터가 독립적인지 (데이터 누수 없음)','모델이 더 많은 레이어를 가지는지','더 많은 에포크로 훈련했는지','GPU를 사용했는지'],
+      en:['Whether training and test data are truly independent (no data leakage)','Whether the model has more layers','Whether it was trained for more epochs','Whether a GPU was used']
+    },
+    correct:0,
+    ko_fb:'정답! 데이터 누수(data leakage)는 AI 유전체학에서 가장 흔한 함정입니다. 같은 유전자의 다른 영역이 훈련과 테스트 세트에 모두 포함되면 인위적으로 높은 정확도가 나옵니다.',
+    en_fb:'Correct! Data leakage is the most common pitfall in AI genomics. If different regions of the same gene appear in both training and test sets, accuracy is artificially inflated.'
+  }
+];
+
+let qIdx = 0, answered = false;
+
+function renderQuiz(){
+  const q = quizData[qIdx];
+  const isKo = currentLang === 'ko';
+  const opts = isKo ? q.options.ko : q.options.en;
+  let html = `<div class="quiz-q">${isKo ? q.ko_q : q.en_q}</div>
+    <div class="quiz-options">`;
+  opts.forEach((o,i)=>{
+    html += `<button class="quiz-opt" onclick="answerQ(${i})" id="opt-${i}">
+      <span class="opt-letter">${String.fromCharCode(65+i)}</span>
+      <span class="opt-text">${o}</span>
+    </button>`;
+  });
+  html += `</div>
+    <div class="quiz-fb" id="quiz-fb"></div>
+    <div class="quiz-nav">
+      <span class="quiz-prog">${isKo ? `문제 ${qIdx+1} / ${quizData.length}` : `Question ${qIdx+1} of ${quizData.length}`}</span>
+      <button class="nav-btn" id="next-btn" onclick="nextQ()" disabled>${isKo ? '다음 →' : 'Next →'}</button>
+    </div>`;
+  document.getElementById('quiz-card').innerHTML = html;
+  answered = false;
+}
+
+function answerQ(i){
+  if(answered) return;
+  answered = true;
+  const q = quizData[qIdx];
+  const isKo = currentLang === 'ko';
+  document.querySelectorAll('.quiz-opt').forEach((el,j)=>{
+    el.style.pointerEvents='none';
+    if(j===q.correct) el.classList.add('correct');
+    else if(j===i && i!==q.correct) el.classList.add('wrong');
+  });
+  const fb = document.getElementById('quiz-fb');
+  fb.className = 'quiz-fb show ' + (i===q.correct ? 'ok' : 'bad');
+  fb.innerHTML = isKo ? q.ko_fb : q.en_fb;
+  document.getElementById('next-btn').disabled = false;
+}
+
+function nextQ(){
+  qIdx = (qIdx+1) % quizData.length;
+  renderQuiz();
+}
+
+renderQuiz();
+</script>
+</body>
+</html>

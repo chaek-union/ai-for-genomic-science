@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 7 — ML Ensemble Methods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 50%, rgba(74,222,128,.05) 0%, transparent 60%)}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.2rem,5.5vw,4.2rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:860px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:560px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:680px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 2rem}
+.plot-box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;margin-bottom:2rem}
+.plot-caption{font:.85rem/1.5 system-ui;color:var(--muted);margin-top:1rem;text-align:center}
+.btn-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1.5rem;align-items:center}
+.action-btn{padding:.5rem 1.4rem;border-radius:8px;border:1px solid var(--gold);background:var(--gold-dim);color:var(--gold);font:.88rem/1 system-ui;cursor:pointer;transition:.2s;font-weight:600}
+.action-btn:hover{background:rgba(196,163,90,.22)}
+.action-btn:disabled{opacity:.4;cursor:default}
+.stat-row{display:flex;gap:2rem;margin-bottom:2rem;flex-wrap:wrap}
+.stat-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1.2rem 1.6rem;min-width:140px}
+.stat-label{font:.75rem/1 'SF Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem}
+.stat-value{font:700 1.8rem/1 system-ui;color:var(--gold)}
+.stat-sub{font:.8rem/1.3 system-ui;color:var(--muted);margin-top:.3rem}
+</style>
+</head>
+<body>
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <div class="hero-ch">Chapter 7</div>
+  <h1 data-ko="ML 앙상블 방법" data-en="ML Ensemble Methods"></h1>
+  <p class="hero-sub" data-ko="여러 약한 분류기를 결합해 강력한 예측 시스템을 만드는 방법과, CADD·REVEL·PolyPhen의 성능을 비교합니다." data-en="How combining weak classifiers creates powerful predictors — and how CADD, REVEL, and PolyPhen compare in practice."></p>
+  <div class="hero-scroll" onclick="document.querySelector('.section').scrollIntoView({behavior:'smooth'})">&#9662; scroll</div>
+</section>
+
+<!-- Section 1: Ensemble Voting Animation -->
+<section class="section">
+  <div class="section-label" data-ko="앙상블 투표 — 군중이 더 현명한 이유" data-en="Ensemble Voting — Why Crowds Are Smarter"></div>
+  <h2 class="section-title" data-ko="개별 분류기 5개 vs. 앙상블" data-en="5 Individual Classifiers vs. the Ensemble"></h2>
+  <p class="section-body" data-ko="각 분류기는 약 75–85%의 정확도를 보이지만, 다수결 앙상블은 ~92%를 달성합니다. 아래 버튼으로 개별 투표가 나타나고 앙상블이 집계되는 과정을 단계별로 확인하세요." data-en="Each individual classifier achieves ~75–85% accuracy, but majority-vote ensemble reaches ~92%. Step through the animation to watch individual votes appear and the ensemble tally build up."></p>
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label" data-ko="개별 평균 정확도" data-en="Avg Individual Accuracy"></div>
+      <div class="stat-value">80%</div>
+      <div class="stat-sub" data-ko="5개 분류기 평균" data-en="mean of 5 classifiers"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label" data-ko="앙상블 정확도" data-en="Ensemble Accuracy"></div>
+      <div class="stat-value" id="ensemble-acc-val">—</div>
+      <div class="stat-sub" data-ko="다수결 투표" data-en="majority vote"></div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="action-btn" id="vote-step-btn" onclick="voteStep()">
+      <span data-ko="다음 단계" data-en="Next Step"></span> &#9654;
+    </button>
+    <button class="action-btn" onclick="voteReset()" data-ko="초기화" data-en="Reset"></button>
+  </div>
+  <div class="plot-box">
+    <div id="vote-plot" style="height:420px"></div>
+    <p class="plot-caption" data-ko="막대는 각 분류기의 정확도입니다. 마지막 단계에서 앙상블 결과가 표시됩니다." data-en="Bars show each classifier's accuracy. The final step reveals the ensemble result."></p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- Section 2: ROC Curves -->
+<section class="section">
+  <div class="section-label" data-ko="ROC 곡선 — CADD · REVEL · PolyPhen 비교" data-en="ROC Curves — Comparing CADD, REVEL, PolyPhen"></div>
+  <h2 class="section-title" data-ko="어떤 도구가 병원성 변이를 가장 잘 잡아내나?" data-en="Which Tool Best Identifies Pathogenic Variants?"></h2>
+  <p class="section-body" data-ko="ROC 곡선은 모든 임계값에 걸쳐 민감도(TPR)와 특이도(1-FPR) 사이의 트레이드오프를 보여줍니다. AUC가 1에 가까울수록 성능이 좋습니다. 대각선은 무작위 분류기를 나타냅니다." data-en="ROC curves show the trade-off between sensitivity (TPR) and specificity (1-FPR) across all thresholds. AUC closer to 1 is better. The diagonal line represents a random classifier."></p>
+  <div class="plot-box">
+    <div id="roc-plot" style="height:500px"></div>
+    <p class="plot-caption" data-ko="호버하여 각 임계값에서의 TPR/FPR을 확인하세요. REVEL AUC 0.92, CADD AUC 0.85, PolyPhen AUC 0.80." data-en="Hover to see TPR/FPR at each threshold. REVEL AUC 0.92, CADD AUC 0.85, PolyPhen AUC 0.80."></p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- Section 3: CADD Score Distribution -->
+<section class="section">
+  <div class="section-label" data-ko="CADD 점수 분포" data-en="CADD Score Distribution"></div>
+  <h2 class="section-title" data-ko="CADD 점수 20이 왜 임계값인가?" data-en="Why Is CADD Score 20 the Threshold?"></h2>
+  <p class="section-body" data-ko="ClinVar의 병원성 변이와 gnomAD의 흔한(양성) 변이의 CADD phred 점수 분포를 겹쳐 보면 ~15–20 사이에서 명확한 분리가 나타납니다. CADD 20은 상위 1% 유해 변이에 해당합니다." data-en="Overlapping CADD phred score distributions for pathogenic (ClinVar) vs benign (common gnomAD) variants show clear separation around 15–20. CADD 20 corresponds to the top 1% most deleterious variants."></p>
+  <div class="plot-box">
+    <div id="cadd-plot" style="height:460px"></div>
+    <p class="plot-caption" data-ko="x축: CADD phred 점수 (0–40), y축: 밀도. 수직 점선: CADD = 20 (권장 임계값)." data-en="x: CADD phred score (0–40), y: density. Vertical dashed line at CADD = 20 (recommended threshold)."></p>
+  </div>
+</section>
+
+<script>
+let currentLang = 'ko';
+function setLang(l) {
+  currentLang = l;
+  document.querySelectorAll('[data-ko]').forEach(el => { el.textContent = el.dataset[l]; });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.lang-btn:' + (l==='ko' ? 'first' : 'last') + '-child').classList.add('active');
+  updatePlotLanguage(l);
+}
+document.querySelectorAll('[data-ko]').forEach(el => { el.textContent = el.dataset.ko; });
+
+// ── Bilingual plot label registry ────────────────────────────────────────────
+const plotLabels = {
+  'vote-plot': {
+    yaxis: { ko: '정확도', en: 'Accuracy' },
+    annotations: [
+      { ko: '개별 평균 80%', en: 'Indiv. avg 80%' }
+    ]
+  },
+  'roc-plot': {
+    xaxis: { ko: '위양성률 (FPR)', en: 'False Positive Rate (FPR)' },
+    yaxis: { ko: '진양성률 (TPR)', en: 'True Positive Rate (TPR)' },
+    traces: [
+      { ko: null, en: null }, // AUC fill (no legend)
+      { ko: 'REVEL (AUC = 0.92)', en: 'REVEL (AUC = 0.92)' },
+      { ko: 'CADD (AUC = 0.85)',  en: 'CADD (AUC = 0.85)'  },
+      { ko: 'PolyPhen (AUC = 0.80)', en: 'PolyPhen (AUC = 0.80)' },
+      { ko: '무작위 분류기', en: 'Random classifier' }
+    ]
+  },
+  'cadd-plot': {
+    xaxis: { ko: 'CADD Phred 점수', en: 'CADD Phred Score' },
+    yaxis: { ko: '상대 밀도',       en: 'Relative Density'  },
+    traces: [
+      { ko: '병원성 변이 (ClinVar)',         en: 'Pathogenic (ClinVar)'    },
+      { ko: '양성 변이 (gnomAD 흔한 변이)', en: 'Benign (gnomAD common)'  }
+    ],
+    annotations: [
+      { ko: '아래: 양성 가능성',     en: 'Below: likely benign'       },
+      { ko: '위: 병원성 가능성',     en: 'Above: possibly pathogenic' },
+      { ko: 'CADD = 20',             en: 'CADD = 20'                  }
+    ]
+  }
+};
+
+function updatePlotLanguage(l) {
+  Object.keys(plotLabels).forEach(divId => {
+    const el = document.getElementById(divId);
+    if (!el || !el.data) return;
+    const labels = plotLabels[divId];
+
+    // Axis titles
+    const layoutUpdate = {};
+    if (labels.xaxis) layoutUpdate['xaxis.title.text'] = labels.xaxis[l];
+    if (labels.yaxis) layoutUpdate['yaxis.title.text'] = labels.yaxis[l];
+
+    // Annotations
+    if (labels.annotations && el.layout && el.layout.annotations) {
+      layoutUpdate.annotations = el.layout.annotations.map((a, i) =>
+        labels.annotations[i] ? { ...a, text: labels.annotations[i][l] } : a
+      );
+    }
+
+    if (Object.keys(layoutUpdate).length) Plotly.relayout(el, layoutUpdate);
+
+    // Trace names
+    if (labels.traces) {
+      labels.traces.forEach((t, i) => {
+        if (t && t[l] !== null && el.data[i]) {
+          Plotly.restyle(el, { name: t[l] }, [i]);
+        }
+      });
+    }
+  });
+}
+
+const darkLayout = {
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor: 'rgba(20,20,31,1)',
+  font: { color: '#e4e0d8', family: 'system-ui, sans-serif' }
+};
+const cfg = { responsive: true, displayModeBar: false };
+
+// ── Ensemble Voting Animation ─────────────────────────────────────────────────
+const classifiers = [
+  { name: 'DeepSEA',    acc: 0.82, color: '#38bdf8' },
+  { name: 'Enformer',   acc: 0.79, color: '#4ade80' },
+  { name: 'SpliceAI',   acc: 0.84, color: '#a78bfa' },
+  { name: 'CADD-v2',    acc: 0.77, color: '#fb923c' },
+  { name: 'PrimateAI',  acc: 0.78, color: '#f472b6' }
+];
+const ensembleAcc = 0.92;
+let voteStage = 0; // 0=empty, 1-5=each classifier, 6=ensemble
+
+function buildVotePlot(stage) {
+  const names = classifiers.map(c => c.name).concat(['Ensemble']);
+  const accs  = classifiers.map(c => stage > classifiers.indexOf(c) ? c.acc : null)
+                            .concat([stage >= 6 ? ensembleAcc : null]);
+  const colors = classifiers.map((c,i) => stage > i ? c.color : 'rgba(0,0,0,0)')
+                             .concat([stage >= 6 ? '#c4a35a' : 'rgba(0,0,0,0)']);
+  const opacities = classifiers.map((c,i) => stage > i ? 0.85 : 0)
+                                .concat([stage >= 6 ? 1 : 0]);
+
+  Plotly.react('vote-plot', [{
+    type: 'bar',
+    x: names,
+    y: accs.map(v => v || 0),
+    marker: {
+      color: colors,
+      opacity: opacities,
+      line: { color: '#0b0b11', width: 1 }
+    },
+    text: accs.map(v => v ? (v*100).toFixed(0)+'%' : ''),
+    textposition: 'outside',
+    textfont: { size: 13, color: '#e4e0d8' },
+    hovertemplate: '<b>%{x}</b><br>Accuracy: %{y:.0%}<extra></extra>'
+  }], {
+    ...darkLayout,
+    xaxis: { gridcolor:'#22222e', tickfont:{size:13} },
+    yaxis: { gridcolor:'#22222e', range:[0, 1.05], title: currentLang==='ko' ? '정확도' : 'Accuracy', titlefont:{size:12},
+      tickformat:'.0%' },
+    shapes: [{
+      type:'line', x0:-0.5, x1:5.5, y0:0.8, y1:0.8,
+      line:{color:'#7a756d',width:1,dash:'dot'}
+    }],
+    annotations: [{
+      x: 5.4, y: 0.81, text: currentLang==='ko' ? '개별 평균 80%' : 'Indiv. avg 80%',
+      showarrow:false, font:{size:10,color:'#7a756d'}, xanchor:'right'
+    }],
+    margin: { t:30, r:30, b:60, l:70 }
+  }, cfg);
+
+  if (stage >= 6) {
+    document.getElementById('ensemble-acc-val').textContent = '92%';
+  }
+}
+
+function voteStep() {
+  if (voteStage < 6) {
+    voteStage++;
+    buildVotePlot(voteStage);
+  }
+  if (voteStage >= 6) {
+    document.getElementById('vote-step-btn').disabled = true;
+  }
+}
+function voteReset() {
+  voteStage = 0;
+  document.getElementById('ensemble-acc-val').textContent = '—';
+  document.getElementById('vote-step-btn').disabled = false;
+  buildVotePlot(0);
+}
+buildVotePlot(0);
+
+// ── ROC Curves ────────────────────────────────────────────────────────────────
+(function buildROC() {
+  // Generate ROC-like curves parametrically
+  function rocCurve(auc, n, seed) {
+    let s = seed;
+    function r() { s = (s * 9301 + 49297) % 233280; return s / 233280; }
+    const pts = [[0,0]];
+    for (let i = 1; i < n; i++) {
+      const t = i / n;
+      const fpr = t;
+      const tpr = Math.min(1, Math.pow(t, 1 / (auc / (1 - auc)) * 0.5) + (r()-0.5)*0.015);
+      pts.push([fpr, Math.max(pts[pts.length-1][1], tpr)]);
+    }
+    pts.push([1,1]);
+    return pts;
+  }
+
+  const tools = [
+    { name:'REVEL',    auc:0.92, color:'#4ade80', seed:42 },
+    { name:'CADD',     auc:0.85, color:'#38bdf8', seed:77 },
+    { name:'PolyPhen', auc:0.80, color:'#a78bfa', seed:13 }
+  ];
+
+  const traces = tools.map(t => {
+    const pts = rocCurve(t.auc, 100, t.seed);
+    return {
+      type:'scatter', mode:'lines', name:`${t.name} (AUC = ${t.auc})`,
+      x: pts.map(p => p[0]),
+      y: pts.map(p => p[1]),
+      line: { color: t.color, width: 2.5 },
+      hovertemplate: `<b>${t.name}</b><br>FPR: %{x:.3f}<br>TPR: %{y:.3f}<extra></extra>`
+    };
+  });
+
+  // Diagonal random classifier
+  traces.push({
+    type:'scatter', mode:'lines', name:'Random classifier',
+    x:[0,1], y:[0,1],
+    line: { color:'#44444f', width:1.5, dash:'dash' },
+    hoverinfo:'skip'
+  });
+
+  // AUC fill for REVEL
+  const revelPts = rocCurve(0.92, 100, 42);
+  traces.unshift({
+    type:'scatter', mode:'none', fill:'tozeroy', fillcolor:'rgba(74,222,128,0.06)',
+    x: revelPts.map(p=>p[0]), y: revelPts.map(p=>p[1]),
+    showlegend:false, hoverinfo:'skip'
+  });
+
+  Plotly.newPlot('roc-plot', traces, {
+    ...darkLayout,
+    xaxis: { gridcolor:'#22222e', title: currentLang==='ko' ? '위양성률 (FPR)' : 'False Positive Rate (FPR)', range:[0,1], titlefont:{size:12} },
+    yaxis: { gridcolor:'#22222e', title: currentLang==='ko' ? '진양성률 (TPR)' : 'True Positive Rate (TPR)', range:[0,1.02], titlefont:{size:12} },
+    legend: { x:0.55, y:0.15, bgcolor:'rgba(20,20,31,.9)', bordercolor:'#22222e', borderwidth:1 },
+    margin: { t:30, r:30, b:70, l:75 }
+  }, cfg);
+})();
+
+// ── CADD Score Distribution ───────────────────────────────────────────────────
+(function buildCADD() {
+  // Seeded PRNG
+  let s1 = 1234, s2 = 5678;
+  function r1() { s1 = (s1 * 9301 + 49297) % 233280; return s1/233280; }
+  function r2() { s2 = (s2 * 9301 + 49297) % 233280; return s2/233280; }
+
+  // Kernel density approximation via binning
+  function normalSample(mu, sigma, rand) {
+    // Box-Muller
+    const u1 = rand(), u2 = rand();
+    return mu + sigma * Math.sqrt(-2*Math.log(u1+0.0001)) * Math.cos(2*Math.PI*u2);
+  }
+
+  const bins = Array.from({length:40}, (_,i) => i + 0.5);
+
+  // Pathogenic: roughly normal around 26, sd 7, clamped 0-40
+  const pathCounts = new Array(40).fill(0);
+  for (let i = 0; i < 5000; i++) {
+    const v = normalSample(26, 7, r1);
+    const bin = Math.floor(Math.min(39, Math.max(0, v)));
+    pathCounts[bin]++;
+  }
+
+  // Benign: roughly normal around 8, sd 5, clamped 0-40
+  const benignCounts = new Array(40).fill(0);
+  for (let i = 0; i < 5000; i++) {
+    const v = normalSample(8, 5, r2);
+    const bin = Math.floor(Math.min(39, Math.max(0, v)));
+    benignCounts[bin]++;
+  }
+
+  // Normalize to density
+  const maxP = Math.max(...pathCounts);
+  const maxB = Math.max(...benignCounts);
+
+  Plotly.newPlot('cadd-plot', [
+    {
+      type:'bar', name: currentLang==='ko' ? '병원성 변이 (ClinVar)' : 'Pathogenic (ClinVar)',
+      x: bins, y: pathCounts.map(v => v/maxP),
+      marker: { color:'rgba(248,113,113,0.65)', line:{color:'#f87171',width:1} },
+      hovertemplate: 'CADD: %{x:.0f}<br>Relative density: %{y:.3f}<extra></extra>'
+    },
+    {
+      type:'bar', name: currentLang==='ko' ? '양성 변이 (gnomAD 흔한 변이)' : 'Benign (gnomAD common)',
+      x: bins, y: benignCounts.map(v => v/maxB),
+      marker: { color:'rgba(74,222,128,0.5)', line:{color:'#4ade80',width:1} },
+      hovertemplate: 'CADD: %{x:.0f}<br>Relative density: %{y:.3f}<extra></extra>'
+    }
+  ], {
+    ...darkLayout,
+    barmode: 'overlay',
+    shapes: [{
+      type:'line', x0:20, x1:20, y0:0, y1:1.05,
+      line:{color:'#c4a35a',width:2,dash:'dot'}
+    }],
+    annotations: [
+      { x:10, y:0.95, text: currentLang==='ko' ? '아래: 양성 가능성' : 'Below: likely benign',
+        showarrow:false, font:{size:11,color:'#4ade80'}, xanchor:'center',
+        bgcolor:'rgba(74,222,128,.1)', borderpad:4 },
+      { x:30, y:0.95, text: currentLang==='ko' ? '위: 병원성 가능성' : 'Above: possibly pathogenic',
+        showarrow:false, font:{size:11,color:'#f87171'}, xanchor:'center',
+        bgcolor:'rgba(248,113,113,.1)', borderpad:4 },
+      { x:20.5, y:1.0, text:'CADD = 20', showarrow:false,
+        font:{size:10,color:'#c4a35a'}, xanchor:'left' }
+    ],
+    xaxis: { gridcolor:'#22222e', title: currentLang==='ko' ? 'CADD Phred 점수' : 'CADD Phred Score', range:[0,40], titlefont:{size:12} },
+    yaxis: { gridcolor:'#22222e', title: currentLang==='ko' ? '상대 밀도' : 'Relative Density', range:[0,1.1], titlefont:{size:12} },
+    legend: { x:0.55, y:0.9, bgcolor:'rgba(20,20,31,.9)', bordercolor:'#22222e', borderwidth:1 },
+    margin: { t:30, r:30, b:70, l:75 }
+  }, cfg);
+})();
+
+// Apply Korean labels to all plots after they are fully initialized
+updatePlotLanguage('ko');
+</script>
+</body>
+</html>

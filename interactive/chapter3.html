@@ -5,648 +5,556 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chapter 3 — Neural Networks: How Machines Learn Patterns</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
 <style>
-:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--water:#38bdf8;--red:#f87171;--purple:#a78bfa;--line:#22222e}
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+
 .lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
 .lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
 .lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
-.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative}
+
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
 .hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
-.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.4rem,6.5vw,5rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:880px;margin-bottom:1.5rem}
-.hero-sub{font-size:1.05rem;color:var(--muted);max-width:540px;line-height:1.6}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.4rem,6.5vw,5rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:560px;line-height:1.6}
 .hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
 
-/* Editorial — centered text with ASCII between paragraphs */
-.editorial{max-width:700px;margin:0 auto;padding:2rem}
-.ed-para{font:16px/1.85 Georgia,'Noto Serif KR',serif;color:var(--text);text-align:center;margin-bottom:2rem}
+.section{padding:5rem 2rem;max-width:920px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:700px;margin-bottom:2rem}
+.insight-box{background:rgba(196,163,90,.06);border:1px solid rgba(196,163,90,.2);border-radius:10px;padding:1.2rem 1.5rem;margin:1.5rem 0;font:.95rem/1.7 Georgia,serif;color:var(--text)}
+.insight-box strong{color:var(--gold)}
+hr.divider{border:none;border-top:1px solid var(--line);margin:5rem 0}
 
-/* CRT TV with ASCII person */
-.tv-wrapper{max-width:820px;margin:2.5rem auto;position:relative}
-.tv-frame{background:#0a0a0a;border:3px solid #333;border-radius:18px;padding:0;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(56,189,248,.06),0 8px 32px rgba(0,0,0,.5),inset 0 0 80px rgba(0,0,0,.8)}
-.tv-screen{position:relative;overflow:hidden;padding:1rem .5rem;margin:12px;border-radius:8px;background:#050510}
-/* CRT scanlines */
-.tv-screen::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 1px,rgba(0,0,0,.2) 1px,rgba(0,0,0,.2) 3px);pointer-events:none;z-index:2}
-/* CRT vignette */
-.tv-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.5) 100%);pointer-events:none;z-index:3}
-.tv-screen pre{font:7.5px/1.15 'SF Mono','Fira Code','Courier New',monospace;color:rgba(200,200,210,.7);text-align:center;white-space:pre;user-select:none;position:relative;z-index:1;letter-spacing:0px}
-/* TV controls bar */
-.tv-bar{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.2rem;background:#111;border-top:1px solid #222}
-.tv-led{width:6px;height:6px;border-radius:50%;background:#f44;box-shadow:0 0 6px #f44;animation:blink 2s infinite}
-@keyframes blink{0%,90%{opacity:1}95%{opacity:.3}100%{opacity:1}}
-.tv-label{font:600 .7rem/1 system-ui;color:#555;letter-spacing:.08em}
-.tv-knobs{display:flex;gap:8px}
-.tv-knob{width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#444,#222);border:1px solid #555}
-/* Subtitle */
-.subtitle-bar{text-align:center;padding:1rem 1.5rem;min-height:3.2rem;position:relative}
-.subtitle-text{font:500 1rem/1.5 system-ui,sans-serif;color:var(--text);text-shadow:0 1px 4px rgba(0,0,0,.8);display:inline-block;background:rgba(0,0,0,.6);padding:.3rem .8rem;border-radius:6px}
-.subtitle-text .cursor{animation:blinker 0.6s step-end infinite;color:var(--gold)}
-@keyframes blinker{50%{opacity:0}}
-/* PSYCHEDELIC MODE */
-.tv-screen.psycho pre{animation:rainbowText 0.4s linear infinite}
-.tv-screen.psycho{animation:screenPulse 0.3s ease infinite;box-shadow:inset 0 0 60px rgba(255,0,255,.15)}
-@keyframes rainbowText{0%{color:#ff0040}14%{color:#ff8000}28%{color:#ffff00}42%{color:#00ff80}56%{color:#00bfff}70%{color:#8000ff}85%{color:#ff00ff}100%{color:#ff0040}}
-@keyframes screenPulse{0%,100%{filter:brightness(1) hue-rotate(0deg)}50%{filter:brightness(1.3) hue-rotate(30deg)}}
-/* GLITCH MODE */
-.tv-screen.glitch{animation:tvGlitch 0.15s steps(2) infinite}
-.tv-screen.glitch pre{color:#ff2020!important;text-shadow:0 0 10px #ff0000,2px 0 #00ff00,-2px 0 #0000ff}
-@keyframes tvGlitch{0%{transform:translate(0)}25%{transform:translate(-4px,2px) skewX(-1deg)}50%{transform:translate(3px,-3px) skewX(1deg)}75%{transform:translate(-2px,4px)}100%{transform:translate(0)}}
-/* SHAKE */
-.tv-frame.shake{animation:tvShake 0.3s ease infinite}
-@keyframes tvShake{0%,100%{transform:translate(0)}20%{transform:translate(-3px,2px) rotate(-0.5deg)}40%{transform:translate(4px,-1px) rotate(0.5deg)}60%{transform:translate(-2px,3px)}80%{transform:translate(3px,-2px) rotate(-0.3deg)}}
-.subtitle-text.psycho-sub{background:linear-gradient(90deg,#ff0040,#ff8000,#ffff00,#00ff80,#00bfff,#8000ff,#ff00ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:gradMove 0.5s linear infinite;font-weight:900;font-size:1.2rem}
-@keyframes gradMove{0%{background-position:0%}100%{background-position:200%}}
+.plot-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2rem 2rem 1.5rem;overflow:hidden}
+.plot-caption{font:.88rem/1.6 system-ui;color:var(--muted);margin-top:1rem;padding-top:1rem;border-top:1px solid var(--line)}
 
-.pullquote{position:absolute;z-index:5;border-left:2px solid var(--gold);padding:0 0 0 14px;font-style:italic;color:var(--gold);font-size:.92rem;line-height:1.5;max-width:220px;pointer-events:none}
+.ctrl-row{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;margin:1.2rem 0}
+.ctrl-label{font:.85rem/1.3 system-ui;color:var(--muted);min-width:150px;flex-shrink:0}
+.ctrl-label span{color:var(--gold);font-weight:700;font-family:'SF Mono',monospace}
+input[type=range]{flex:1;min-width:180px;height:4px;border-radius:2px;-webkit-appearance:none;background:var(--line);outline:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--bg)}
 
-/* Classifier section — FIXED below editorial */
-.clf-section{max-width:820px;margin:0 auto;padding:1rem 2rem 2rem;display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;justify-content:center}
-.clf-canvas-wrap{position:relative}
-.clf-canvas-wrap canvas{border-radius:16px;display:block;border:1px solid rgba(255,255,255,.08);cursor:crosshair}
-.clf-panel{min-width:200px;flex:1}
-.sp-acc{font:900 3rem/1 'Playfair Display',Georgia,serif;color:var(--gold);letter-spacing:-.02em;transition:.3s}
-.sp-acc.has{color:#fff}
-.sp-label{font:600 .7rem/1.2 system-ui;color:var(--muted);margin-top:.15rem;letter-spacing:.05em;text-transform:uppercase}
-.sp-detail{font:500 .8rem/1.4 system-ui;color:var(--muted);margin-top:.4rem}
-.sp-detail .v{color:var(--gold);font-weight:700}
-.sp-mode{display:inline-block;background:var(--gold-dim);color:var(--gold);font:700 .65rem/1 system-ui;padding:.2rem .5rem;border-radius:4px;margin-top:.4rem}
-.clf-btns{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.8rem}
+.toggle-group{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+.toggle-btn{padding:.4rem .9rem;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font:.82rem/1 system-ui;cursor:pointer;transition:.2s}
+.toggle-btn.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+.toggle-btn.act-sig{background:rgba(248,113,113,.12);border-color:#f87171;color:#f87171}
+.toggle-btn.act-tanh{background:rgba(167,139,250,.12);border-color:#a78bfa;color:#a78bfa}
+.toggle-btn.act-relu{background:rgba(74,222,128,.12);border-color:#4ade80;color:#4ade80}
+.toggle-btn.act-lrelu{background:rgba(56,189,248,.12);border-color:#38bdf8;color:#38bdf8}
 
-.divider{text-align:center;padding:3rem 2rem;color:var(--muted);font:.82rem/1 system-ui;letter-spacing:.08em}
-.divider .ln{width:50px;height:1px;background:var(--line);margin:0 auto .8rem}
+.stat-row{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}
+.stat-chip{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;padding:.6rem 1rem;text-align:center;flex:1;min-width:100px}
+.stat-chip .v{font:700 1.4rem/1.2 'Playfair Display',serif;color:var(--gold)}
+.stat-chip .l{font:.72rem/1.2 system-ui;color:var(--muted);margin-top:.2rem;text-transform:uppercase;letter-spacing:.05em}
 
-.experiments{max-width:780px;margin:0 auto;padding:1rem 2rem 2rem}
-.exp-card{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:2rem;overflow:hidden}
-.exp-head{padding:1rem 1.3rem;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:.6rem}
-.exp-num{width:26px;height:26px;border-radius:50%;background:var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;font:700 .8rem/1 system-ui;flex-shrink:0}
-.exp-title{font:700 1rem/1.3 system-ui,sans-serif;color:#fff}
-.exp-body{padding:1.3rem}
-.exp-desc{color:var(--muted);font:.85rem/1.55 system-ui,sans-serif;margin-bottom:1rem}
-canvas.chart{width:100%;border-radius:8px;display:block}
-.btn-row{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin-top:.7rem}
-.btn{padding:.42rem .9rem;border-radius:8px;border:1px solid var(--line);background:0;color:var(--text);font:600 .78rem/1 system-ui;cursor:pointer;transition:.15s}
-.btn:hover{background:rgba(255,255,255,.06)}
-.btn-g{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
-.btn-r{border-color:var(--red);color:var(--red)}
-.btn.act{background:var(--gold);color:var(--bg);border-color:var(--gold)}
-.btn-path{color:var(--red);border-color:var(--red);background:rgba(248,113,113,.1)}
-.btn-ben{color:var(--water);border-color:var(--water);background:rgba(56,189,248,.1)}
-.sl{margin:.5rem 0}
-.sl label{display:flex;justify-content:space-between;font:600 .8rem/1.3 system-ui;color:var(--muted)}
-.sl .v{color:var(--gold)}
-input[type=range]{width:100%;height:4px;border-radius:2px;-webkit-appearance:none;background:var(--line);outline:0;margin-top:.3rem}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--bg)}
-.info{background:rgba(196,163,90,.07);border:1px solid rgba(196,163,90,.12);border-radius:8px;padding:.65rem .9rem;font:.8rem/1.45 system-ui,sans-serif;color:var(--gold);margin-top:.7rem}
-.neuron-canvas{background:#0d0d18;border-radius:12px;border:1px solid var(--line)}
-.act-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.8rem}
-.act-card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:.8rem;text-align:center}
-.act-card canvas{width:100%;border-radius:6px;display:block;margin-bottom:.4rem}
-.act-card .name{font:700 .82rem/1 system-ui;color:var(--gold)}
-.act-card .eq{font:.7rem/1.2 'SF Mono',monospace;color:var(--muted);margin-top:.2rem}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
-.footer{text-align:center;padding:3rem 2rem;color:var(--muted);font:.75rem/1.4 system-ui;border-top:1px solid var(--line);margin-top:2rem}
-@media(max-width:700px){.ed-container{min-height:500px}.act-row{grid-template-columns:1fr}.clf-section{flex-direction:column}.pullquote{display:none}}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
 </style>
 </head>
 <body>
 
 <div class="lang-toggle">
-  <button class="lang-btn active" onclick="setLang('ko')" id="btn-ko">한국어</button>
-  <button class="lang-btn" onclick="setLang('en')" id="btn-en">EN</button>
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
 </div>
 
+<!-- HERO -->
 <section class="hero">
-  <div class="hero-ch">Chapter 03</div>
-  <h1 id="hero-title"></h1>
-  <p class="hero-sub" id="hero-sub"></p>
-  <div class="hero-scroll" onclick="document.querySelector('.editorial').scrollIntoView({behavior:'smooth'})"><span class="i18n" data-ko="스크롤하여 시작" data-en="Scroll to begin"></span><br>↓</div>
+  <div class="hero-ch">Chapter 3</div>
+  <h1 data-ko="신경망: 기계가 패턴을<br>학습하는 방법" data-en="Neural Networks:<br>How Machines Learn Patterns"></h1>
+  <p class="hero-sub" data-ko="활성화 함수, 결정 경계, 과적합 — 신경망의 핵심 개념을 인터랙티브 시각화로 이해하세요." data-en="Activation functions, decision boundaries, overfitting — understand the core concepts of neural networks through interactive visualization."></p>
+  <div class="hero-scroll" onclick="document.querySelector('.section').scrollIntoView({behavior:'smooth'})">↓<br><span data-ko="아래로 스크롤" data-en="Scroll down"></span></div>
 </section>
 
-<!-- Editorial — centered text + CRT TV with ASCII person -->
-<section class="editorial">
-  <p class="ed-para" id="ed-p1"></p>
+<!-- SECTION 1: Activation Functions -->
+<section class="section">
+  <h2 class="section-title" data-ko="활성화 함수 비교" data-en="Activation Functions Compared"></h2>
+  <p class="section-body" data-ko="활성화 함수는 뉴런이 신호를 전달할지 결정합니다. Sigmoid는 약물 용량-반응 곡선처럼 부드럽게 포화됩니다. ReLU는 유전자 발현의 on/off 스위치와 유사합니다. 아래 버튼으로 함수를 켜고 끄면서 특성을 비교하세요." data-en="Activation functions determine how a neuron transmits signals. Sigmoid saturates smoothly like a drug dose-response curve. ReLU resembles a gene expression on/off switch. Toggle functions below to compare their properties."></p>
 
-  <!-- CRT TV -->
-  <div class="tv-wrapper">
-    <div class="tv-frame">
-      <div class="tv-screen"><pre id="tv-ascii"></pre></div>
-      <div class="subtitle-bar"><span class="subtitle-text" id="tv-sub">&nbsp;</span></div>
-      <div class="tv-bar">
-        <div class="tv-led"></div>
-        <div class="tv-label">NEURAL NETWORKS — CH.03</div>
-        <div class="tv-knobs"><div class="tv-knob"></div><div class="tv-knob"></div></div>
-      </div>
+  <div class="plot-card">
+    <div class="toggle-group" id="act-toggles">
+      <button class="toggle-btn act-sig active" onclick="toggleAct('sigmoid')" id="btn-sigmoid">Sigmoid</button>
+      <button class="toggle-btn act-tanh active" onclick="toggleAct('tanh')" id="btn-tanh">Tanh</button>
+      <button class="toggle-btn act-relu active" onclick="toggleAct('relu')" id="btn-relu">ReLU</button>
+      <button class="toggle-btn act-lrelu active" onclick="toggleAct('lrelu')" id="btn-lrelu">Leaky ReLU</button>
     </div>
+    <div id="act-plot" style="height:380px;"></div>
+    <div class="plot-caption" data-ko="x축: 입력값 (−5 ~ 5). 각 함수의 특성에 주목하세요. Sigmoid/Tanh: 극단값에서 기울기 소실(vanishing gradient). ReLU: 음수 입력에서 '죽은 뉴런(dead neuron)' 문제. Leaky ReLU: 이를 작은 음수 기울기(0.01)로 해결." data-en="x-axis: input value (−5 to 5). Note: Sigmoid/Tanh exhibit vanishing gradients at extremes. ReLU creates 'dead neurons' for negative inputs. Leaky ReLU solves this with a small negative slope (0.01)."></div>
   </div>
 
-  <p class="ed-para" id="ed-p2"></p>
-  <div style="text-align:center;margin:1.5rem auto 2rem"><span style="border-left:2px solid var(--gold);padding:0 0 0 14px;font-style:italic;color:var(--gold);font-size:.95rem;line-height:1.6;display:inline-block;text-align:left" id="pq1"></span></div>
-  <p class="ed-para" id="ed-p3"></p>
+  <div class="insight-box" data-ko="<strong>생물학적 유사성:</strong> Sigmoid는 Hill 방정식(효소 동역학)과 같은 S자 포화 곡선입니다. ReLU는 전사인자의 임계값(threshold) 활성화와 유사합니다. 딥러닝에서 활성화 함수는 비선형성을 부여합니다 — 이 없이는 여러 레이어를 쌓아도 선형 모델과 같습니다." data-en="<strong>Biological analogy:</strong> Sigmoid mirrors the Hill equation (enzyme kinetics) — an S-shaped saturation curve. ReLU resembles threshold activation of a transcription factor. Without nonlinear activation functions, stacking multiple layers is mathematically equivalent to a single linear model."></div>
 </section>
 
-<!-- 2D Classifier — fixed section -->
-<div class="clf-section">
-  <div class="clf-canvas-wrap">
-    <canvas id="clf-cv" width="400" height="400"></canvas>
-  </div>
-  <div class="clf-panel">
-    <div class="sp-acc" id="sp-acc">—</div>
-    <div class="sp-label"><span class="i18n" data-ko="정확도(Accuracy)" data-en="Accuracy"></span></div>
-    <div class="sp-detail"><span class="i18n" data-ko="손실(Loss)" data-en="Loss"></span>: <span class="v" id="sp-loss">—</span></div>
-    <div class="sp-detail"><span class="i18n" data-ko="에포크(Epoch)" data-en="Epoch"></span>: <span class="v" id="sp-epoch">0</span></div>
-    <div class="sp-mode" id="sp-mode"></div>
-    <div class="clf-btns">
-      <button class="btn btn-path act" id="cm1" onclick="clfMode=1;document.getElementById('cm1').classList.add('act');document.getElementById('cm0').classList.remove('act')"><span class="i18n" data-ko="병원성(P)" data-en="Pathogenic"></span></button>
-      <button class="btn btn-ben" id="cm0" onclick="clfMode=0;document.getElementById('cm0').classList.add('act');document.getElementById('cm1').classList.remove('act')"><span class="i18n" data-ko="중립(B)" data-en="Benign"></span></button>
-    </div>
-    <div class="clf-btns">
-      <button class="btn btn-g" onclick="trainNetwork()"><span class="i18n" data-ko="학습 시작!" data-en="Train!"></span></button>
-      <button class="btn btn-r" onclick="resetClf()"><span class="i18n" data-ko="초기화" data-en="Reset"></span></button>
-    </div>
-    <div class="info" id="clf-info" style="margin-top:.6rem"></div>
-  </div>
-</div>
+<hr class="divider">
 
-<div class="divider"><div class="ln"></div><span class="i18n" data-ko="인터랙티브 실험" data-en="Interactive Experiments"></span></div>
+<!-- SECTION 2: Single Neuron Decision Boundary -->
+<section class="section">
+  <h2 class="section-title" data-ko="단일 뉴런의 결정 경계" data-en="Single Neuron Decision Boundary"></h2>
+  <p class="section-body" data-ko="변이체를 병원성(빨간색) vs 양성(파란색)으로 분류하는 단일 뉴런을 시뮬레이션합니다. x축은 진화적 보존도, y축은 구조적 영향 점수입니다. 슬라이더로 가중치(w₁, w₂)와 편향(b)을 조정해 결정 경계선을 직접 움직여보세요." data-en="Simulate a single neuron classifying variants as pathogenic (red) vs benign (blue). x-axis: evolutionary conservation, y-axis: structural impact score. Adjust weights (w₁, w₂) and bias (b) with sliders to move the decision boundary."></p>
 
-<div class="experiments">
-  <!-- Activation Functions -->
-  <div class="exp-card">
-    <div class="exp-head"><div class="exp-num">1</div><div class="exp-title i18n" data-ko="활성화 함수(Activation Function) 비교" data-en="Activation Function Comparison"></div></div>
-    <div class="exp-body">
-      <p class="exp-desc i18n" data-ko="활성화 함수가 없으면 아무리 층을 쌓아도 직선 하나! 세 가지 함수를 비교해보세요." data-en="Without activation functions, any network is just one line! Compare three functions."></p>
-      <div class="sl"><label><span class="i18n" data-ko="입력값(z)" data-en="Input (z)"></span><span class="v" id="act-z-val">0.0</span></label><input type=range id="act-z" min="-50" max="50" value="0" oninput="updActFns()"></div>
-      <div class="act-row">
-        <div class="act-card"><canvas class="chart" id="cv-sigmoid" height="140"></canvas><div class="name">Sigmoid</div><div class="eq">1/(1+e<sup>-z</sup>)</div><div style="margin-top:.3rem;font:.75rem/1.2 system-ui;color:var(--muted)"><span class="i18n" data-ko="출력" data-en="Out"></span>: <span class="v" id="sig-out">0.50</span></div></div>
-        <div class="act-card"><canvas class="chart" id="cv-tanh" height="140"></canvas><div class="name">Tanh</div><div class="eq">(e<sup>z</sup>-e<sup>-z</sup>)/(e<sup>z</sup>+e<sup>-z</sup>)</div><div style="margin-top:.3rem;font:.75rem/1.2 system-ui;color:var(--muted)"><span class="i18n" data-ko="출력" data-en="Out"></span>: <span class="v" id="tanh-out">0.00</span></div></div>
-        <div class="act-card"><canvas class="chart" id="cv-relu" height="140"></canvas><div class="name">ReLU</div><div class="eq">max(0, z)</div><div style="margin-top:.3rem;font:.75rem/1.2 system-ui;color:var(--muted)"><span class="i18n" data-ko="출력" data-en="Out"></span>: <span class="v" id="relu-out">0.00</span></div></div>
-      </div>
-      <div class="info" id="act-info"></div>
+  <div class="plot-card">
+    <div class="ctrl-row">
+      <div class="ctrl-label" data-ko="w₁ (보존도): <span id='w1-val'>2.0</span>" data-en="w₁ (conservation): <span id='w1-val'>2.0</span>"></div>
+      <input type="range" id="w1-slider" min="-5" max="5" step="0.1" value="2.0" oninput="updateBoundary()">
     </div>
+    <div class="ctrl-row">
+      <div class="ctrl-label" data-ko="w₂ (구조적 영향): <span id='w2-val'>1.5</span>" data-en="w₂ (structural impact): <span id='w2-val'>1.5</span>"></div>
+      <input type="range" id="w2-slider" min="-5" max="5" step="0.1" value="1.5" oninput="updateBoundary()">
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-label" data-ko="b (편향): <span id='b-val'>-3.0</span>" data-en="b (bias): <span id='b-val'>-3.0</span>"></div>
+      <input type="range" id="b-slider" min="-8" max="2" step="0.1" value="-3.0" oninput="updateBoundary()">
+    </div>
+    <div class="stat-row" id="boundary-stats"></div>
+    <div id="boundary-plot" style="height:400px;"></div>
+    <div class="plot-caption" data-ko="결정 경계: w₁x + w₂y + b = 0. 금색 선 위쪽(w₁x + w₂y + b > 0)을 병원성으로 분류합니다. 정확도가 실시간으로 업데이트됩니다." data-en="Decision boundary: w₁x + w₂y + b = 0. Points above the gold line (w₁x + w₂y + b > 0) are classified as pathogenic. Accuracy updates in real time."></div>
   </div>
 
-  <!-- Single Neuron -->
-  <div class="exp-card">
-    <div class="exp-head"><div class="exp-num">2</div><div class="exp-title i18n" data-ko="단일 뉴런(Single Neuron) 탐색기" data-en="Single Neuron Explorer"></div></div>
-    <div class="exp-body">
-      <p class="exp-desc i18n" data-ko="가중치와 편향을 바꾸면 출력이 어떻게 변하나요?" data-en="How does the output change when you adjust weights and bias?"></p>
-      <div class="sl"><label><span>x₁ (<span class="i18n" data-ko="보존도" data-en="Conservation"></span>)</span><span class="v" id="x1-v">0.5</span></label><input type=range id="x1" min="0" max="100" value="50" oninput="updNeuron()"></div>
-      <div class="sl"><label><span>x₂ (<span class="i18n" data-ko="구조적 영향" data-en="Structural"></span>)</span><span class="v" id="x2-v">0.5</span></label><input type=range id="x2" min="0" max="100" value="50" oninput="updNeuron()"></div>
-      <div class="sl"><label>w₁<span class="v" id="w1-v">0.8</span></label><input type=range id="w1" min="-200" max="200" value="80" oninput="updNeuron()"></div>
-      <div class="sl"><label>w₂<span class="v" id="w2-v">0.5</span></label><input type=range id="w2" min="-200" max="200" value="50" oninput="updNeuron()"></div>
-      <div class="sl"><label>bias<span class="v" id="b-v">-0.3</span></label><input type=range id="nb" min="-200" max="200" value="-30" oninput="updNeuron()"></div>
-      <div class="btn-row" style="margin-bottom:.6rem">
-        <button class="btn act" onclick="setActFn('sigmoid',this)">Sigmoid</button>
-        <button class="btn" onclick="setActFn('relu',this)">ReLU</button>
-        <button class="btn" onclick="setActFn('tanh',this)">Tanh</button>
-      </div>
-      <canvas class="neuron-canvas chart" id="cv-neuron" height="180"></canvas>
-      <div class="info" id="neuron-info"></div>
+  <div class="insight-box" data-ko="<strong>한계와 시사점:</strong> 단일 뉴런(퍼셉트론)은 선형 분리 가능한 문제만 풀 수 있습니다. 실제 변이체 데이터는 비선형적입니다. 여러 레이어를 쌓고(깊은 신경망) 비선형 활성화 함수를 사용하면 복잡한 결정 경계를 학습할 수 있습니다." data-en="<strong>Limitation and implication:</strong> A single neuron (perceptron) can only solve linearly separable problems. Real variant data is non-linear. Stacking multiple layers with non-linear activations allows learning arbitrarily complex decision boundaries."></div>
+</section>
+
+<hr class="divider">
+
+<!-- SECTION 3: Training — Bias-Variance Tradeoff -->
+<section class="section">
+  <h2 class="section-title" data-ko="신경망 훈련 — 편향-분산 트레이드오프" data-en="Training a Neural Network — Bias-Variance Tradeoff"></h2>
+  <p class="section-body" data-ko="히든 뉴런 수를 바꾸면 모델 용량이 달라집니다. 뉴런이 너무 적으면 과소적합(underfitting), 너무 많으면 과적합(overfitting)이 발생합니다. 슬라이더를 움직여 세 가지 시나리오를 직접 확인하세요." data-en="Changing the number of hidden neurons alters model capacity. Too few neurons leads to underfitting; too many causes overfitting. Move the slider to observe all three scenarios directly."></p>
+
+  <div class="plot-card">
+    <div class="ctrl-row">
+      <div class="ctrl-label" data-ko="히든 뉴런 수: <span id='neuron-val'>16</span>" data-en="Hidden neurons: <span id='neuron-val'>16</span>"></div>
+      <input type="range" id="neuron-slider" min="0" max="5" step="1" value="2" oninput="updateLossPlot(this.value)">
+      <div id="neuron-regime" style="font:.82rem/1 system-ui;color:var(--gold);padding:.3rem .7rem;border-radius:5px;background:var(--gold-dim);border:1px solid rgba(196,163,90,.3);white-space:nowrap"></div>
     </div>
+    <div id="loss-plot" style="height:400px;"></div>
+    <div class="plot-caption" data-ko="파란 선: 훈련 손실. 주황 선: 검증 손실. 검증 손실이 훈련 손실보다 크게 올라가는 지점(epoch ~40)이 과적합 시작점입니다. 히든 뉴런 2개는 과소적합, 16개는 최적, 64개는 명확한 과적합 패턴을 보입니다." data-en="Blue: training loss. Orange: validation loss. The point where validation loss rises above training loss (around epoch 40) marks the onset of overfitting. 2 neurons: underfitting; 16: good fit; 64: clear overfitting."></div>
   </div>
 
-  <!-- Training Visualizer -->
-  <div class="exp-card">
-    <div class="exp-head"><div class="exp-num">3</div><div class="exp-title i18n" data-ko="학습 과정 시각화(Training Process)" data-en="Training Process Visualizer"></div></div>
-    <div class="exp-body">
-      <p class="exp-desc i18n" data-ko="학습률이 너무 크거나 작으면 어떻게 될까요?" data-en="What happens when the learning rate is too high or too low?"></p>
-      <div class="sl"><label><span class="i18n" data-ko="학습률(Learning Rate)" data-en="Learning Rate"></span><span class="v" id="lr-v">0.01</span></label><input type=range id="lr" min="1" max="100" value="10" oninput="updLR()"></div>
-      <div class="sl"><label><span class="i18n" data-ko="은닉층 뉴런 수" data-en="Hidden neurons"></span><span class="v" id="hn-v">8</span></label><input type=range id="hn" min="2" max="32" value="8" oninput="updHN()"></div>
-      <canvas class="chart" id="cv-loss" height="200"></canvas>
-      <div class="btn-row">
-        <button class="btn btn-g" onclick="startTraining()"><span class="i18n" data-ko="학습 시작" data-en="Start Training"></span></button>
-        <button class="btn" onclick="stepTraining(10)"><span class="i18n" data-ko="+10 에포크" data-en="+10 Epochs"></span></button>
-        <button class="btn btn-r" onclick="resetTraining()"><span class="i18n" data-ko="초기화" data-en="Reset"></span></button>
-      </div>
-      <div class="info" id="train-info"></div>
-    </div>
-  </div>
-</div>
+  <div class="insight-box" data-ko="<strong>실용적 해결책:</strong> Early stopping(검증 손실이 오르기 시작할 때 훈련 중단), Dropout(무작위로 뉴런 비활성화), L2 정규화. 모두 복잡도를 제어하는 방법입니다. 유전체학에서는 특히 샘플 수 대비 모델 파라미터 수에 주의해야 합니다." data-en="<strong>Practical solutions:</strong> Early stopping (halt when validation loss rises), Dropout (randomly deactivate neurons), L2 regularization. All control model complexity. In genomics, pay particular attention to the ratio of model parameters to sample size."></div>
+</section>
 
-<div class="footer"><span class="i18n" data-ko="AI for Genomic Science — 안준용, 고려대학교" data-en="AI for Genomic Science — Joon-Yong An, Korea University"></span></div>
+<hr class="divider">
+
+<!-- SECTION 4: Loss Function Intuition -->
+<section class="section">
+  <h2 class="section-title" data-ko="손실 함수의 직관" data-en="Loss Function Intuition"></h2>
+  <p class="section-body" data-ko="Cross-entropy 손실은 예측 신뢰도에 따라 페널티를 다르게 부여합니다. 확신을 가지고 틀렸을 때 가장 큰 손실이 발생합니다. 아래 차트에서 각 예측 시나리오의 손실을 비교하세요." data-en="Cross-entropy loss penalizes differently based on prediction confidence. Being confidently wrong incurs the largest penalty. Compare the loss for each prediction scenario in the chart below."></p>
+
+  <div class="plot-card">
+    <div id="loss-intuition-plot" style="height:380px;"></div>
+    <div class="plot-caption" data-ko="y축: Cross-entropy 손실 = −log(예측 확률). x축: 5가지 예측 시나리오. 초록색: 올바른 예측. 빨간색: 틀린 예측. 확신이 강할수록 페널티의 차이가 극적으로 커집니다." data-en="y-axis: Cross-entropy loss = −log(predicted probability). x-axis: 5 prediction scenarios. Green: correct. Red: wrong. The more confident the prediction, the more dramatic the penalty gap."></div>
+  </div>
+
+  <div class="insight-box" data-ko="<strong>왜 −log(p)인가:</strong> p=1(완벽한 예측) → 손실=0. p=0.5(동전 던지기) → 손실=0.69. p=0.05(확신하며 틀림) → 손실=3.0. 이 비대칭적 페널티가 모델로 하여금 불확실한 예측에는 보수적으로, 확신하는 예측에는 정확하도록 강제합니다." data-en="<strong>Why −log(p):</strong> p=1 (perfect) → loss=0. p=0.5 (coin flip) → loss=0.69. p=0.05 (confidently wrong) → loss=3.0. This asymmetric penalty forces the model to be conservative when uncertain and accurate when confident."></div>
+</section>
+
+<footer class="page-footer">
+  <p data-ko="AI for Genomic Science · Chapter 3" data-en="AI for Genomic Science · Chapter 3"></p>
+  <p style="margin-top:.5rem"><a href="../index.html" data-ko="← 목차로 돌아가기" data-en="← Back to Table of Contents"></a></p>
+</footer>
 
 <script>
-/* ================================================================ i18n */
-let L='ko';
-function t(k,e){return L==='ko'?k:e}
+/* ── LANGUAGE TOGGLE ── */
+let currentLang = 'ko';
 function setLang(l){
-  L=l;document.documentElement.lang=l;
-  document.getElementById('btn-ko').classList.toggle('active',l==='ko');
-  document.getElementById('btn-en').classList.toggle('active',l==='en');
-  document.querySelectorAll('.i18n').forEach(e=>e.textContent=e.dataset[l]||'');
-  document.getElementById('hero-title').textContent=t('신경망 —\n기계가 패턴을 배우는 법','NEURAL NETWORKS —\nHOW MACHINES\nLEARN PATTERNS');
-  document.getElementById('hero-sub').textContent=t('가장 단순한 구성 요소인 인공 뉴런 하나로 시작하여,\n층을 쌓으면 어떤 패턴도 학습할 수 있습니다.','Starting from one artificial neuron,\nstacking layers can learn any pattern.');
-  document.getElementById('pq1').innerHTML=t('"층이 깊어질수록,<br>단순한 모티프가<br>복잡한 조절 논리가 된다"','\"Deeper layers turn<br>simple motifs into<br>complex regulatory logic\"');
-  document.getElementById('sp-mode').textContent=t('비선형(Nonlinear)','Nonlinear');
-  requestAnimationFrame(()=>{layoutEd();updActFns();updNeuron();updClfInfo()});
-}
-
-/* ================================================================
-   CRT TV — ASCII Person + mouth animation + subtitles
-   ================================================================ */
-const FACE=[
-'..............:::........::.::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::',
-'...............::::.....::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::',
-'............::.:::.....:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::',
-'......::.....::.::.:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::',
-'..................::::::::::::::::::::::--=====---::::::::::::::::::::::::::::::::::::::::::::::::::',
-'......::....::.:::.:::::.::::::::::=*#####%%%%%%%%%#*=::::::::::::::::::::::::::::::::::::::::::::::',
-'.:.........::::::::::::::::::::::=#%%%%%%%%%%%%%@%@@%%#=::::::::::::::::::::::::::::::::::::::::::::',
-'::....::...:::::::::::::::::::-*#%%%%%%%%%@@@@@@@@@@@%%%#**+-:::::::::::::::::::::::::::::::::::::::',
-'..::......::::::::::::::::::+#%%%%%%%%%%%@@@@@@@@@@@@@%%%#####*=-:::::::::::::::::::::::::::::::::::',
-':.::::::..::::::::::::::::+%%%%%%%%%%%%@@@@@@@@@@@@@@@@%%%###%%%#+-:::::::::::::::::::::::::::::::::',
-'.:::::::::::::::::::::::-#%%%%%##%%%%%@@@@%%%%###%%%%%@@%%#%%%%%%%#=::::::::::::::::::::::::::::::::',
-'::::..::.::::::::::::::-#%%%%%%%%%%%%%%%%##*+++===++**#%%%%%%%%%%%%%*-::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::*%%%%%%@@%%%%%%##*++==-------===+*#%%%%%%%@@@@%*::::::::::::::::::::::::::::::',
-':::::::::::::::::::::#%%%%%%%%%%%##**+=----::::------==++*#%%%%%%%@@@%=:::::::::::::::::::::::::::::',
-'::::::::::::::::::::=#%%%@@@%%%%#*+=--::::::::::------===+*#%%%@%%%%%%%-::::::::::::::::::::::::::::',
-'::::::::::::::::::::*%%%%@@@%%##+=-:::::::::::::::-----===+*#%%%@@@@%@%*::::::::::::::::::::::::::::',
-':::::::::::::::::::=#%%@@@@%##*=--::::::::::::::::-----===++*#%%%@%%@@@%::::::::::::::::::::::::::::',
-':::::::::::::::::::*%%@@@%%#*=--::::::::::::::::::------===++*#%%%%%@@@#-:::::::::::::::::::::::::::',
-':::::::::::::::::::*%%@@%%*+=-::::::::::::::::::::------==+++**#%%%@@%%#-:::::::::::::::::::::::::::',
-':::::::::::::::::::+%@@@%+=--:::::::::::::::::::::----===+++++*#%%%@@@%*::::::::::::::::::::::::::::',
-':::::::::::::::::::=%@%@+----::::::::::::::::::--==+++===++++++*#%%%@@%#::::::::::::::::::::::::::::',
-':::::::::::::::::::-#%@%+-----====----::::::---==========+++++***#%@@@%*::::::::::::::::::::::::::::',
-'::::::::::::::::::::+%%@+==--========--------==----:---==+*%%#####%@%%%*=:::::::::::::::::::::::::::',
-':::::::::::::::::::::#%%=-====-:::----===+**=-----=*%%#*****++++++*%%****+::::::::::::::::::::::::::',
-':::::::::::::::::::::+#%+*=-----=++===------===--+=-=+==+++++=++++*#**+***:::::::::::::::::::::::::',
-':::::::::::::::::::::=****==+*==+#*==--==:--++=----==========++++++***++**::::::::::::::::::::::::::',
-'::::::::::::::::::::=+++======---------=-:--===-----------===+++++********::::::::::::::::::::::::::',
-':::::::::::::::::::::+=-===--------------::-==---:-------====++++++***##*+::::::::::::::::::::::::::',
-'::::::::::::::::::::::--==--------------:::-===-------------==+++++***#**-::::::::::::::::::::::::::',
-':::::::::::::::::::::::--==--------------:::--====-----------===+++++**+*+::::::::::::::::::::::::::',
-'::::::::::::::::::::::::--=-----:::::--------=+==+=---------====+++++*+++::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::-------:::-----+*+=++**++=--------====+++++++++=::::::::::::::::::::::::::::',
-];
-// Mouth area: two variants (closed / open) — 5 lines each
-const M_CLOSED=[
-':::::::::::::::::::::::::-=--------:::----=======---------====++++++-:::::::::::::::::::::::::::::::',
-':::::::::::::::::::::::::-----------------------====-----=====+++++=::::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::-=------------======++***#==--=====++++++-::::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::::==------=+**=-----======---====+++++++-:::::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::::-=-----------------===----=====+++++++-:::::::::::::::::::::::::::::::::',
-];
-const M_OPEN=[
-':::::::::::::::::::::::::-=--------:::----===-===---------====++++++-:::::::::::::::::::::::::::::::',
-':::::::::::::::::::::::::-----------------==-===----====-----=====+++++=::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::-=----------=-==--==++***#==--=====++++++-::::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::::==------=+**=--=--======---====+++++++-:::::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::::-=------------==---===----=====+++++++-:::::::::::::::::::::::::::::::::',
-];
-
-// SKULL ASCII (for "dead neuron" moment)
-const SKULL=[
-'::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::',
-'------==----=---------------=-===--=----===------:::::::::::::::::::::::::::::::::::::::::::::::::',
-'==========-----------==----==-------::--==+=-----::::::::::::::::::::::::::-====-:::::::::::::::::',
-'===============--======--===-------:::--==++=----:::::::::::::::::::::::::-=++++*+-::::::::::::::::',
-'=============-====-=-------------::::---=++++=--::::::::::::::::::::::::-====++*#*+::::::::::::::::',
-'========-------------:::::::--::::::----=+++++=-::::::::::::::::::::::--=+++++++*#*-:::::::::::::::',
-'-------------::::::::::----------------===++++++=-::::::::::::::::::-==++++++++****=:::::::::::::::',
-'-----::::::::::::::-----------========-=++=============---------:::===+*++++*#**++*+:::::::::::::::',
-':::::-:::::--------======+++++++++++======-=====================+=+++*#++*######*+*+:::::::::::::::',
-'-----------=====+++++++++++++++++====------======+==============+++*##+++*#%%%#*++*+:::::::::::::::',
-'-====+++++++++++++++++++++++======----------====++================+##*+++*#%%%#++++=:::::::::::::::',
-'----+*****+++++++++++++=====----------------===++===================+*++*%@%%#*++++-:::::::::::::::',
-'=---=++++++++++++++++======-----------------==++=====================++#%%%%#+++++=::::::::::::::::',
-'=--==++++++++++++++======-----------------===++====----=====+===========+##++++##+=--::::::::::::::',
-'=--==+++++++++++========---------+#%#+=--====+++=----=--===+++============++++++++=--::::::::::::::',
-'---==+=========------------:..:-++*###*==========---==--=====+==============+++***+=--:::::::::::::',
-'--------------------------....:-+#%%@%+=---==-=======+%%%*+===================+*##+==--::::::::::::',
-'------------------------::...:--+*%#+=--------===++#%+=+#@@%++=================++*+==--::::::::::::',
-'------------------------:....--===------------==+#%@*=%@@@@@%+==================+++==--::::::::::::',
-'-----------------------.....:----------------===++*%%*#%%%#+=--------=---========+====-::::::::::::',
-'----------------------:::..:..::---------------=======+===-==----------------=========-::::::::::::',
-'---==-----------------:::::.-=+******==---------============--------==---------=======--:::::::::::',
-'=-------=-=##+=-------::::.=@@@@@@@@%%%+-------===-----=------------------------=======-:::::::::::',
-'==-====-----+**+====-::--::=%@@@@@@@@@%*----------------------------------------========-::::::::::',
-'------=++=---====---::::.:-+%%@@@@@@@@%==--------------------------------=---===========--:::::::::',
-'--=+==+*+++-----===-------=+#%@@@@@@%#+====----==----------------------==================-:::::::::',
-'=====++=--=----====--:::--=*##%%%%%%#*============-------------------===========+++======--::::::::',
-'====++=---==-======--:::--=+#######%%*++============-==-=---===---====------=====+=======--::::::::',
-'::---==============--::----=#%%@@@@@%%*+=========+===========---===----------===+=========--:::::::',
-'..........:::--------::::---+#%%%%%%@@@%#++##%%%%#+========----==-----------======++======---::::::',
-'::...:...............:-:-----=+########%%%####*#+=========--------------=-=====++++++======--::::::',
-'::::::::::..:........::-::-----+*++++++++++++++===============--=--==-==========+++++++=====-::::::',
-'::::::::::::::::::...::----------============================-=-------=======++==+++++++====--:....',
-'::::::::::::::::::::::::-----------=========================-------========++++++++++++=====--:::::',
-'---:-::::::::::::::::::----------------==================-------=============+++++++++======--:::::',
-'---------::-:::::::::::-----------===-=================------=--=============++++++++=======--:::::',
-'---------------::::::::-------------===================-----================+++++++=======----:::::',
-'------------------::-:--------==---=-=======================================+++++=======-==---:::::',
-'--------------------::---------================================--==================----------::::::',
-'---------------------::----------==========+=+==+===============-============--==--=---------::::::',
-'---------------------:::----------========+++++++========---==============----------------==--:::::',
-'---------------------::::--------===================--=---=======-------------------------==--::::',
-'----------------------::::--------=====================--=----=-====----------------------===-----',
-'----------------------::----------=================-----==---=--=----==------------------====----:-',
-'----------------------------------==================-===-=--==------=+==----------------=====------:',
-'----------------------------------================-======------=------------------------=====------',
-'========---=-------:::::---------===================--==--==-===--=------------------======+=------',
-'==========--------:::::---------==-===================--=---=-----------------------======++=------',
-'======----------::::::::--------==-============-====-=--=========-----------------========++==-----',
-'====----------::::::.:::------==================-------=---=-======-------------=======+++====----+',
-'====---------::..::.:::--------=================--====-------------=------------==-===++++++===---+',
-'====--------::.:::::::---------==================---------=--------==----------------===++++===---+',
-];
-const FACE_BOTTOM=[
-':::::::::::::::::::::::::::::-=-----------------==========++++++++-:::::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::::::-===---------------========+++++++++**-:::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::::::::-===-------------====++++++++++**==#%=::::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::::::::::====---------====++++++++++++*=-=#@@*-::::::::::::::::::::::::::::',
-'::::::::::::::::::::::::::::::::::::=++========++++++++++++++++=--*%@@@%+-::::::::::::::::::::::::::',
-':::::::::::::::::::::::::::::::::::::=+++++++++++++++++++++++=-:-=%@@@@@@@+:::::::::::::::::::::::::',
-':::::::::::::::::::::::::::::::::::::-+++++++++++++++++++++=-:::=#@@@@@@@@@@%-::::::::::::::::::::::',
-':::::::::::::::::::::::::::::::::::-=-==+++++++++++++++++=-::::-#@@@@@@@@@@@@@@%#=::::::::::::::::::',
-'::::::::::::::::::::::::::::::::::+%+-====+++++++++++++=-:::::-#@@@@@@@@@@@@@@@%%%%%#*=:::::::::::::',
-'::::::::::::::::::::::::::::::-+##%%+.:=============+=-::::::-#@@@@@@@@@@@@@@@@%%%%%%%%%%#*=::::::::',
-'::::::::::::::::::::::::::+*#%%%%%%%+..:==========+=::::::::=#@@@@@@@@@@@@@@@@%%%%%%%%%%%%%%%%#*+-::',
-':::::::::::::::::::::=*#%%%%%%%%%%%%=....-======+-:::::::::=#%@@@@@@@@@@%%%@@%%%%%%%%%%%%%%%%%%%%%%#',
-':::::::::::::::-=+*%%%%%%%%%%%%%%%%#-.....:====-........::-#%%%@@@@@@@%%%%%@%%%%%%%%%%%%%%%%%%%%%%%%',
-'::::::::::-=+#%%%%%%%%%%%%%%%%%%%%%*:......:--:.........:-*%%%%%%%@@@%%%%%%@%%%%%%%%%%%%%%%%%%%%%%%%',
-':::::::-+#%%%%%%%%%%%%%%%%%%%%%%%%%*:...:+**++:.........:+%%%%%%%%%%%%%%%%%@@%%%%%%%%%%%%%%%%%%%%%%%',
-'::::-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%+..:+***+++++-.......=%%%%%%%%%%%%%%%@@@@%%%%%%%%%%%%%%%%%%%%%%%%',
-':::=%%%%%%%%%%%%%%%%%%%@%%%%%%%%%%#=.-+****++=+*##-....:#%%%%%%%%%%%%@@@%%%%%%%%%%%%%%%%%%%%%%%%%%%%',
-'::=%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*::++=+**++*#+#%#*:..+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%',
-':-%%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%+:=+=:-+***##%*+=---=%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%',
-':#%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%+-+=-..=**####+-::::#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%',
-'+%%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#+==:...=++*#%#=::.:+%%%%%%%%%%%%%%%%%%%@@%%%%%%%%%%%%%%%%%%%%%%%%%',
-'#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#=-:...:=***###=.:.-%%%%%%%%%%%%%%%%%%%@@%%%%%%%%%%%%%%%%%%%%%%%%%%',
-'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#-:....-****###+:..#%%%%%%%%%%%%%%%%%%@@%%%%%%%%%%%%%%%%%%%%%%%%%%%',
-'%%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*-:....=#****##+:.=%%%%%%%%%%%%%%%%%%@@%%%%%%%%%%%%%%%%%%%%%%%%%%%%',
-'%%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%+-:...-*#*****+*::%%%%%%%%%%%%%%%%%%@@%%%%%%%%%%%%%%%%%%%%%%%%%%%%@',
-'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%+-:..:+##**+=+*#-#%%%%%%%%%%%%%%%%%@@%%%%%%%%%%%%%%%%%%%%%%%%%%@@@@',
-'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%=-:..=##**=+***#+%%%%%%%%%%%%%%%%%@@%%%%%%%%%%%%%%%%%%%%%%%%%%@@@@@',
-'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%=-:::+##++*****#%%%%%%%%%%%%%%%%%@@@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%',
-'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#=-::=#*+*******%%%%%%%%%%%%%%%%%@@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@@%@',
-'%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#=-::=**********%%%%%%%%%%%%%%%%@@@%%%%%%%%%%%%%%%%%%%%%%%%%%%@@@@@@',
-'%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#=-:-+*##******#%%%%%%%%%%%%%%%@@@%%%%%%%%%%%%%%%%%%%%%%%%%%%%@@@@@@',
-'%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#=-:-*###****=*%%%%%%%%%%%%%%%@@@%%%%%%%%%%%%%%%%%%%%%%%%%@%%@@@@@@@',
-'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%=-:=####**++*%%%%%%%%%%%%%%%@@@%%%%%%%%%%%%%%%%%%%%%%%%%@@%%@@@@@@@',
-];
-
-// Subtitle sequence: {text, effect} — effect: null, 'psycho', 'skull', 'glitch'
-const SUBS={
-  ko:[
-    {t:'안녕하세요, 여러분.',fx:null},
-    {t:'인공 신경망의 기본 단위는 놀라울 정도로 단순합니다.',fx:null},
-    {t:'입력 × 가중치 → 합산 → 활성화!',fx:null},
-    {t:'여러분 뇌의 뉴런도 같은 원리입니다.',fx:null},
-    {t:'수상돌기로 신호를 받고... 세포체에서 통합...',fx:null},
-    {t:'역치를 넘으면 — 발사!!',fx:null},
-    {t:'뉴런 하나는 직선 하나.',fx:null},
-    {t:'여러 개를 쌓으면? 곡선이 됩니다.',fx:null},
-    {t:'이것이... 딥러닝의... 힘이에요!!!',fx:'psycho'},
-    {t:'하지만 조심하세요...',fx:null},
-    {t:'과적합(Overfitting)은 모든 것을 파괴합니다.',fx:'glitch'},
-    {t:'죽은 뉴런(Dead Neuron)이 되면...',fx:'skull'},
-    {t:'영원히... 돌아올 수 없습니다...',fx:'skull'},
-    {t:'...걱정 마세요. 해결 방법이 있어요!',fx:null},
-    {t:'Dropout, 정규화, 조기 중단!',fx:null},
-    {t:'아래에서 직접 실험해보세요!',fx:null},
-  ],
-  en:[
-    {t:'Hello, everyone.',fx:null},
-    {t:'The basic unit of a neural network is remarkably simple.',fx:null},
-    {t:'Input × Weight → Sum → Activate!',fx:null},
-    {t:'Your brain neurons work the same way.',fx:null},
-    {t:'Dendrites receive... cell body integrates...',fx:null},
-    {t:'Threshold crossed — FIRE!!',fx:null},
-    {t:'One neuron = one straight line.',fx:null},
-    {t:'Stack them? You get curves.',fx:null},
-    {t:'This is... the power... of DEEP LEARNING!!!',fx:'psycho'},
-    {t:'But be careful...',fx:null},
-    {t:'Overfitting DESTROYS everything.',fx:'glitch'},
-    {t:'When a neuron DIES...',fx:'skull'},
-    {t:'It never... comes back...',fx:'skull'},
-    {t:'...Don\'t worry. There are solutions!',fx:null},
-    {t:'Dropout, regularization, early stopping!',fx:null},
-    {t:'Try the experiments below!',fx:null},
-  ]
-};
-
-let mouthOpen=false,subIdx=0,charIdx=0,subPause=0,currentFx=null;
-
-function renderTV(){
-  const pre=document.getElementById('tv-ascii');if(!pre)return;
-  const screen=document.querySelector('.tv-screen');
-  const frame=document.querySelector('.tv-frame');
-  // Choose face: skull or normal
-  let lines;
-  if(currentFx==='skull'){
-    lines=[...SKULL];
-  } else {
-    const mouth=mouthOpen?M_OPEN:M_CLOSED;
-    lines=[...FACE,...mouth,...FACE_BOTTOM];
-  }
-  pre.textContent=lines.join('\n');
-  // Apply screen effects
-  screen.classList.toggle('psycho',currentFx==='psycho');
-  screen.classList.toggle('glitch',currentFx==='skull'||currentFx==='glitch');
-  frame.classList.toggle('shake',currentFx==='glitch'||currentFx==='skull');
-}
-
-function animTV(){
-  const subs=SUBS[L];
-  const sub=subs[subIdx];
-  currentFx=sub.fx;
-  if(charIdx<sub.t.length){mouthOpen=!mouthOpen}else{mouthOpen=false}
-  renderTV();
-  const el=document.getElementById('tv-sub');
-  // Subtitle styling
-  el.classList.toggle('psycho-sub',currentFx==='psycho');
-  if(subPause>0){
-    subPause--;
-    if(currentFx==='skull')el.innerHTML='<span style="color:#ff2020">'+sub.t+'</span><span class="cursor">|</span>';
-    else el.innerHTML=sub.t+'<span class="cursor">|</span>';
-  }
-  else if(charIdx<sub.t.length){
-    charIdx=Math.min(charIdx+2,sub.t.length);
-    const txt=sub.t.slice(0,charIdx);
-    if(currentFx==='psycho')el.innerHTML=txt+'<span class="cursor">|</span>';
-    else if(currentFx==='skull'||currentFx==='glitch')el.innerHTML='<span style="color:#ff2020">'+txt+'</span><span class="cursor">|</span>';
-    else el.innerHTML=txt+'<span class="cursor">|</span>';
-  }
-  else{
-    subPause=currentFx?8:12;
-    charIdx=0;
-    subIdx=(subIdx+1)%subs.length;
-  }
-  setTimeout(animTV,currentFx?120:180);
-}
-
-/* ================================================================
-   Editorial text — centered paragraphs
-   ================================================================ */
-const ED={
-  ko:['인공 신경망의 기본 단위는 놀라울 정도로 단순합니다. 입력값에 가중치를 곱하고, 모두 더한 뒤, 비선형 함수를 통과시키는 것이 전부입니다. 여러분의 뇌에 있는 실제 뉴런이 수상돌기(Dendrite)로 신호를 받고, 세포체(Cell body)에서 통합한 뒤, 역치를 넘으면 활동전위(Action potential)를 발사하는 것과 개념적으로 같습니다.','위의 교수님이 설명하는 것처럼, 뉴런 하나는 직선 하나만 그릴 수 있습니다. 하지만 여러 개를 쌓으면 직선이 곡선이 됩니다. 첫 번째 층은 TATA 박스나 CpG 섬 같은 단순한 서열 모티프를 감지하고, 두 번째 층은 이들을 결합해 프로모터 모듈을 인식합니다.','세 번째 층은 인핸서-프로모터 상호작용 같은 조절 논리를 파악합니다. 이것이 심층 학습(Deep Learning)이 유전체학에서 강력한 이유입니다. 아래 분류기에서 직접 확인해보세요!'],
-  en:['The basic unit of an artificial neural network is remarkably simple. Multiply inputs by weights, sum them up, pass through a nonlinear function. Conceptually identical to how your biological neurons receive signals through dendrites, integrate in the cell body, and fire an action potential when threshold is exceeded.','As the professor above explains, one neuron draws one straight line. Stack multiple neurons and straight lines become curves. The first layer detects simple motifs like TATA boxes. The second combines them into promoter modules.','The third layer grasps regulatory logic like enhancer-promoter interactions. This is why deep learning is powerful for genomics. Try the classifier below!']
-};
-
-function initEditorial(){layoutEd();renderTV();setTimeout(animTV,600)}
-function layoutEd(){document.getElementById('ed-p1').textContent=ED[L][0];document.getElementById('ed-p2').textContent=ED[L][1];document.getElementById('ed-p3').textContent=ED[L][2]}
-
-/* ================================================================ Neural Network */
-class NN{
-  constructor(layers){this.W=[];this.B=[];for(let i=0;i<layers.length-1;i++){const s=Math.sqrt(2/layers[i]);this.W.push(Array.from({length:layers[i+1]},()=>Array.from({length:layers[i]},()=>(Math.random()-.5)*2*s)));this.B.push(Array(layers[i+1]).fill(0))}}
-  forward(x){let a=[...x];this.As=[a];this.Zs=[];for(let i=0;i<this.W.length;i++){const z=this.W[i].map((row,j)=>row.reduce((s,w,k)=>s+w*a[k],0)+this.B[i][j]);this.Zs.push(z);a=i===this.W.length-1?z.map(v=>1/(1+Math.exp(-Math.max(-20,Math.min(20,v))))):z.map(v=>Math.max(0,v));this.As.push(a)}return a}
-  backward(target,lr){const L=this.W.length;let d=this.As[L].map((a,i)=>a-target[i]);for(let i=L-1;i>=0;i--){const ap=this.As[i];for(let j=0;j<this.W[i].length;j++){for(let k=0;k<this.W[i][j].length;k++)this.W[i][j][k]-=lr*d[j]*ap[k];this.B[i][j]-=lr*d[j]}if(i>0){const nd=Array(this.W[i][0].length).fill(0);for(let j=0;j<this.W[i].length;j++)for(let k=0;k<this.W[i][j].length;k++)nd[k]+=this.W[i][j][k]*d[j];d=nd.map((v,k)=>this.Zs[i-1][k]>0?v:0)}}}
-  loss(data){let s=0;data.forEach(({x,y})=>{const p=this.forward(x)[0];s+=-(y[0]*Math.log(p+1e-8)+(1-y[0])*Math.log(1-p+1e-8))});return s/data.length}
-  accuracy(data){let c=0;data.forEach(({x,y})=>{const p=this.forward(x)[0];if((p>.5)===(y[0]===1))c++});return c/data.length}
-}
-
-/* ================================================================ 2D Classifier */
-let clfData=[],clfNN=null,clfMode=1,clfEpoch=0,clfTraining=false;
-
-function initClf(){
-  clfData=[
-    {x:[.2,.2],y:[0]},{x:[.3,.15],y:[0]},{x:[.15,.35],y:[0]},{x:[.25,.3],y:[0]},{x:[.1,.2],y:[0]},
-    {x:[.8,.8],y:[0]},{x:[.85,.75],y:[0]},{x:[.9,.85],y:[0]},{x:[.75,.9],y:[0]},{x:[.7,.8],y:[0]},
-    {x:[.7,.3],y:[1]},{x:[.6,.25],y:[1]},{x:[.75,.2],y:[1]},{x:[.65,.35],y:[1]},{x:[.8,.15],y:[1]},
-    {x:[.3,.7],y:[1]},{x:[.25,.8],y:[1]},{x:[.35,.75],y:[1]},{x:[.2,.65],y:[1]},{x:[.4,.8],y:[1]},
-    {x:[.5,.5],y:[1]},{x:[.55,.45],y:[1]},{x:[.45,.55],y:[1]}
-  ];
-  clfNN=new NN([2,8,4,1]);clfEpoch=0;
-  // Canvas click — directly on canvas, no drag conflict
-  document.getElementById('clf-cv').addEventListener('click',e=>{
-    const cv=e.target,rect=cv.getBoundingClientRect();
-    const px=(e.clientX-rect.left)/rect.width,py=1-(e.clientY-rect.top)/rect.height;
-    if(px>=0&&px<=1&&py>=0&&py<=1){clfData.push({x:[px,py],y:[clfMode]});drawClf()}
+  currentLang = l;
+  document.querySelectorAll('[data-ko]').forEach(el=>{
+    el.innerHTML = l==='ko' ? el.dataset.ko : el.dataset.en;
   });
-  drawClf();updClfInfo();
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.lang-btn:${l==='ko'?'first':'last'}-child`).classList.add('active');
+  renderAllPlots();
 }
+document.querySelectorAll('[data-ko]').forEach(el=>{ el.innerHTML = el.dataset.ko; });
 
-function trainNetwork(){
-  if(clfData.length<4)return;
-  clfNN=new NN([2,8,4,1]);clfEpoch=0;clfTraining=true;
-  function step(){
-    if(!clfTraining||clfEpoch>=200)return;
-    for(let i=0;i<5;i++){
-      const sh=[...clfData].sort(()=>Math.random()-.5);
-      sh.forEach(d=>{clfNN.forward(d.x);clfNN.backward(d.y,.05)});
-      clfEpoch++;
+/* ── BILINGUAL PLOT LABELS ── */
+const plotLabels = {
+  actPlot: {
+    xaxis: { ko: '입력 x', en: 'Input x' },
+    yaxis: { ko: 'f(x)', en: 'f(x)' },
+    annotations: {
+      vanishing: { ko: '기울기 소실 영역<br>(Vanishing Gradient)', en: 'Vanishing Gradient<br>Region' },
+      dead:      { ko: '죽은 뉴런 구역<br>(Dead Neuron Zone)', en: 'Dead Neuron<br>Zone' }
     }
-    drawClf();updClfStats();
-    if(clfEpoch<200)requestAnimationFrame(step);
-    else updClfInfo();
+  },
+  boundaryPlot: {
+    xaxis: { ko: '진화적 보존도 (Conservation)', en: 'Evolutionary Conservation' },
+    yaxis: { ko: '구조적 영향 점수', en: 'Structural Impact Score' },
+    traces: [
+      { ko: '병원성', en: 'Pathogenic' },
+      { ko: '양성', en: 'Benign' },
+      { ko: '결정 경계', en: 'Decision boundary' }
+    ]
+  },
+  lossPlot: {
+    xaxis: { ko: '에포크', en: 'Epoch' },
+    yaxis: { ko: '손실 (Loss)', en: 'Loss' },
+    traces: [
+      { ko: '훈련 손실 (Train Loss)', en: 'Training Loss' },
+      { ko: '검증 손실 (Val Loss)', en: 'Validation Loss' }
+    ],
+    annotations: {
+      overfitting: { ko: '과적합 시작', en: 'Overfitting begins' }
+    }
+  },
+  lossIntuitionPlot: {
+    yaxis: { ko: 'Cross-Entropy 손실 = −log(p)', en: 'Cross-Entropy Loss = −log(p)' },
+    scenarios: [
+      { ko: '확신하며 정답', en: 'Confident Correct' },
+      { ko: '적당히 확신', en: 'Moderately sure' },
+      { ko: '불확실', en: 'Uncertain' },
+      { ko: '적당히 틀림', en: 'Moderately wrong' },
+      { ko: '확신하며 틀림', en: 'Confident Wrong' }
+    ],
+    annotations: [
+      { ko: '거의 페널티 없음', en: 'Almost no penalty' },
+      { ko: '최대 페널티!', en: 'Maximum penalty!' }
+    ]
   }
-  step();
-}
+};
 
-function resetClf(){clfData=[];clfTraining=false;clfNN=new NN([2,8,4,1]);clfEpoch=0;drawClf();updClfStats();updClfInfo()}
+/* ── PLOTLY THEME ── */
+const THEME = {
+  paper_bgcolor:'rgba(0,0,0,0)',
+  plot_bgcolor:'rgba(20,20,31,1)',
+  font:{color:'#e4e0d8', family:'system-ui, Georgia, serif'},
+  margin:{t:50,b:60,l:65,r:50}
+};
+const CFG = {responsive:true, displayModeBar:false};
 
-function drawClf(){
-  const cv=document.getElementById('clf-cv'),ctx=cv.getContext('2d');
-  const dpr=devicePixelRatio||1,S=400;
-  if(cv.width!==S*dpr){cv.width=S*dpr;cv.height=S*dpr;cv.style.width=S+'px';cv.style.height=S+'px';ctx.scale(dpr,dpr)}
-  ctx.clearRect(0,0,S,S);ctx.fillStyle='#0d0d1a';ctx.fillRect(0,0,S,S);
-  // Decision boundary
-  if(clfNN&&clfEpoch>0){const res=4;for(let px=0;px<S;px+=res)for(let py=0;py<S;py+=res){const pred=clfNN.forward([px/S,1-py/S])[0];const r=Math.round(pred*180+40),b=Math.round((1-pred)*180+40);ctx.fillStyle=`rgba(${r},50,${b},0.25)`;ctx.fillRect(px,py,res,res)}}
-  // Grid
-  ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=.5;
-  for(let i=0;i<=4;i++){const g=S*i/4;ctx.beginPath();ctx.moveTo(g,0);ctx.lineTo(g,S);ctx.stroke();ctx.beginPath();ctx.moveTo(0,g);ctx.lineTo(S,g);ctx.stroke()}
-  ctx.fillStyle='#555';ctx.font='10px system-ui';ctx.textAlign='center';
-  ctx.fillText(t('보존도(Conservation)','Conservation'),S/2,S-4);
-  ctx.save();ctx.translate(10,S/2);ctx.rotate(-Math.PI/2);ctx.fillText(t('구조적 영향(Structural)','Structural impact'),0,0);ctx.restore();
-  // Points
-  clfData.forEach(d=>{const sx=d.x[0]*S,sy=(1-d.x[1])*S;ctx.beginPath();ctx.arc(sx,sy,5,0,Math.PI*2);ctx.fillStyle=d.y[0]===1?'#f87171':'#38bdf8';ctx.fill();ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;ctx.stroke()});
-}
+/* ── SECTION 1: ACTIVATION FUNCTIONS ── */
+const actVisible = {sigmoid:true, tanh:true, relu:true, lrelu:true};
 
-function updClfStats(){
-  const acc=clfData.length>0&&clfEpoch>0?clfNN.accuracy(clfData):0;
-  const loss=clfData.length>0&&clfEpoch>0?clfNN.loss(clfData):0;
-  document.getElementById('sp-acc').textContent=clfEpoch>0?(acc*100).toFixed(1)+'%':'—';
-  document.getElementById('sp-acc').classList.toggle('has',clfEpoch>0);
-  document.getElementById('sp-loss').textContent=clfEpoch>0?loss.toFixed(3):'—';
-  document.getElementById('sp-epoch').textContent=clfEpoch;
-}
+function sigmoid(x){ return 1/(1+Math.exp(-x)); }
+function tanhF(x){ return Math.tanh(x); }
+function relu(x){ return Math.max(0,x); }
+function lrelu(x){ return x>=0 ? x : 0.01*x; }
 
-function updClfInfo(){
-  const el=document.getElementById('clf-info');
-  if(clfEpoch===0)el.textContent=t('💡 캔버스를 클릭해 점을 추가하고 "학습 시작!"을 누르세요. 빨간 점=병원성, 파란 점=중립 변이입니다.','💡 Click the canvas to add points, then press "Train!" Red=pathogenic, Blue=benign.');
-  else if(clfEpoch>=200){const acc=clfNN.accuracy(clfData);el.textContent=t(`💡 학습 완료! 정확도 ${(acc*100).toFixed(1)}%. 배경색이 결정 경계를 보여줍니다. 점을 더 추가하고 다시 학습해보세요!`,`💡 Done! Accuracy ${(acc*100).toFixed(1)}%. Background shows decision boundary. Add more points and retrain!`)}
-}
+const xAct = Array.from({length:200},(_,i)=> -5 + i*(10/199));
 
-/* ================================================================ Activation Fns */
-function initC(id){const c=document.getElementById(id),d=devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;const x=c.getContext('2d');x.scale(d,d);return{x,w:r.width,h:r.height}}
-
-function updActFns(){
-  const z=+document.getElementById('act-z').value/10;
-  document.getElementById('act-z-val').textContent=z.toFixed(1);
-  const sig=1/(1+Math.exp(-z)),th=Math.tanh(z),re=Math.max(0,z);
-  document.getElementById('sig-out').textContent=sig.toFixed(3);
-  document.getElementById('tanh-out').textContent=th.toFixed(3);
-  document.getElementById('relu-out').textContent=re.toFixed(3);
-  drawActFn('cv-sigmoid',x=>1/(1+Math.exp(-x)),z,'#4ade80',0,1);
-  drawActFn('cv-tanh',Math.tanh,z,'#38bdf8',-1,1);
-  drawActFn('cv-relu',x=>Math.max(0,x),z,'#a78bfa',0,5);
-  document.getElementById('act-info').textContent=z>2?t('💡 큰 양수: Sigmoid/Tanh 포화 → 기울기 ≈ 0 (기울기 소실). ReLU는 이 문제 없음!','💡 Large positive: Sigmoid/Tanh saturate → gradient ≈ 0 (vanishing gradient). ReLU avoids this!'):z<-2?t('💡 큰 음수: ReLU 출력 = 0. 지속되면 "죽은 뉴런". Leaky ReLU가 해결.','💡 Large negative: ReLU = 0. If persistent → "dead neuron." Leaky ReLU fixes this.'):t('💡 0 근처: 세 함수 모두 거의 선형. 비선형성은 극값에서 나타남.','💡 Near 0: all three are nearly linear. Nonlinearity appears at extremes.');
-}
-
-function drawActFn(id,fn,zNow,color,yMin,yMax){
-  const{x:ctx,w,h}=initC(id);const P={t:6,r:6,b:16,l:6},pw=w-P.l-P.r,ph=h-P.t-P.b;ctx.clearRect(0,0,w,h);
-  const xMin=-5,xMax=5;
-  ctx.strokeStyle='#1e1e2a';ctx.lineWidth=.5;
-  const zeroX=P.l+(-xMin)/(xMax-xMin)*pw,zeroY=P.t+ph-(-yMin)/(yMax-yMin)*ph;
-  ctx.beginPath();ctx.moveTo(zeroX,P.t);ctx.lineTo(zeroX,P.t+ph);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(P.l,zeroY);ctx.lineTo(P.l+pw,zeroY);ctx.stroke();
-  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;
-  for(let i=0;i<=pw;i++){const x=xMin+(i/pw)*(xMax-xMin),y=fn(x),py=P.t+ph-(y-yMin)/(yMax-yMin)*ph;i?ctx.lineTo(P.l+i,py):ctx.moveTo(P.l+i,py)}ctx.stroke();
-  const mx=P.l+(zNow-xMin)/(xMax-xMin)*pw,my=P.t+ph-(fn(zNow)-yMin)/(yMax-yMin)*ph;
-  ctx.beginPath();ctx.arc(mx,my,5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
-  ctx.fillStyle='#555';ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText(xMin,P.l,P.t+ph+12);ctx.fillText(xMax,P.l+pw,P.t+ph+12);
-}
-
-/* ================================================================ Single Neuron */
-let neuronActFn='sigmoid';
-function setActFn(fn,btn){neuronActFn=fn;btn.parentElement.querySelectorAll('.btn').forEach(x=>x.classList.remove('act'));btn.classList.add('act');updNeuron()}
-function updNeuron(){
-  const x1=+document.getElementById('x1').value/100,x2=+document.getElementById('x2').value/100;
-  const w1=+document.getElementById('w1').value/100,w2=+document.getElementById('w2').value/100,b=+document.getElementById('nb').value/100;
-  document.getElementById('x1-v').textContent=x1.toFixed(2);document.getElementById('x2-v').textContent=x2.toFixed(2);
-  document.getElementById('w1-v').textContent=w1.toFixed(2);document.getElementById('w2-v').textContent=w2.toFixed(2);document.getElementById('b-v').textContent=b.toFixed(2);
-  const z=w1*x1+w2*x2+b;let a;if(neuronActFn==='sigmoid')a=1/(1+Math.exp(-z));else if(neuronActFn==='relu')a=Math.max(0,z);else a=Math.tanh(z);
-  drawNeuronDiagram(x1,x2,w1,w2,b,z,a);
-  document.getElementById('neuron-info').textContent=t(`💡 z = ${w1.toFixed(2)}×${x1.toFixed(2)} + ${w2.toFixed(2)}×${x2.toFixed(2)} + (${b.toFixed(2)}) = ${z.toFixed(3)} → ${neuronActFn}(z) = ${a.toFixed(3)}`,`💡 z = ${w1.toFixed(2)}×${x1.toFixed(2)} + ${w2.toFixed(2)}×${x2.toFixed(2)} + (${b.toFixed(2)}) = ${z.toFixed(3)} → ${neuronActFn}(z) = ${a.toFixed(3)}`);
-}
-function drawNeuronDiagram(x1,x2,w1,w2,b,z,a){
-  const{x:ctx,w,h}=initC('cv-neuron');ctx.clearRect(0,0,w,h);const cy=h/2,nX=w*.55,nR=28;
-  [{x:x1,w:w1,label:'x₁',y:cy-30},{x:x2,w:w2,label:'x₂',y:cy+30}].forEach(inp=>{
-    ctx.strokeStyle=inp.w>=0?'rgba(74,222,128,.5)':'rgba(248,113,113,.5)';ctx.lineWidth=Math.abs(inp.w)*3+.5;ctx.beginPath();ctx.moveTo(w*.1,inp.y);ctx.lineTo(nX-nR,cy);ctx.stroke();
-    ctx.fillStyle=inp.w>=0?'#4ade80':'#f87171';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('w='+inp.w.toFixed(2),(w*.1+nX-nR)/2,inp.y-8);
-    ctx.fillStyle='#e4e0d8';ctx.font='bold 12px system-ui';ctx.textAlign='right';ctx.fillText(inp.label+'='+inp.x.toFixed(2),w*.1-4,inp.y+4);
+function buildActPlot(){
+  const traces = [];
+  const fns = [
+    {key:'sigmoid', fn:sigmoid, color:'#f87171', name:'Sigmoid'},
+    {key:'tanh',    fn:tanhF,   color:'#a78bfa', name:'Tanh'},
+    {key:'relu',    fn:relu,    color:'#4ade80', name:'ReLU'},
+    {key:'lrelu',   fn:lrelu,   color:'#38bdf8', name:'Leaky ReLU'}
+  ];
+  fns.forEach(f=>{
+    if(!actVisible[f.key]) return;
+    traces.push({
+      x: xAct, y: xAct.map(f.fn),
+      type:'scatter', mode:'lines',
+      name: f.name,
+      line:{color:f.color, width:2.5},
+      hovertemplate:`<b>${f.name}</b><br>x=%{x:.2f}<br>f(x)=%{y:.3f}<extra></extra>`
+    });
   });
-  const intensity=Math.min(1,Math.max(0,neuronActFn==='sigmoid'?a:a/2));
-  const grad=ctx.createRadialGradient(nX,cy,2,nX,cy,nR);grad.addColorStop(0,`rgba(196,163,90,${.3+intensity*.5})`);grad.addColorStop(1,`rgba(196,163,90,.08)`);
-  ctx.beginPath();ctx.arc(nX,cy,nR,0,Math.PI*2);ctx.fillStyle=grad;ctx.fill();ctx.strokeStyle='rgba(196,163,90,.4)';ctx.lineWidth=1.5;ctx.stroke();
-  ctx.fillStyle='#c4a35a';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.fillText('Σ+f',nX,cy+4);
-  ctx.strokeStyle=`rgba(196,163,90,${.3+intensity*.5})`;ctx.lineWidth=2+intensity*3;ctx.beginPath();ctx.moveTo(nX+nR,cy);ctx.lineTo(w*.88,cy);ctx.stroke();
-  ctx.fillStyle='#fff';ctx.font='bold 16px system-ui';ctx.textAlign='left';ctx.fillText(a.toFixed(3),w*.89,cy+6);
-  ctx.fillStyle='#7a756d';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('z='+z.toFixed(2),nX,cy-nR-8);ctx.fillText('b='+b.toFixed(2),nX,cy+nR+14);
+
+  // Annotations
+  const annotations = [];
+  if(actVisible.sigmoid || actVisible.tanh){
+    annotations.push({
+      x:-4.2, y:.08,
+      text: plotLabels.actPlot.annotations.vanishing[currentLang],
+      showarrow:true, arrowhead:2, arrowcolor:'#f87171',
+      font:{color:'#f87171', size:10},
+      ax:60, ay:30
+    });
+  }
+  if(actVisible.relu){
+    annotations.push({
+      x:-2, y:-.08,
+      text: plotLabels.actPlot.annotations.dead[currentLang],
+      showarrow:true, arrowhead:2, arrowcolor:'#4ade80',
+      font:{color:'#4ade80', size:10},
+      ax:-10, ay:-40
+    });
+  }
+
+  const layout = {
+    ...THEME,
+    xaxis:{gridcolor:'#22222e', zerolinecolor:'#444', title:plotLabels.actPlot.xaxis[currentLang], range:[-5,5], tickfont:{size:11}},
+    yaxis:{gridcolor:'#22222e', zerolinecolor:'#444', title:plotLabels.actPlot.yaxis[currentLang], range:[-1.3,1.3], tickfont:{size:11}},
+    legend:{orientation:'h', y:1.06, x:.5, xanchor:'center', font:{size:12}},
+    annotations,
+    shapes:[{type:'line',x0:0,x1:0,y0:-1.3,y1:1.3,line:{color:'#22222e',width:1}},
+            {type:'line',x0:-5,x1:5,y0:0,y1:0,line:{color:'#22222e',width:1}}],
+    height:380
+  };
+  Plotly.react('act-plot', traces.length ? traces : [{x:[0],y:[0],type:'scatter',mode:'markers',marker:{opacity:0}}], layout, CFG);
 }
 
-/* ================================================================ Training Vis */
-let trainNN=null,trainData=[],lossHistory=[],trainEp=0,trainRunning=false;
-function genTrainData(){trainData=[];for(let i=0;i<60;i++){const x1=Math.random(),x2=Math.random();trainData.push({x:[x1,x2],y:[(x1+x2>.7&&x1+x2<1.4&&Math.abs(x1-x2)<.5)?1:0]})}}
-function updLR(){document.getElementById('lr-v').textContent=(+document.getElementById('lr').value/1000).toFixed(3)}
-function updHN(){document.getElementById('hn-v').textContent=document.getElementById('hn').value}
-function startTraining(){const lr=+document.getElementById('lr').value/1000,hn=+document.getElementById('hn').value;if(!trainData.length)genTrainData();trainNN=new NN([2,hn,hn,1]);trainEp=0;lossHistory=[];trainRunning=true;
-  function step(){if(!trainRunning||trainEp>=300)return;for(let i=0;i<3;i++){[...trainData].sort(()=>Math.random()-.5).forEach(d=>{trainNN.forward(d.x);trainNN.backward(d.y,lr)});trainEp++;lossHistory.push(trainNN.loss(trainData))}drawLossChart();
-    const loss=lossHistory[lossHistory.length-1],acc=trainNN.accuracy(trainData);document.getElementById('train-info').textContent=t(`💡 에포크 ${trainEp} | 손실: ${loss.toFixed(4)} | 정확도: ${(acc*100).toFixed(1)}%`,`💡 Epoch ${trainEp} | Loss: ${loss.toFixed(4)} | Acc: ${(acc*100).toFixed(1)}%`);
-    if(trainEp<300)requestAnimationFrame(step)}step()}
-function stepTraining(n){if(!trainNN){startTraining();return}const lr=+document.getElementById('lr').value/1000;for(let e=0;e<n;e++){[...trainData].sort(()=>Math.random()-.5).forEach(d=>{trainNN.forward(d.x);trainNN.backward(d.y,lr)});trainEp++;lossHistory.push(trainNN.loss(trainData))}drawLossChart()}
-function resetTraining(){trainNN=null;trainData=[];lossHistory=[];trainEp=0;trainRunning=false;genTrainData();const cv=document.getElementById('cv-loss');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);document.getElementById('train-info').textContent=t('💡 학습 시작을 누르세요!','💡 Press Start Training!')}
-function drawLossChart(){const{x:ctx,w,h}=initC('cv-loss');const P={t:10,r:12,b:28,l:35},pw=w-P.l-P.r,ph=h-P.t-P.b;ctx.clearRect(0,0,w,h);if(!lossHistory.length)return;const maxL=Math.max(...lossHistory,.7);
-  ctx.strokeStyle='#1e1e2a';ctx.lineWidth=.5;for(let i=0;i<=4;i++){const gy=P.t+(i/4)*ph;ctx.beginPath();ctx.moveTo(P.l,gy);ctx.lineTo(P.l+pw,gy);ctx.stroke();ctx.fillStyle='#555';ctx.font='9px system-ui';ctx.textAlign='right';ctx.fillText((maxL*(1-i/4)).toFixed(2),P.l-4,gy+3)}
-  ctx.beginPath();ctx.strokeStyle='#f87171';ctx.lineWidth=2;lossHistory.forEach((l,i)=>{const px=P.l+(i/(lossHistory.length-1||1))*pw,py=P.t+(1-l/maxL)*ph;i?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();
-  ctx.fillStyle='#555';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText(t('에포크','Epoch'),P.l+pw/2,P.t+ph+18)}
+function toggleAct(key){
+  actVisible[key] = !actVisible[key];
+  const btn = document.getElementById(`btn-${key}`);
+  btn.classList.toggle('active');
+  buildActPlot();
+}
 
-/* ================================================================ Init */
-window.addEventListener('load',()=>{genTrainData();initEditorial();initClf();setLang('ko');updActFns();updNeuron()});
-window.addEventListener('resize',()=>requestAnimationFrame(()=>{layoutEd();drawClf();updActFns()}));
+buildActPlot();
+
+/* ── SECTION 2: DECISION BOUNDARY ── */
+// Generate synthetic variant data (seeded)
+function seededRand(s){ return Math.abs((Math.sin(s)*43758.5453123)%1); }
+
+const variantData = (()=>{
+  const path=[], benign=[];
+  for(let i=0;i<50;i++){
+    // pathogenic: high conservation + high structural impact
+    const cx = 0.5 + seededRand(i*3)*0.5;
+    const cy = 0.4 + seededRand(i*3+1)*0.6;
+    path.push([cx, cy]);
+  }
+  for(let i=0;i<50;i++){
+    // benign: low conservation or low structural impact
+    const cx = seededRand(i*7)*0.7;
+    const cy = seededRand(i*7+2)*0.6;
+    benign.push([cx, cy]);
+  }
+  return {path, benign};
+})();
+
+function updateBoundary(){
+  const w1 = parseFloat(document.getElementById('w1-slider').value);
+  const w2 = parseFloat(document.getElementById('w2-slider').value);
+  const b  = parseFloat(document.getElementById('b-slider').value);
+  document.getElementById('w1-val').textContent = w1.toFixed(1);
+  document.getElementById('w2-val').textContent = w2.toFixed(1);
+  document.getElementById('b-val').textContent  = b.toFixed(1);
+
+  // Compute accuracy
+  let correct = 0;
+  variantData.path.forEach(([x,y])=>{ if(w1*x+w2*y+b>0) correct++; });
+  variantData.benign.forEach(([x,y])=>{ if(w1*x+w2*y+b<=0) correct++; });
+  const acc = (correct/100*100).toFixed(1);
+
+  document.getElementById('boundary-stats').innerHTML = `
+    <div class="stat-chip"><div class="v">${acc}%</div><div class="l">${currentLang==='ko'?'정확도':'Accuracy'}</div></div>
+    <div class="stat-chip"><div class="v" style="color:#f87171">50</div><div class="l">${currentLang==='ko'?'병원성 (실제)':'Pathogenic (true)'}</div></div>
+    <div class="stat-chip"><div class="v" style="color:#38bdf8">50</div><div class="l">${currentLang==='ko'?'양성 (실제)':'Benign (true)'}</div></div>
+    <div class="stat-chip"><div class="v" style="color:#c4a35a">${w1.toFixed(1)}x+${w2.toFixed(1)}y+${b.toFixed(1)}=0</div><div class="l">${currentLang==='ko'?'결정 경계':'Decision boundary'}</div></div>
+  `;
+
+  // Decision boundary line: y = (-w1*x - b) / w2
+  const xLine = [0, 1];
+  const yLine = w2 !== 0 ? xLine.map(x=>(-w1*x-b)/w2) : [0,0];
+
+  const traces = [
+    {
+      x: variantData.path.map(p=>p[0]),
+      y: variantData.path.map(p=>p[1]),
+      type:'scatter', mode:'markers',
+      name: plotLabels.boundaryPlot.traces[0][currentLang],
+      marker:{color:'#f87171', size:9, opacity:.8, line:{color:'rgba(0,0,0,.3)',width:1}},
+      hovertemplate:`<b>${plotLabels.boundaryPlot.traces[0][currentLang]}</b><br>Conservation: %{x:.2f}<br>Structural: %{y:.2f}<extra></extra>`
+    },
+    {
+      x: variantData.benign.map(p=>p[0]),
+      y: variantData.benign.map(p=>p[1]),
+      type:'scatter', mode:'markers',
+      name: plotLabels.boundaryPlot.traces[1][currentLang],
+      marker:{color:'#38bdf8', size:9, opacity:.8, line:{color:'rgba(0,0,0,.3)',width:1}},
+      hovertemplate:`<b>${plotLabels.boundaryPlot.traces[1][currentLang]}</b><br>Conservation: %{x:.2f}<br>Structural: %{y:.2f}<extra></extra>`
+    },
+    {
+      x: xLine, y: yLine,
+      type:'scatter', mode:'lines',
+      name: plotLabels.boundaryPlot.traces[2][currentLang],
+      line:{color:'#c4a35a', width:2.5, dash:'dash'},
+      hoverinfo:'skip'
+    }
+  ];
+
+  const layout = {
+    ...THEME,
+    xaxis:{gridcolor:'#22222e', title: plotLabels.boundaryPlot.xaxis[currentLang], range:[0,1], tickfont:{size:11}},
+    yaxis:{gridcolor:'#22222e', title: plotLabels.boundaryPlot.yaxis[currentLang], range:[0,1], tickfont:{size:11}},
+    legend:{orientation:'h', y:1.06, x:.5, xanchor:'center', font:{size:11}},
+    height:400
+  };
+  Plotly.react('boundary-plot', traces, layout, CFG);
+}
+
+updateBoundary();
+
+/* ── SECTION 3: TRAINING LOSS CURVES ── */
+const NEURON_CONFIGS = [
+  {n:2,   label:'2',  regime_ko:'과소적합 (Underfitting)', regime_en:'Underfitting'},
+  {n:4,   label:'4',  regime_ko:'약한 과소적합',           regime_en:'Slight Underfitting'},
+  {n:8,   label:'8',  regime_ko:'양호한 수렴',              regime_en:'Good Convergence'},
+  {n:16,  label:'16', regime_ko:'최적 (Optimal)',           regime_en:'Optimal'},
+  {n:32,  label:'32', regime_ko:'약한 과적합',              regime_en:'Slight Overfitting'},
+  {n:64,  label:'64', regime_ko:'명확한 과적합 (Overfitting)', regime_en:'Clear Overfitting'},
+];
+
+function genLossCurves(cfgIdx){
+  const cfg = NEURON_CONFIGS[cfgIdx];
+  const epochs = Array.from({length:100},(_,i)=>i+1);
+  const trainLoss=[], valLoss=[];
+
+  if(cfgIdx <= 1){
+    // underfitting: both losses plateau high
+    const floor = 1.2 - cfgIdx*0.3;
+    epochs.forEach(e=>{
+      const t = e/100;
+      const noise = (Math.sin(e*1.7)*0.02);
+      trainLoss.push(floor + (2.0-floor)*Math.exp(-2*t) + noise);
+      valLoss.push(floor + 0.1 + (2.1-floor)*Math.exp(-1.8*t) + noise*0.8);
+    });
+  } else if(cfgIdx <= 3){
+    // good convergence
+    const floor = 0.12 + (3-cfgIdx)*0.04;
+    epochs.forEach(e=>{
+      const t = e/100;
+      const noise = (Math.sin(e*2.3)*0.015);
+      trainLoss.push(floor + (2.0-floor)*Math.exp(-4*t) + noise);
+      valLoss.push(floor + 0.08 + (2.1-floor)*Math.exp(-3.5*t) + noise*0.6 + Math.max(0,(t-0.6)*0.1));
+    });
+  } else {
+    // overfitting: training keeps dropping, validation rises
+    const overStart = cfgIdx === 4 ? 0.55 : 0.35;
+    const overMag = (cfgIdx-3)*0.5;
+    epochs.forEach(e=>{
+      const t = e/100;
+      const noise = (Math.sin(e*1.9)*0.015);
+      trainLoss.push(0.05 + 1.95*Math.exp(-5.5*t) + noise);
+      const base = 0.18 + 1.92*Math.exp(-3.5*t);
+      const overfit = Math.max(0,(t-overStart)*overMag);
+      valLoss.push(base + overfit + noise*0.5);
+    });
+  }
+  return {epochs, trainLoss, valLoss};
+}
+
+function updateLossPlot(cfgIdx){
+  cfgIdx = parseInt(cfgIdx);
+  const cfg = NEURON_CONFIGS[cfgIdx];
+  document.getElementById('neuron-val').textContent = cfg.n;
+  const regime = document.getElementById('neuron-regime');
+  regime.textContent = currentLang==='ko' ? cfg.regime_ko : cfg.regime_en;
+
+  const {epochs, trainLoss, valLoss} = genLossCurves(cfgIdx);
+
+  // Find overfitting point (where val > train by margin)
+  let overEpoch = null;
+  if(cfgIdx >= 4){
+    for(let i=10;i<epochs.length;i++){
+      if(valLoss[i] > trainLoss[i] + 0.05){ overEpoch = i+1; break; }
+    }
+  }
+
+  const traces = [
+    {
+      x:epochs, y:trainLoss,
+      type:'scatter', mode:'lines',
+      name: plotLabels.lossPlot.traces[0][currentLang],
+      line:{color:'#38bdf8', width:2.5},
+      fill:'tozeroy', fillcolor:'rgba(56,189,248,.05)'
+    },
+    {
+      x:epochs, y:valLoss,
+      type:'scatter', mode:'lines',
+      name: plotLabels.lossPlot.traces[1][currentLang],
+      line:{color:'#f87171', width:2.5},
+      fill:'tozeroy', fillcolor:'rgba(248,113,113,.05)'
+    }
+  ];
+
+  const annotations = [];
+  const shapes = [];
+  if(overEpoch){
+    shapes.push({
+      type:'line', x0:overEpoch, x1:overEpoch, y0:0, y1:2.5,
+      line:{color:'rgba(248,113,113,.4)', width:1.5, dash:'dot'}
+    });
+    annotations.push({
+      x:overEpoch, y:valLoss[overEpoch-1]+0.2,
+      text: plotLabels.lossPlot.annotations.overfitting[currentLang],
+      showarrow:true, arrowhead:2, arrowcolor:'#f87171',
+      font:{color:'#f87171', size:11},
+      ax:40, ay:-20
+    });
+  }
+
+  const layout = {
+    ...THEME,
+    xaxis:{gridcolor:'#22222e', title:plotLabels.lossPlot.xaxis[currentLang], range:[1,100], tickfont:{size:11}},
+    yaxis:{gridcolor:'#22222e', title: plotLabels.lossPlot.yaxis[currentLang], range:[0,2.4], tickfont:{size:11}},
+    legend:{orientation:'h', y:1.06, x:.5, xanchor:'center', font:{size:11}},
+    annotations,
+    shapes,
+    height:400
+  };
+  Plotly.react('loss-plot', traces, layout, CFG);
+}
+
+updateLossPlot(2); // default: 8 neurons
+
+/* ── SECTION 4: LOSS FUNCTION INTUITION ── */
+function buildLossIntuitionPlot(){
+  const scenarioProbs = [
+    {prob:0.95, correct:true,  suffix: currentLang==='ko'?'(0.95→정답)':'(0.95→correct)'},
+    {prob:0.80, correct:true,  suffix: currentLang==='ko'?'(0.80→정답)':'(0.80→correct)'},
+    {prob:0.50, correct:true,  suffix: currentLang==='ko'?'(0.50→정답)':'(0.50→correct)'},
+    {prob:0.20, correct:false, suffix: currentLang==='ko'?'(0.20→오답)':'(0.20→wrong)'},
+    {prob:0.05, correct:false, suffix: currentLang==='ko'?'(0.05→오답)':'(0.05→wrong)'},
+  ];
+  const scenarios = scenarioProbs.map((s,i)=>({
+    ...s,
+    label: `${plotLabels.lossIntuitionPlot.scenarios[i][currentLang]}\n${s.suffix}`
+  }));
+
+  const losses = scenarios.map(s => s.correct ? -Math.log(s.prob) : -Math.log(1-s.prob));
+  const colors = scenarios.map(s => {
+    if(!s.correct) return '#f87171';
+    if(s.prob >= 0.8) return '#4ade80';
+    return '#c4a35a';
+  });
+  const labels = scenarios.map(s => `${(s.prob*100).toFixed(0)}%`);
+
+  const trace = {
+    type:'bar',
+    x: scenarios.map(s=>s.label.split('\n')[0]),
+    y: losses,
+    text: losses.map(l=>`Loss: ${l.toFixed(2)}`),
+    textposition:'outside',
+    marker:{color: colors, opacity:.85, line:{color:'rgba(0,0,0,.3)',width:1}},
+    hovertemplate: scenarios.map((s,i)=>
+      `<b>${s.label.replace('\n',' ')}</b><br>Predicted prob: ${(s.prob*100).toFixed(0)}%<br>Loss: ${losses[i].toFixed(3)}<extra></extra>`
+    )
+  };
+
+  const annotations = [
+    {x:0, y:losses[0]+0.15, text: plotLabels.lossIntuitionPlot.annotations[0][currentLang], showarrow:false, font:{color:'#4ade80',size:10}},
+    {x:4, y:losses[4]+0.15, text: plotLabels.lossIntuitionPlot.annotations[1][currentLang], showarrow:false, font:{color:'#f87171',size:10}},
+  ];
+
+  const layout = {
+    ...THEME,
+    xaxis:{gridcolor:'#22222e', tickfont:{size:11}},
+    yaxis:{gridcolor:'#22222e', title:plotLabels.lossIntuitionPlot.yaxis[currentLang], tickfont:{size:11}, range:[0,3.5]},
+    showlegend:false,
+    annotations,
+    height:380
+  };
+  Plotly.react('loss-intuition-plot', [trace], layout, CFG);
+}
+
+buildLossIntuitionPlot();
+
+/* ── RE-RENDER ON LANG CHANGE ── */
+function renderAllPlots(){
+  buildActPlot();
+  updateBoundary();
+  updateLossPlot(parseInt(document.getElementById('neuron-slider').value));
+  buildLossIntuitionPlot();
+}
 </script>
 </body>
 </html>

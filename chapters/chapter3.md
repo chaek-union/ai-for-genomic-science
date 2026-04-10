@@ -16,6 +16,18 @@ The key insight: neural networks aren't magic. They're built from the simplest p
 
 ---
 
+## 학습 목표 (Learning Objectives)
+
+이 장을 마치면 다음을 할 수 있습니다:
+
+- [ ] 인공 뉴런(퍼셉트론)의 구조와 가중합 계산 과정을 설명한다
+- [ ] 활성화 함수(ReLU, sigmoid, tanh)의 역할과 비선형성이 필요한 이유를 논한다
+- [ ] 순전파(forward propagation)를 통해 신경망이 예측값을 계산하는 과정을 따라간다
+- [ ] 손실 함수와 역전파(backpropagation)를 이용해 신경망이 학습하는 원리를 설명한다
+- [ ] 과적합(overfitting)의 원인을 파악하고 정규화, 드롭아웃 등 완화 전략을 적용한다
+
+---
+
 ## From Biological Neurons to Artificial Neurons
 
 ### The Real Thing: Your Brain's Neurons
@@ -470,7 +482,7 @@ dLoss/dw₁ = dLoss/dOutput × dOutput/dHidden × dHidden/dw₁
            the loss?"       affect output?"   hidden layer?"
 ```
 
-Each factor is easy to compute individually. Multiplied together, they tell us exactly how much w₁ contributes to the loss — and therefore how to adjust it.
+Read it like a sentence: *"How much does the loss change when we nudge w₁?"* = *"How much does the output affect the loss?"* × *"How much does the hidden layer affect the output?"* × *"How much does w₁ affect the hidden layer?"* Each factor is easy to compute individually. Multiplied together, they tell us exactly how much w₁ is responsible for the error — and therefore how much to adjust it.
 
 ### The Complete Training Loop
 
@@ -603,6 +615,8 @@ Layer 1 gradient: 0.0039 × 0.25 = 0.00098  ← Almost zero! Layer 1 barely lear
 
 ## Math Box: Forward and Backward Pass
 
+> *This section contains matrix mathematics. It is completely optional — you can understand neural networks without it.*
+
 *You can skip this section and still understand the concepts! This is for those curious about the formal mathematics.*
 
 ### Forward Pass (Matrix Form)
@@ -691,27 +705,32 @@ The beauty of backpropagation: no matter how deep the network, the chain rule le
 
 ---
 
-## Key Terms
+<details>
+<summary><strong>📖 Key Terms</strong></summary>
 
-- **Artificial neuron (perceptron):** Basic unit that computes a weighted sum of inputs, adds bias, applies activation function
-- **Weight:** Learned parameter controlling the strength of a connection between neurons
-- **Bias:** Learned parameter allowing the neuron's activation threshold to shift
-- **Activation function:** Nonlinear function applied after summation (ReLU, sigmoid, tanh)
-- **ReLU (Rectified Linear Unit):** max(0, z) — most popular modern activation
-- **Hidden layer:** Layer of neurons between input and output that learns intermediate features
-- **Deep neural network:** Network with multiple hidden layers
-- **Forward propagation:** Computing output from input through the network layers
-- **One-hot encoding:** Representing categorical data (A, C, G, T) as binary vectors
-- **Loss function:** Measures how wrong the network's predictions are
-- **Binary cross-entropy:** Standard loss for binary classification problems
-- **Backpropagation:** Algorithm that computes gradients of the loss with respect to all weights using the chain rule
-- **Gradient:** Direction and magnitude of steepest increase in a function
-- **Learning rate:** Hyperparameter controlling the step size of weight updates
-- **Epoch:** One complete pass through the entire training dataset
-- **Overfitting:** Network memorizes training data instead of learning general patterns
-- **Dropout:** Regularization technique that randomly disables neurons during training
-- **Vanishing gradient:** Problem where gradients become too small for early layers to learn
-- **Hyperparameter:** Settings chosen before training (learning rate, architecture, etc.)
+| Term | Definition |
+|------|-----------|
+| **Artificial neuron (perceptron)** | Basic unit that computes a weighted sum of inputs, adds bias, applies activation function |
+| **Weight** | Learned parameter controlling the strength of a connection between neurons |
+| **Bias** | Learned parameter allowing the neuron's activation threshold to shift |
+| **Activation function** | Nonlinear function applied after summation (ReLU, sigmoid, tanh) |
+| **ReLU (Rectified Linear Unit)** | max(0, z) — most popular modern activation |
+| **Hidden layer** | Layer of neurons between input and output that learns intermediate features |
+| **Deep neural network** | Network with multiple hidden layers |
+| **Forward propagation** | Computing output from input through the network layers |
+| **One-hot encoding** | Representing categorical data (A, C, G, T) as binary vectors |
+| **Loss function** | Measures how wrong the network's predictions are |
+| **Binary cross-entropy** | Standard loss for binary classification problems |
+| **Backpropagation** | Algorithm that computes gradients of the loss with respect to all weights using the chain rule |
+| **Gradient** | Direction and magnitude of steepest increase in a function |
+| **Learning rate** | Hyperparameter controlling the step size of weight updates |
+| **Epoch** | One complete pass through the entire training dataset |
+| **Overfitting** | Network memorizes training data instead of learning general patterns |
+| **Dropout** | Regularization technique that randomly disables neurons during training |
+| **Vanishing gradient** | Problem where gradients become too small for early layers to learn |
+| **Hyperparameter** | Settings chosen before training (learning rate, architecture, etc.) |
+
+</details>
 
 ---
 
@@ -798,27 +817,3 @@ Gap:             0.87  (huge — clear overfitting)
 
 </details>
 
----
-
-## Hands-On Labs
-
-### Lab 3.1: Build Your First Neural Network (45-60 min)
-
-**Learn:**
-- Implement a single neuron from scratch in Python
-- Visualize decision boundaries
-- See how activation functions change the boundary
-- Train on a simple genomic classification task
-
-**[Access Lab 3.1 on Google Colab](https://colab.research.google.com/drive/YOUR_LAB3_1_LINK_HERE)**
-
-### Lab 3.2: Train a Variant Pathogenicity Predictor (60-90 min)
-
-**Learn:**
-- Build a multi-layer network with PyTorch
-- Train on real ClinVar data
-- Visualize training loss over epochs
-- Diagnose and fix overfitting
-- Evaluate with confusion matrices and ROC curves
-
-**[Access Lab 3.2 on Google Colab](https://colab.research.google.com/drive/YOUR_LAB3_2_LINK_HERE)**

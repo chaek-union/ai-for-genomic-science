@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 15 — Introduction to Single-Cell Omics</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.2rem,5.5vw,4.2rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:560px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+#hero-canvas{position:absolute;inset:0;opacity:.35;pointer-events:none}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:680px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 auto;max-width:960px}
+.chart-wrap{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem}
+.plot-container{width:100%}
+.view-toggle{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.view-btn{padding:.55rem 1.4rem;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:.88rem/1 system-ui;cursor:pointer;transition:.2s}
+.view-btn.active{border-color:var(--gold);background:var(--gold-dim);color:var(--gold)}
+.annotation-box{margin-top:1rem;padding:1rem 1.2rem;background:rgba(255,255,255,.03);border-left:2px solid var(--gold);border-radius:0 6px 6px 0;font:.9rem/1.6 system-ui;color:var(--muted)}
+.controls-row{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem}
+.ctrl-label{font:.82rem/1 'SF Mono',monospace;color:var(--muted);flex-shrink:0}
+.slider-wrap{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.5rem}
+.slider-wrap label{font:.82rem/1 'SF Mono',monospace;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--gold)}
+.readout{font:.85rem/1 'SF Mono',monospace;color:var(--gold);text-align:center;margin-top:.3rem}
+select.gene-select{background:var(--card);border:1px solid var(--line);color:var(--text);padding:.4rem .8rem;border-radius:6px;font:.88rem/1 system-ui;cursor:pointer;outline:none}
+select.gene-select:focus{border-color:var(--gold)}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+.page-footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-ch">Chapter 15</div>
+  <h1 class="t" data-ko="단일 세포 오믹스 개론" data-en="Introduction to Single-Cell Omics"></h1>
+  <p class="hero-sub t"
+     data-ko="수백만 세포를 평균 내면 무엇을 잃는가 — 그리고 단일세포 기술이 어떻게 숨겨진 이질성을 드러내는가."
+     data-en="What do we lose when we average millions of cells — and how does single-cell technology reveal hidden heterogeneity?">
+  </p>
+  <div class="hero-scroll" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+    <div class="t" data-ko="스크롤하여 탐색" data-en="scroll to explore"></div>
+    <div style="font-size:1.4rem;margin-top:.4rem">↓</div>
+  </div>
+</section>
+
+<!-- SECTION 1: BULK VS SINGLE-CELL WITH CELL TYPE SLIDER -->
+<div class="section" id="s1">
+  <div class="section-label t" data-ko="Bulk vs 단일세포 해상도" data-en="Bulk vs Single-Cell Resolution"></div>
+  <h2 class="section-title t" data-ko="평균이 숨기는 세포 이질성" data-en="Cellular Heterogeneity Hidden by Averaging"></h2>
+  <p class="section-body t"
+     data-ko="Bulk RNA-seq은 수백만 세포를 하나의 평균값으로 요약합니다. Gene X의 평균이 50 TPM처럼 보여도 실제로는 전혀 다른 세포 집단들이 섞여 있습니다. 세포 유형 수 슬라이더를 조절해 평균이 얼마나 많은 정보를 숨기는지 확인하세요."
+     data-en="Bulk RNA-seq collapses millions of cells into a single average. Gene X reads ~50 TPM on average — but multiple distinct cell populations are hidden. Adjust the cell type slider to see how averaging obscures more and more biological reality.">
+  </p>
+  <div class="view-toggle">
+    <button class="view-btn active" id="btn-bulk" onclick="setScMode('bulk')">
+      <span class="t" data-ko="Bulk RNA-seq 뷰" data-en="Bulk RNA-seq View"></span>
+    </button>
+    <button class="view-btn" id="btn-sc" onclick="setScMode('sc')">
+      <span class="t" data-ko="단일세포 뷰" data-en="Single-Cell View"></span>
+    </button>
+  </div>
+  <div class="slider-wrap">
+    <label class="t" data-ko="세포 유형 수: <span id='ntype-val'>2</span>가지" data-en="Number of cell types: <span id='ntype-val'>2</span>">
+      <span class="t" data-ko="세포 유형 수:" data-en="Number of cell types:"></span>
+      <span id="ntype-val" style="color:var(--gold);margin-left:.4rem">2</span>
+    </label>
+    <input type="range" id="ntype-slider" min="1" max="3" step="1" value="2" oninput="onNTypeChange(this.value)">
+    <div class="readout" id="ntype-readout"></div>
+  </div>
+  <div class="chart-wrap">
+    <div id="plot-bulk-sc" class="plot-container" style="min-height:380px"></div>
+  </div>
+  <div class="annotation-box t" id="bulk-sc-annotation"
+       data-ko="세포 유형이 많을수록 평균은 더 큰 거짓말을 합니다."
+       data-en="The more cell types, the bigger the lie the average tells.">
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: SEQUENCING DEPTH & SPARSITY -->
+<div class="section" id="s2">
+  <div class="section-label t" data-ko="시퀀싱 깊이와 희소성" data-en="Sequencing Depth and Sparsity"></div>
+  <h2 class="section-title t" data-ko="왜 단일세포 데이터는 대부분 0인가" data-en="Why Is Most Single-Cell Data Zero?"></h2>
+  <p class="section-body t"
+     data-ko="단일세포 RNA-seq 데이터 행렬은 대부분 0으로 가득 합니다. 이는 '드롭아웃'이라 부르는 현상 때문입니다 — 실제로 발현되고 있어도 읽히지 않을 수 있습니다. 시퀀싱 깊이(세포당 읽기 수) 슬라이더를 조절하면서 깊이가 어떻게 희소성을 바꾸는지 관찰하세요."
+     data-en="The single-cell RNA-seq data matrix is mostly zeros. This is the 'dropout' effect — even truly expressed genes can be missed if sequencing is too shallow. Adjust the sequencing depth slider to see how depth changes what you can detect.">
+  </p>
+  <div class="slider-wrap">
+    <label><span class="t" data-ko="세포당 읽기 수:" data-en="Reads per cell:"></span>
+      <span id="depth-val" style="color:var(--gold);margin-left:.4rem">5,000</span>
+    </label>
+    <input type="range" id="depth-slider" min="0" max="3" step="1" value="1" oninput="onDepthChange(this.value)">
+    <div class="readout" id="depth-readout"></div>
+  </div>
+  <div class="chart-wrap">
+    <div id="plot-heatmap" class="plot-container" style="min-height:460px"></div>
+  </div>
+  <div class="annotation-box t" id="depth-annotation"
+       data-ko="1K 읽기: 거의 모든 값이 0 (검은색). 50K 읽기: 행렬이 밝아집니다 — 더 많은 유전자가 신뢰있게 검출됩니다."
+       data-en="At 1K reads: nearly everything is zero (dark). At 50K reads: the matrix lights up — more genes reliably detected.">
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: UMAP — HOW DIMENSIONALITY REDUCTION WORKS -->
+<div class="section" id="s3">
+  <div class="section-label t" data-ko="차원 축소: UMAP의 원리" data-en="Dimensionality Reduction: How UMAP Works"></div>
+  <h2 class="section-title t" data-ko="PCA 원시 공간 vs UMAP: 같은 세포, 다른 지도" data-en="Raw PCA vs UMAP: Same Cells, Different Maps"></h2>
+  <p class="section-body t"
+     data-ko="수만 개의 유전자 발현 프로파일을 2D로 압축합니다. PCA는 선형 변환이라 겹침이 많습니다. UMAP은 비선형 구조를 보존해 클러스터를 드러냅니다. n_neighbors 파라미터를 조절해 UMAP이 어떻게 클러스터 형태를 바꾸는지 직접 확인하세요."
+     data-en="Compressing tens of thousands of gene dimensions into 2D. PCA uses linear transformations — heavy overlap. UMAP preserves non-linear structure, revealing clusters. Adjust n_neighbors to see how this parameter shapes UMAP clusters — and why you shouldn't over-interpret them.">
+  </p>
+  <div class="view-toggle">
+    <button class="view-btn active" id="btn-pca" onclick="setUmapMode('pca')">
+      <span class="t" data-ko="PCA (원시 공간)" data-en="PCA (Raw Space)"></span>
+    </button>
+    <button class="view-btn" id="btn-umap" onclick="setUmapMode('umap')">
+      <span class="t" data-ko="UMAP" data-en="UMAP"></span>
+    </button>
+  </div>
+  <div class="slider-wrap" id="nn-slider-wrap">
+    <label><span class="t" data-ko="n_neighbors (UMAP 파라미터):" data-en="n_neighbors (UMAP parameter):"></span>
+      <span id="nn-val" style="color:var(--gold);margin-left:.4rem">15</span>
+    </label>
+    <input type="range" id="nn-slider" min="0" max="2" step="1" value="1" oninput="onNNChange(this.value)">
+    <div class="readout" id="nn-readout"></div>
+  </div>
+  <div class="controls-row">
+    <span class="ctrl-label t" data-ko="색상 모드:" data-en="Color mode:"></span>
+    <button class="view-btn active" id="btn-color-type" onclick="setColorMode('type')">
+      <span class="t" data-ko="세포 유형" data-en="Cell Type"></span>
+    </button>
+    <button class="view-btn" id="btn-color-gene" onclick="setColorMode('gene')">
+      <span class="t" data-ko="유전자 발현" data-en="Gene Expression"></span>
+    </button>
+    <span class="ctrl-label t" data-ko="유전자:" data-en="Gene:"></span>
+    <select class="gene-select" id="gene-select" onchange="updateUMAP()">
+      <option value="CD3E">CD3E (T cell)</option>
+      <option value="MS4A1">MS4A1 (B cell)</option>
+      <option value="CD14">CD14 (Monocyte)</option>
+      <option value="NKG7">NKG7 (NK cell)</option>
+      <option value="FOXP3">FOXP3 (Treg)</option>
+    </select>
+  </div>
+  <div class="chart-wrap">
+    <div id="plot-umap" class="plot-container" style="min-height:500px"></div>
+  </div>
+  <div class="annotation-box t" id="umap-annotation"
+       data-ko="낮은 n_neighbors: 매우 타이트한 클러스터 — 하나의 세포 유형이 여러 조각으로 쪼개질 수 있습니다. 높은 n_neighbors: 느슨한 클러스터 — 일부 중첩이 생깁니다. UMAP은 시각화 도구이지 절대적 구조가 아닙니다."
+       data-en="Low n_neighbors: very tight clusters — one cell type may fragment into pieces. High n_neighbors: looser clusters — some overlap appears. UMAP is a visualization tool, not an absolute structure.">
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p class="t" data-ko="AI for Genomic Science — 챕터 15 인터랙티브" data-en="AI for Genomic Science — Chapter 15 Interactive"></p>
+  <p style="margin-top:.5rem"><a href="../chapters/chapter15.md" class="t" data-ko="← 챕터 15 본문으로" data-en="← Back to Chapter 15">← 챕터 15 본문으로</a></p>
+  <p class="source-note" style="font-size:.75rem;color:var(--muted);margin-top:1rem">
+    Based on: Macosko et al. (2015) Cell; Stuart &amp; Satija (2019) Nature Reviews Genetics; McInnes et al. (2018) UMAP: Uniform Manifold Approximation and Projection
+  </p>
+</footer>
+
+<script>
+// ─── LANGUAGE ──────────────────────────────────────────────────────────────
+let lang = 'ko';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === l.toUpperCase()));
+  document.querySelectorAll('[data-'+l+']').forEach(el => {
+    if (el.tagName !== 'BUTTON' && el.tagName !== 'INPUT') el.textContent = el.dataset[l];
+  });
+  updatePlotLanguage(l);
+}
+function updatePlotLanguage(l) {
+  drawBulkSC();
+  buildHeatmap();
+  updateUMAP();
+}
+
+// ─── HERO PARTICLES ──────────────────────────────────────────────────────────
+(function(){
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let W,H,dots;
+  function resize(){
+    W=canvas.width=canvas.offsetWidth; H=canvas.height=canvas.offsetHeight;
+    dots=Array.from({length:160},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+.4,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,a:Math.random()}));
+  }
+  window.addEventListener('resize',resize); resize();
+  (function draw(){
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d=>{
+      d.x+=d.vx; d.y+=d.vy;
+      if(d.x<0)d.x=W; if(d.x>W)d.x=0;
+      if(d.y<0)d.y=H; if(d.y>H)d.y=0;
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(196,163,90,${d.a*.6})`; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  })();
+})();
+
+// ─── DARK PLOTLY BASE ─────────────────────────────────────────────────────────
+const darkBase = {
+  paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(20,20,31,1)',
+  font:{color:'#e4e0d8',family:'system-ui'},
+  xaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  yaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  margin:{t:50,r:20,b:60,l:60},
+  legend:{bgcolor:'rgba(0,0,0,0)',bordercolor:'#22222e',borderwidth:1}
+};
+
+// ─── SECTION 1: BULK VS SINGLE-CELL ──────────────────────────────────────────
+let scMode = 'bulk';
+let nTypes = 2;
+
+const cellTypeData = {
+  1: [
+    { name_ko:'세포 집단 A', name_en:'Population A', mean:50, std:8, n:400, color:'#38bdf8' }
+  ],
+  2: [
+    { name_ko:'T 세포 (발현 높음)', name_en:'T cell (high expr)', mean:85, std:6, n:250, color:'#38bdf8' },
+    { name_ko:'B 세포 (발현 낮음)', name_en:'B cell (low expr)', mean:12, std:5, n:250, color:'#4ade80' }
+  ],
+  3: [
+    { name_ko:'T 세포 (발현 높음)', name_en:'T cell (high expr)', mean:90, std:6, n:200, color:'#38bdf8' },
+    { name_ko:'단핵구 (발현 중간)', name_en:'Monocyte (medium)', mean:48, std:7, n:150, color:'#c4a35a' },
+    { name_ko:'B 세포 (발현 낮음)', name_en:'B cell (low expr)', mean:10, std:4, n:150, color:'#4ade80' }
+  ]
+};
+
+function gaussRnd(mean, std) {
+  let u=0,v=0;
+  while(u===0)u=Math.random(); while(v===0)v=Math.random();
+  return mean + std*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function setScMode(m) {
+  scMode = m;
+  document.getElementById('btn-bulk').classList.toggle('active', m==='bulk');
+  document.getElementById('btn-sc').classList.toggle('active', m==='sc');
+  drawBulkSC();
+}
+
+function onNTypeChange(v) {
+  nTypes = parseInt(v);
+  document.getElementById('ntype-val').textContent = nTypes;
+  const msgs = {
+    ko: { 1:'1가지 세포 유형: 평균이 실제를 잘 반영합니다.', 2:'2가지 세포 유형: 평균 ~50 TPM이지만 실제는 85와 12 — 완전히 다른 두 집단입니다.', 3:'3가지 세포 유형: 평균 ~50 TPM이지만 실제로는 T 세포(90), 단핵구(48), B 세포(10) — 평균은 어떤 집단도 대표하지 못합니다.' },
+    en: { 1:'1 cell type: the average represents reality well.', 2:'2 cell types: average ~50 TPM, but reality is 85 and 12 — two completely distinct populations.', 3:'3 cell types: average ~50 TPM, but T cells (90), Monocytes (48), B cells (10) — the average represents none of them.' }
+  };
+  document.getElementById('bulk-sc-annotation').textContent = msgs[lang][nTypes];
+  drawBulkSC();
+}
+
+function drawBulkSC() {
+  const types = cellTypeData[nTypes];
+  if (scMode === 'bulk') {
+    // Compute weighted average
+    let totalN = types.reduce((s,t)=>s+t.n,0);
+    let weightedMean = types.reduce((s,t)=>s+t.mean*t.n,0)/totalN;
+    // Show a vertical bar representing bulk average
+    const traces = [{
+      x:[lang==='ko'?'Gene X (Bulk 평균)':'Gene X (Bulk Average)'],
+      y:[weightedMean],
+      type:'bar',
+      marker:{color:'#7a756d',width:0.3},
+      error_y:{type:'constant',value:3,color:'rgba(255,255,255,0.3)',thickness:2,width:8},
+      hovertemplate:`<b>${lang==='ko'?'Bulk 평균':'Bulk Average'}</b><br>${weightedMean.toFixed(1)} TPM<extra></extra>`
+    }];
+    const layout={
+      ...darkBase,
+      title:{text:lang==='ko'?`Bulk RNA-seq: 평균 ${weightedMean.toFixed(1)} TPM (세포 ${totalN}개 평균)`:`Bulk RNA-seq: Average ${weightedMean.toFixed(1)} TPM (collapsed from ${totalN} cells)`,font:{size:13,color:'#e4e0d8'}},
+      xaxis:{...darkBase.xaxis,tickfont:{size:13}},
+      yaxis:{...darkBase.yaxis,title:'TPM',range:[0,120]},
+      annotations:[{x:0,y:weightedMean+8,text:lang==='ko'?`하나의 숫자가 ${nTypes}가지 집단을 가립니다`:`One number masks ${nTypes} population${nTypes>1?'s':''}`,showarrow:false,font:{color:'#f87171',size:12}}],
+      margin:{t:60,r:20,b:60,l:70}
+    };
+    Plotly.react('plot-bulk-sc',traces,layout,{responsive:true,displayModeBar:false});
+  } else {
+    // Single-cell histogram per type
+    const traces = types.map(t => {
+      const samples = Array.from({length:t.n},()=>Math.max(0,gaussRnd(t.mean,t.std)));
+      return {
+        x:samples, type:'histogram', nbinsx:30, opacity:0.72,
+        name:lang==='ko'?t.name_ko:t.name_en,
+        marker:{color:t.color,line:{color:t.color,width:0.5}},
+        hovertemplate:`<b>${lang==='ko'?t.name_ko:t.name_en}</b><br>%{x:.0f} TPM<extra></extra>`
+      };
+    });
+    // Bulk mean line
+    let totalN = types.reduce((s,t)=>s+t.n,0);
+    let weightedMean = types.reduce((s,t)=>s+t.mean*t.n,0)/totalN;
+    traces.push({
+      x:[weightedMean,weightedMean], y:[0,80], mode:'lines', type:'scatter',
+      name:lang==='ko'?'Bulk 평균':'Bulk Average',
+      line:{color:'#f87171',width:2.5,dash:'dash'},
+      hovertemplate:`<b>${lang==='ko'?'Bulk 평균':'Bulk Average'}</b><br>${weightedMean.toFixed(1)} TPM<extra></extra>`
+    });
+    const layout={
+      ...darkBase,
+      title:{text:lang==='ko'?`단일세포 뷰: ${nTypes}가지 세포 유형이 보입니다 (Bulk 평균 = 빨간 점선)`:`Single-Cell View: ${nTypes} distinct population${nTypes>1?'s':''} revealed (Bulk avg = red dashed)`,font:{size:13,color:'#e4e0d8'}},
+      barmode:'overlay',
+      xaxis:{...darkBase.xaxis,title:'Gene X Expression (TPM)',range:[-5,120]},
+      yaxis:{...darkBase.yaxis,title:lang==='ko'?'세포 수':'Cell Count'},
+      margin:{t:60,r:20,b:70,l:70}
+    };
+    Plotly.react('plot-bulk-sc',traces,layout,{responsive:true,displayModeBar:false});
+  }
+}
+
+// ─── SECTION 2: SEQUENCING DEPTH & SPARSITY ──────────────────────────────────
+const DEPTHS = [1000,5000,10000,50000];
+const DEPTH_LABELS = ['1K','5K','10K','50K'];
+let currentDepth = 1;
+
+const N_CELLS = 40, N_GENES = 25;
+const geneNames = ['CD3E','CD4','CD8A','MS4A1','CD14','NKG7','FOXP3','GZMB','IL7R','CCR7',
+  'S100A4','GNLY','LYZ','FCER1A','CST3','PPBP','PF4','GNG11','HLA-DRA','CD79A',
+  'IGHM','IL32','TYROBP','FCGR3A','PSAP'];
+
+// Cell type assignments (0=T,1=B,2=Mono,3=NK)
+const cellTypes = Array.from({length:N_CELLS},(_,i)=>i<12?0:i<22?1:i<32?2:3);
+const cellColors = ['#38bdf8','#4ade80','#c4a35a','#a78bfa'];
+const cellTypeNames = {ko:['T 세포','B 세포','단핵구','NK 세포'],en:['T cell','B cell','Monocyte','NK cell']};
+
+// True expression matrix (if sequencing were infinite)
+const trueExpr = [];
+for(let c=0;c<N_CELLS;c++){
+  const row=[];
+  for(let g=0;g<N_GENES;g++){
+    const ct=cellTypes[c];
+    let base=0.5;
+    // Marker genes
+    if(ct===0&&(g===0||g===1||g===2||g===9||g===11))base=8;
+    if(ct===1&&(g===3||g===18||g===19||g===20))base=8;
+    if(ct===2&&(g===4||g===12||g===16||g===17||g===18))base=7;
+    if(ct===3&&(g===5||g===7||g===10||g===22))base=8;
+    // Housekeeping
+    if(g===23||g===24)base=3;
+    row.push(base*(0.6+Math.random()*0.8));
+  }
+  trueExpr.push(row);
+}
+
+function simulateDropout(depth) {
+  // Dropout probability decreases with depth and expression level
+  const depthScale = depth/10000;
+  const mat=[];
+  for(let c=0;c<N_CELLS;c++){
+    const row=[];
+    for(let g=0;g<N_GENES;g++){
+      const expr=trueExpr[c][g];
+      // Dropout: P(detected) = 1 - exp(-lambda * expr * depthScale)
+      const pDetect = 1 - Math.exp(-1.2*expr*depthScale);
+      const detected = Math.random()<pDetect;
+      row.push(detected ? expr*(0.7+Math.random()*0.6) : 0);
+    }
+    mat.push(row);
+  }
+  return mat;
+}
+
+function onDepthChange(v) {
+  currentDepth = parseInt(v);
+  const d = DEPTHS[currentDepth];
+  document.getElementById('depth-val').textContent = d.toLocaleString();
+  const annMsgs = {
+    ko:{0:'1K 읽기: 극도로 희소합니다 — 마커 유전자조차 대부분 드롭아웃됩니다.',1:'5K 읽기: 강한 마커 유전자들이 보이기 시작합니다. 대부분 여전히 0입니다.',2:'10K 읽기: 세포 유형 패턴이 더 명확해집니다. 여전히 상당한 드롭아웃이 있습니다.',3:'50K 읽기: 더 밀도 있는 행렬. 낮은 발현 유전자들도 검출됩니다. 하지만 여전히 완벽하지 않습니다.'},
+    en:{0:'1K reads: extremely sparse — even marker genes mostly drop out.',1:'5K reads: strong marker genes start to emerge. Most values still zero.',2:'10K reads: cell type patterns become clearer. Still substantial dropout.',3:'50K reads: much denser matrix. Low-expression genes now detectable. Still not perfect.'}
+  };
+  document.getElementById('depth-annotation').textContent = annMsgs[lang][currentDepth];
+  buildHeatmap();
+}
+
+function buildHeatmap() {
+  const d = DEPTHS[currentDepth];
+  const mat = simulateDropout(d);
+  // Transpose: rows=genes, cols=cells
+  const z = geneNames.map((_,g)=>cellTypes.map((_,c)=>mat[c][g]));
+  const sparsity = z.flat().filter(v=>v===0).length/(N_CELLS*N_GENES)*100;
+
+  // Cell label colors
+  const cellLabels = Array.from({length:N_CELLS},(_,i)=>`Cell${i+1}`);
+  const trace = {
+    z, type:'heatmap',
+    x:cellLabels, y:geneNames,
+    colorscale:[[0,'#0b0b11'],[0.15,'#1a2535'],[0.4,'#1e4d7a'],[0.7,'#2980b9'],[1,'#38bdf8']],
+    zmin:0, zmax:8,
+    hovertemplate:'<b>%{y}</b> in %{x}<br>Expression: %{z:.2f}<extra></extra>',
+    colorbar:{title:lang==='ko'?'발현량':'Expression',titlefont:{color:'#e4e0d8',size:11},tickfont:{color:'#7a756d',size:9},len:0.7}
+  };
+
+  // Cell type boundary lines via shapes
+  const shapes=[];
+  [12,22,32].forEach(pos=>{
+    shapes.push({type:'line',x0:pos-0.5,x1:pos-0.5,y0:-0.5,y1:N_GENES-0.5,xref:'x',yref:'y',line:{color:'#c4a35a',width:1.5,dash:'dot'}});
+  });
+
+  // Cell type annotations
+  const typeAnns=[
+    {pos:5.5,lbl:lang==='ko'?'T 세포':'T cells'},
+    {pos:16.5,lbl:lang==='ko'?'B 세포':'B cells'},
+    {pos:26.5,lbl:lang==='ko'?'단핵구':'Monocytes'},
+    {pos:35.5,lbl:lang==='ko'?'NK 세포':'NK cells'}
+  ];
+  const annotations=typeAnns.map(a=>({
+    x:a.pos,y:N_GENES-0.5,xref:'x',yref:'y',
+    text:a.lbl,showarrow:false,
+    font:{color:'#c4a35a',size:10},textangle:0,
+    yanchor:'bottom'
+  }));
+  annotations.push({
+    x:0.5,y:1.02,xref:'paper',yref:'paper',
+    text:`${lang==='ko'?'희소성':'Sparsity'}: ${sparsity.toFixed(0)}% ${lang==='ko'?'드롭아웃':'dropout'} | ${lang==='ko'?'깊이':'Depth'}: ${d.toLocaleString()} reads`,
+    showarrow:false,font:{color:sparsity>70?'#f87171':'#4ade80',size:12},xanchor:'left'
+  });
+
+  const layout={
+    ...darkBase,
+    title:{text:lang==='ko'?`단일세포 발현 행렬 (${N_CELLS}세포 × ${N_GENES}유전자) — 깊이: ${DEPTH_LABELS[currentDepth]}`:`Single-Cell Expression Matrix (${N_CELLS} cells × ${N_GENES} genes) — Depth: ${DEPTH_LABELS[currentDepth]}`,font:{size:13,color:'#e4e0d8'}},
+    xaxis:{...darkBase.xaxis,showticklabels:false,title:lang==='ko'?`세포 (세포 유형으로 정렬)`:`Cells (sorted by type)`,zeroline:false},
+    yaxis:{...darkBase.yaxis,tickfont:{size:9},zeroline:false,automargin:true},
+    shapes,annotations,
+    margin:{t:60,r:20,b:60,l:90}
+  };
+  Plotly.react('plot-heatmap',[trace],layout,{responsive:true,displayModeBar:false});
+}
+
+// ─── SECTION 3: UMAP VISUALIZATION ──────────────────────────────────────────
+let umapMode = 'pca';
+let nnLevel = 1; // 0=low(5), 1=mid(15), 2=high(50)
+let colorMode = 'type';
+
+const NN_LEVELS = [5,15,50];
+const NN_LABELS = ['5 (낮음/low)','15 (중간/mid)','50 (높음/high)'];
+
+const umapCellDefs = [
+  {name_ko:'CD4+ T 세포', name_en:'CD4+ T cell', color:'#38bdf8', n:80,
+   pca:{cx:0.5,cy:1.0,cr:2.5}, umap:{5:{cx:-4.0,cy:2.0,cr:0.5},15:{cx:-4.0,cy:2.0,cr:0.9},50:{cx:-3.8,cy:2.1,cr:1.4}}},
+  {name_ko:'CD8+ T 세포', name_en:'CD8+ T cell', color:'#0ea5e9', n:70,
+   pca:{cx:1.0,cy:-0.5,cr:2.3}, umap:{5:{cx:-3.0,cy:3.5,cr:0.4},15:{cx:-3.0,cy:3.5,cr:0.8},50:{cx:-2.8,cy:3.2,cr:1.3}}},
+  {name_ko:'B 세포', name_en:'B cell', color:'#4ade80', n:75,
+   pca:{cx:-0.8,cy:1.2,cr:2.4}, umap:{5:{cx:3.5,cy:2.0,cr:0.5},15:{cx:3.5,cy:2.0,cr:0.9},50:{cx:3.3,cy:2.2,cr:1.5}}},
+  {name_ko:'단핵구', name_en:'Monocyte', color:'#f87171', n:65,
+   pca:{cx:0.2,cy:-1.5,cr:2.2}, umap:{5:{cx:1.0,cy:-3.5,cr:0.4},15:{cx:1.0,cy:-3.5,cr:0.8},50:{cx:1.2,cy:-3.2,cr:1.4}}},
+  {name_ko:'NK 세포', name_en:'NK cell', color:'#a78bfa', n:55,
+   pca:{cx:-1.0,cy:-0.5,cr:2.0}, umap:{5:{cx:-4.5,cy:-2.0,cr:0.4},15:{cx:-4.5,cy:-2.0,cr:0.75},50:{cx:-4.2,cy:-2.2,cr:1.3}}},
+];
+
+// Gene expression per cell type (for coloring)
+const geneExprByType = {
+  CD3E:   [8,8,0.3,0.3,3],
+  MS4A1:  [0.3,0.3,8,0.3,0.3],
+  CD14:   [0.3,0.3,0.3,8,0.3],
+  NKG7:   [2,4,0.3,0.3,8],
+  FOXP3:  [1.5,0.3,0.3,0.3,0.3],
+};
+
+// Generate cell positions once
+let cellPts = {};
+umapCellDefs.forEach(cd=>{
+  const pts=[];
+  for(let i=0;i<cd.n;i++){
+    pts.push({
+      px:gaussRnd(cd.pca.cx,cd.pca.cr*0.6), py:gaussRnd(cd.pca.cy,cd.pca.cr*0.6),
+      ux5:gaussRnd(cd.umap[5].cx,cd.umap[5].cr), uy5:gaussRnd(cd.umap[5].cy,cd.umap[5].cr),
+      ux15:gaussRnd(cd.umap[15].cx,cd.umap[15].cr), uy15:gaussRnd(cd.umap[15].cy,cd.umap[15].cr),
+      ux50:gaussRnd(cd.umap[50].cx,cd.umap[50].cr), uy50:gaussRnd(cd.umap[50].cy,cd.umap[50].cr),
+    });
+  }
+  cellPts[cd.name_en]=pts;
+});
+
+function setUmapMode(m) {
+  umapMode=m;
+  document.getElementById('btn-pca').classList.toggle('active',m==='pca');
+  document.getElementById('btn-umap').classList.toggle('active',m==='umap');
+  document.getElementById('nn-slider-wrap').style.opacity = m==='umap'?'1':'0.3';
+  document.getElementById('nn-slider').disabled = m==='pca';
+  updateUMAP();
+}
+
+function onNNChange(v) {
+  nnLevel=parseInt(v);
+  const nn=NN_LEVELS[nnLevel];
+  document.getElementById('nn-val').textContent=nn;
+  const msgs={
+    ko:{0:'n_neighbors=5 (낮음): 매우 타이트한 클러스터. 한 세포 유형이 여러 섬으로 쪼개질 수 있습니다.',1:'n_neighbors=15 (중간): 균형 잡힌 UMAP. 가장 일반적으로 쓰입니다.',2:'n_neighbors=50 (높음): 느슨한 클러스터. 일부 세포 유형들이 가까워집니다.'},
+    en:{0:'n_neighbors=5 (low): very tight clusters. A single cell type can fragment into multiple islands.',1:'n_neighbors=15 (mid): balanced UMAP. Most commonly used.',2:'n_neighbors=50 (high): loose clusters. Some cell types move closer together.'}
+  };
+  document.getElementById('umap-annotation').textContent=msgs[lang][nnLevel];
+  updateUMAP();
+}
+
+function setColorMode(m) {
+  colorMode=m;
+  document.getElementById('btn-color-type').classList.toggle('active',m==='type');
+  document.getElementById('btn-color-gene').classList.toggle('active',m==='gene');
+  updateUMAP();
+}
+
+function updateUMAP() {
+  const gene = document.getElementById('gene-select').value;
+  const nn = NN_LEVELS[nnLevel];
+  const traces=[];
+
+  umapCellDefs.forEach((cd,ci)=>{
+    const pts=cellPts[cd.name_en];
+    let xs,ys;
+    if(umapMode==='pca'){
+      xs=pts.map(p=>p.px); ys=pts.map(p=>p.py);
+    } else {
+      const key=`ux${nn}`;
+      const kkey=`uy${nn}`;
+      xs=pts.map(p=>p[key]); ys=pts.map(p=>p[kkey]);
+    }
+
+    let markerColor, colorbarConfig=null;
+    if(colorMode==='type'){
+      markerColor=cd.color;
+    } else {
+      const baseExpr=geneExprByType[gene][ci];
+      markerColor=pts.map(()=>Math.max(0,gaussRnd(baseExpr,baseExpr*0.3)));
+      colorbarConfig={colorscale:[[0,'#0b0b11'],[0.3,'#1e4d7a'],[0.7,'#a78bfa'],[1,'#f87171']],cmin:0,cmax:9,colorbar:{title:gene,titlefont:{color:'#e4e0d8',size:10},tickfont:{color:'#7a756d',size:9}}};
+    }
+
+    const tr={
+      x:xs,y:ys,mode:'markers',type:'scatter',
+      name:lang==='ko'?cd.name_ko:cd.name_en,
+      marker:{color:markerColor,size:5,opacity:0.8,line:{color:'rgba(0,0,0,0.2)',width:0.5}},
+      hovertemplate:`<b>${lang==='ko'?cd.name_ko:cd.name_en}</b><extra></extra>`
+    };
+    if(colorbarConfig) Object.assign(tr.marker, colorbarConfig);
+    if(colorMode==='gene') tr.showlegend=false;
+    traces.push(tr);
+  });
+
+  const axisTitle = umapMode==='pca'
+    ? {x:'PC 1',y:'PC 2'}
+    : {x:'UMAP 1',y:'UMAP 2'};
+  const titleText = umapMode==='pca'
+    ? (lang==='ko'?'PCA: 세포들이 많이 겹쳐 있습니다':'PCA: Cells heavily overlapping')
+    : (lang==='ko'?`UMAP (n_neighbors=${nn}): 비선형 구조가 클러스터를 드러냅니다`:`UMAP (n_neighbors=${nn}): Non-linear structure reveals clusters`);
+
+  const layout={
+    ...darkBase,
+    title:{text:titleText,font:{size:13,color:'#e4e0d8'}},
+    xaxis:{...darkBase.xaxis,title:axisTitle.x,zeroline:false},
+    yaxis:{...darkBase.yaxis,title:axisTitle.y,zeroline:false},
+    margin:{t:50,r:20,b:60,l:60}
+  };
+  Plotly.react('plot-umap',traces,layout,{responsive:true,displayModeBar:false});
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  setLang('ko');
+  drawBulkSC();
+  buildHeatmap();
+  updateUMAP();
+  // init readout texts
+  onNTypeChange(2);
+  onDepthChange(1);
+  onNNChange(1);
+});
+</script>
+</body>
+</html>

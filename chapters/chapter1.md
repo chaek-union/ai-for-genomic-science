@@ -1,12 +1,34 @@
 # Chapter 1: Why AI for Genomic Science?
 
-Dr. Sarah An stares at her computer screen, frustrated. She just received whole-genome sequencing (WGS) data from a 7-year-old patient with a complex rare disorder—severe skeletal abnormalities, neurodevelopmental delays, and metabolic dysfunction. Both parents are healthy, suggesting this is a *de novo* (new) mutation. The WGS reveals 4.5 million genetic variants compared to the reference genome. Her computational pipeline identifies approximately 70 de novo variants—changes found in the patient but not in either parent. These are the prime suspects. She runs standard pathogenicity prediction tools—CADD scores and PolyPhen-2—to narrow down the list. After filtering, she's left with 3 coding mutations** in genes with unknown function or disease relevance, and 7 noncoding variants** in regulatory regions. 
+**[Interactive: Chapter 1](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter1.html)** — Explore the variant hunting problem and see how AI narrows the search.
+
+Dr. Sarah An stares at her computer screen, frustrated. She just received whole-genome sequencing (WGS) data from a 7-year-old patient with a complex rare disorder—severe skeletal abnormalities, neurodevelopmental delays, and metabolic dysfunction. Both parents are healthy, suggesting this is a *de novo* (new) mutation.
+
+The WGS reveals **4.5 million genetic variants** compared to the reference genome. Her computational pipeline identifies approximately **70 de novo variants**—changes found in the patient but not in either parent. These are the prime suspects.
+
+She runs standard pathogenicity prediction tools—CADD scores and PolyPhen-2—to narrow down the list. After filtering, she's left with **3 coding mutations** in genes with unknown function or disease relevance, and **7 noncoding variants** in regulatory regions.
 
 Any of these 10 variants could be causative. But which one?
 
-Each functional validation experiment takes 2-3 months and costs $8,000-15,000. Testing all 10 would take **2+ years** and over **$100,000**. Even then, the noncoding variants are challenging to test—their effects on gene regulation are subtle and context-dependent, requiring cell-type-specific assays, enhancer reporter experiments, and potentially CRISPR editing in patient-derived cells. Three days later, using an AI-powered variant prioritization model trained on millions of variants and functional genomics data, Sarah narrows the list to **2 high-confidence candidates**: one coding variant in a gene involved in skeletal development with a damaging structural prediction, and one noncoding variant in an enhancer predicted to disrupt binding of a critical transcription factor expressed in developing bone and neural tissue. Within two months, functional experiments confirm the noncoding variant as causative—it disrupts an enhancer driving expression of a gene essential for both skeletal and neural development.
+Each functional validation experiment takes 2–3 months and costs $8,000–15,000. Testing all 10 would take **2+ years** and over **$100,000**. Even then, the noncoding variants are particularly challenging—their effects on gene regulation are subtle and context-dependent, requiring cell-type-specific assays, enhancer reporter experiments, and potentially CRISPR editing in patient-derived cells.
 
-This is one example how we can leverage the power of AI in genomics: not replacing scientific intuition, but dramatically amplifying it to navigate the vast search space of human genetic variation.
+Three days later, using an AI-powered variant prioritization model trained on millions of variants and functional genomics data, Sarah narrows the list to **2 high-confidence candidates**: one coding variant in a gene involved in skeletal development, and one noncoding variant in an enhancer predicted to disrupt a transcription factor expressed in developing bone and neural tissue.
+
+Within two months, functional experiments confirm the noncoding variant as causative—it disrupts an enhancer driving expression of a gene essential for both skeletal and neural development.
+
+This is one example of how we can leverage the power of AI in genomics: not replacing scientific intuition, but dramatically amplifying it to navigate the vast search space of human genetic variation.
+
+---
+
+## 학습 목표 (Learning Objectives)
+
+이 장을 마치면 다음을 할 수 있습니다:
+
+- [ ] 현대 유전체학이 직면한 데이터 규모 문제와 가설 검증의 병목을 설명한다
+- [ ] AI, 머신러닝, 딥러닝의 개념 계층 구조를 구별하고 예시를 든다
+- [ ] 상관관계와 인과관계의 차이를 설명하고 AI가 인과관계를 입증할 수 없는 이유를 논한다
+- [ ] 유전체 과학에서 AI가 성공적으로 적용된 실제 사례를 최소 세 가지 설명한다
+- [ ] AI 도구를 적절하게 사용해야 하는 상황과 실험적 검증이 필요한 상황을 구분한다
 
 ---
 
@@ -34,9 +56,11 @@ The fundamental problem is that we can generate biological data and hypotheses f
 
 > *"Can computers learn patterns from data instead of having humans program every rule explicitly?"*
 
-Instead of telling a computer "if the DNA sequence has TATA box at position -25 and GC content > 60%, it's probably a promoter," we give the computer thousands of examples of promoters and non-promoters, and let it figure out the patterns. The learning process works by having the algorithm compare its predictions to the correct answers, measure the error, and then automatically adjust its approach through mathematical optimization.
+Think of the difference between a recipe book and a chef who has tasted thousands of dishes. A recipe book follows fixed rules: "if ingredient X, then do step Y." A chef who has tasted enough dishes develops *intuition*—they can sense what's missing without consulting a recipe. Machine learning is closer to the chef: instead of programming every rule, we show the algorithm thousands of examples and let it discover the patterns.
 
-What Is "Learning" in Machine Learning? Here is an example for "Predicting variant functional impact".
+Instead of telling a computer "if the DNA sequence has a TATA box at position -25 and GC content > 60%, it's probably a promoter," we give the computer thousands of labeled examples of promoters and non-promoters, and let it figure out the patterns on its own.
+
+**How a machine learning algorithm learns — an example: predicting variant functional impact**
 
 You have:
 - **Input:** Conservation score, population frequency, predicted structural change
@@ -46,23 +70,24 @@ The algorithm learns by:
 
 1. **Making initial guesses** (usually random)
 2. **Comparing to known answers** (labeled training data)
-3. **Measuring error** (calculating "loss")
-4. **Adjusting internal parameters** to reduce error
+3. **Measuring how wrong it was** (the "loss")
+4. **Adjusting its internal settings** to reduce the error
 5. **Repeating thousands of times**
 
-This adjustment process is optimization—finding the best parameters that minimize prediction errors.
+This cycle—guess, compare, adjust, repeat—is how the algorithm "learns" from data, much like how you improve at a skill through practice and feedback.
 
-For a simple model, the algorithm discovers the best weights: 
-
-```
-Score = (Conservation × w₁) + (Frequency × w₂) + (StructuralChange × w₃) + bias
-```
-
-The algorithm discovers the best values for w₁, w₂, w₃, and bias by examining thousands of examples. We don't tell the algorithm what values to use—it discovers them from data.
+> **Want to see the math?**
+> For a simple model, the algorithm discovers the best *weights* for each input:
+> `Score = (Conservation × w₁) + (Frequency × w₂) + (StructuralChange × w₃) + bias`
+> The values w₁, w₂, w₃ (and bias) are discovered automatically from thousands of examples—we never specify them. A high w₁ would mean "conservation matters a lot for pathogenicity," while a negative w₂ would mean "common variants are probably benign."
 
 ### Deep Learning (DL)
 
-**Deep Learning** uses **artificial neural networks** with many layers to automatically discover patterns in data. Each layer builds on the previous one in a hierarchical fashion. The first layer might detect simple sequence motifs such as TATA or CAAT boxes, while the second layer might combine these motifs to detect larger regulatory modules. The third layer might identify context-dependent regulatory logic, and the fourth layer might predict cell-type-specific enhancer activity.
+**Deep Learning** uses **artificial neural networks** with many layers to automatically discover patterns in data—think of it as machine learning taken to a much greater depth.
+
+Each layer builds on the previous one, like a series of filters in a microscopy pipeline. The first layer might detect simple sequence motifs such as TATA or CAAT boxes. The second layer combines those motifs to detect larger regulatory modules. The third layer identifies context-dependent regulatory logic. The fourth layer predicts cell-type-specific enhancer activity.
+
+No one programs these layers to look for those patterns—the network discovers them by itself after seeing enough examples. This hierarchical feature learning is what makes deep learning so powerful for genomics.
 
 ### The Hierarchy in Practice
 
@@ -103,29 +128,18 @@ Suppose you have data showing:
 
 ✓ **CORRECT:** "Gene X expression and Disease Y are associated"
 
-**Why? Consider these scenarios:**
+**Why? All four scenarios below produce the *same* correlation, but require completely different interventions:**
 
-```
-Scenario 1: Gene X → Disease Y (causal)
-            [Targeting Gene X might cure disease]
+| Scenario | What's actually happening | What you should do |
+|----------|--------------------------|-------------------|
+| Gene X → Disease Y | Gene X directly causes the disease | Target Gene X therapeutically |
+| Disease Y → Gene X | The disease itself triggers Gene X expression | Treat the disease, not Gene X |
+| Inflammation → Gene X *and* Disease Y | A third factor drives both | Treat inflammation |
+| Environmental factor → Gene X *and* Disease Y | Shared cause in the environment | Change the environment |
 
-Scenario 2: Disease Y → Gene X (reverse causation)
-            [Gene X is just responding to disease]
+An AI model trained on correlation data cannot tell you which scenario is true. All four look identical in the data.
 
-Scenario 3: Inflammation → Gene X
-                       ↘
-                         Disease Y (confounding)
-            [Both are symptoms; treat inflammation instead]
-
-Scenario 4: Gene X ← Environmental Factor → Disease Y (common cause)
-            [Change environment, not the gene]
-```
-
-All four scenarios produce identical correlations, but require completely different interventions!
-
-> *"The causes of the data cannot be extracted from the data alone. We need an additional external model, a causal model of some kind."* — Richard McElreath, Statistical Rethinking
-
-This is why Nancy Cartwright's slogan is so important: "No causes in, no causes out." You cannot discover causation by data mining alone—you must bring causal assumptions to the data.
+> *"The causes of the data cannot be extracted from the data alone."* — Richard McElreath, *Statistical Rethinking*
 
 ### Establishing Causation Requires Molecular Experiments
 
@@ -151,70 +165,53 @@ Experiments' role: Establish that perturbation actually causes the effect
 
 ---
 
-## Causal Inference: A Brief Introduction
+## Drawing the Causal Story: Pathway Diagrams
 
-Modern causal inference uses **Directed Acyclic Graphs (DAGs)** to represent causal relationships. A DAG is a diagram with arrows showing cause-and-effect relationships, where "directed" means arrows have direction (A→B means A causes B) and "acyclic" means no circular loops exist (no A→B→C→A).
+You already draw causal models in biology—you just call them **pathway diagrams** or **signaling cascades**. The gene regulation pathway below is a perfect example:
 
 ```
-Simple DAG Example: Gene Regulation
-    Transcription Factor (TF)
+Transcription Factor (TF)
            ↓
-       Enhancer Activity
+    Enhancer Activity
            ↓
-      Gene Expression
+    Gene Expression
            ↓
-        Protein Level
+      Protein Level
            ↓
         Phenotype
-
-This DAG states:
-- Changing TF changes Enhancer (causal)
-- Changing Protein changes Phenotype (causal)
-- Protein and TF are correlated, but not directly causally related
 ```
 
-**Key insight:** The DAG helps you design experiments to establish causation, not just correlation.
+Each arrow means "causes." This diagram captures something important:
+- TF and Protein Level are **correlated** (when TF is active, protein levels tend to be high)
+- But TF does **not directly cause** the protein level—it acts through intermediate steps
 
-**For biology students:**
-- Learn to draw causal models of your system
-- Use them to design experiments
-- Don't confuse AI predictions (correlations) with causal claims
+This distinction matters enormously for experiments. If you want to test whether TF activity causes the phenotype, you need to perturb TF (e.g., with a dominant negative or CRISPR)—not just observe the correlation between TF and phenotype in your RNA-seq data.
+
+Researchers in statistics and computer science call these pathway diagrams **Directed Acyclic Graphs (DAGs)**—a formal name for something biologists have always drawn intuitively.
+
+**The takeaway:** Before interpreting any AI prediction, draw out the causal pathway you believe is operating. This helps you design experiments that test the mechanism, not just the correlation.
 
 ---
 
-## From Null Hypothesis Testing to Comparing Causal Models
+## Asking the Right Question: Mechanism, Not Just Significance
 
-Many biology students learn statistics through a flowchart approach:
-```
-Is data normal? → YES → t-test
-               → NO → Mann-Whitney U test
-```
+Most of us learned statistics with one goal: get a p-value below 0.05 and reject the null hypothesis. "Is there an effect?" If yes, move on.
 
-The goal is typically to reject a null hypothesis: "Does this gene variant have NO effect on disease risk?" If p < 0.05, we conclude "yes, it has an effect."
+But genomics asks a fundamentally different question: **"Which mechanism explains this phenotype?"**
 
-**This approach has serious limitations in modern genomics:**
+Consider a GWAS study that finds 200 variants associated with Type 2 diabetes. Rejecting the null hypothesis for each one is easy—we know they have effects. The hard question is: *which of these variants disrupts insulin signaling, and how?* Does it affect a transcription factor binding site? An enhancer? A splice site? These are competing **mechanistic hypotheses**, and no amount of p-value testing can distinguish between them.
 
-1. **"No effect" is not a realistic biological hypothesis**
-   - Every variant affects something, even if weakly
-   - The real question isn't "effect or no effect?" but "what mechanism causes the effect?"
+> **An analogy:** Imagine your car won't start. A mechanic who only asks "Is there a problem?" (null hypothesis test) isn't very helpful—obviously there's a problem. A good mechanic asks "Is it the battery, the starter motor, or the fuel pump?"—competing hypotheses about mechanism. That's what genomics needs.
 
-2. **Null models are not unique**
-   - What's the "null" for gene network evolution?
-   - What's the "null" for cell-cell communication?
-   - Multiple process models can produce identical null predictions
+**What this means for how you use AI tools:**
 
-3. **Industrial vs. research contexts**
-   - The t-test was invented for Guinness Brewery quality control: "Is this batch the same as previous batches?"
-   - But genomics research asks: "Which of these 10 mechanisms explains this phenotype?"
+When an AI model predicts "this variant is 95% likely to be pathogenic," it's not just saying "effect exists." Based on patterns learned from millions of variants, it's implicitly pointing toward a mechanism. Your job as a scientist is to:
 
-**What this means for AI and genomics:**
+- Ask: *What mechanism is the AI pattern suggesting?* (TF binding disruption? Splicing change? Protein destabilization?)
+- Formulate competing mechanistic hypotheses
+- Design experiments to distinguish between them
 
-When an AI model predicts "this variant is 95% likely to be pathogenic," it's not just saying "effect exists." It's implicitly proposing mechanisms based on patterns it learned. Your job as a scientist is to:
-- Formulate competing causal models (Does this variant disrupt transcription factor binding? Alter splicing? Change enhancer activity?)
-- Design experiments to compare these models
-- Use data to determine which mechanism best explains the phenotype
-
-**AI models should help you compare competing biological hypotheses, not just confirm that "something is significant."**
+**AI models are most valuable when they help you compare competing biological mechanisms, not just confirm that something is statistically significant.**
 
 ---
 
@@ -363,8 +360,8 @@ Need to prioritize/predict many things?
 2. **AI ⊃ ML ⊃ DL** - Hierarchy from broad to specific, each with distinct use cases
 3. **Learning = optimization** - Algorithms discover patterns by adjusting parameters to minimize errors
 4. **Correlation ≠ Causation** - AI finds associations; experiments establish causation through controlled perturbation
-5. **Causal models over null hypotheses** - Compare competing biological mechanisms rather than testing "no effect"
-6. **DAGs clarify causation** - Visual tools to distinguish direct effects from indirect correlations
+5. **Ask "which mechanism?" not "is there an effect?"** - Compare competing biological hypotheses rather than just testing "no effect"
+6. **Pathway diagrams are causal models** - The signaling cascades you already draw help distinguish direct causation from indirect correlation
 7. **Proven impact** - AlphaFold, DeepVariant, single-cell analysis, drug discovery all transform research
 8. **Paradigm shift** - From linear hypothesis-testing to iterative AI-augmented discovery loops
 9. **Virtual cells and in silico experimentation** - AIVC enables computational simulation before physical testing
@@ -374,25 +371,30 @@ Need to prioritize/predict many things?
 
 ---
 
-## Key Terms
+<details>
+<summary><strong>📖 Key Terms</strong></summary>
 
-- **Artificial Intelligence (AI)**: Field of making computers perform tasks requiring human intelligence
-- **Machine Learning (ML)**: Algorithms that learn patterns from data without explicit programming
-- **Deep Learning (DL)**: ML using multi-layered neural networks
-- **Causal Inference**: Methods for establishing causation, not just correlation
-- **DAG (Directed Acyclic Graph)**: Visual representation of causal relationships where arrows indicate cause-and-effect
-- **Parameters**: Numerical values a model learns to make predictions
-- **Training Data**: Examples with known answers used to teach models
-- **Optimization**: Adjusting parameters to minimize prediction errors
-- **Overfitting**: Learning training data too well, failing on new data
-- **Bias**: Systematic errors from unrepresentative training data
-- **Confounding**: When a third variable creates spurious associations
-- **Foundation Model**: Large-scale models trained on diverse data, transferable to many tasks
-- **AI Virtual Cell (AIVC)**: Computational model simulating cellular behavior across scales
-- **Active Learning**: Iterative process where AI identifies most informative next experiments
-- **CRISPR knockout/knockdown**: Gene editing to delete or reduce gene expression for causal validation
-- **Drug inhibition**: Chemical compounds blocking protein function to test causation
-- **Overexpression**: Artificially increasing gene expression levels to observe phenotypic effects
+| Term | Definition |
+|------|-----------|
+| **Artificial Intelligence (AI)** | Field of making computers perform tasks requiring human intelligence |
+| **Machine Learning (ML)** | Algorithms that learn patterns from data without explicit programming |
+| **Deep Learning (DL)** | ML using multi-layered neural networks |
+| **Causal Inference** | Methods for establishing causation, not just correlation |
+| **DAG (Directed Acyclic Graph)** | A formal name for the pathway diagrams biologists already draw—arrows indicate cause-and-effect, and no circular loops are allowed |
+| **Parameters** | Numerical values a model learns to make predictions |
+| **Training Data** | Examples with known answers used to teach models |
+| **Optimization** | Adjusting parameters to minimize prediction errors |
+| **Overfitting** | Learning training data too well, failing on new data |
+| **Bias** | Systematic errors from unrepresentative training data |
+| **Confounding** | When a third variable creates spurious associations |
+| **Foundation Model** | Large-scale models trained on diverse data, transferable to many tasks |
+| **AI Virtual Cell (AIVC)** | Computational model simulating cellular behavior across scales |
+| **Active Learning** | Iterative process where AI identifies most informative next experiments |
+| **CRISPR knockout/knockdown** | Gene editing to delete or reduce gene expression for causal validation |
+| **Drug inhibition** | Chemical compounds blocking protein function to test causation |
+| **Overexpression** | Artificially increasing gene expression levels to observe phenotypic effects |
+
+</details>
 
 ---
 
@@ -450,27 +452,4 @@ AI cannot distinguish between these scenarios. Only **controlled experiments** (
 
 ---
 
-## Hands-On Labs
-
-### Lab 1.1: Getting Started with Google Colab and Python (30-45 min)
-
-**Learn:**
-- Google Colab interface
-- Python basics for biologists
-- DNA/RNA sequence analysis
-- GC content, motif finding
-- Simple visualizations
-
-**[Access Lab 1.1 on Google Colab](https://colab.research.google.com/drive/1NVvOXI3FOfCB8o2xY1-yG3JyXDu4iU0t)**
-
-### Lab 1.2: Essential Python Tools for Bioinformatics (60-90 min)
-
-**Learn:**
-- NumPy for numerical computing
-- Pandas for organizing data
-- Matplotlib for publication plots
-- Biopython for sequences
-- Complete RNA-seq analysis workflow
-
-**[Access Lab 1.2 on Google Colab](https://colab.research.google.com/drive/1iuL3VbGcf25eDlVZoqUXjs11bpD-E08v)**
 

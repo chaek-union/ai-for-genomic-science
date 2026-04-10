@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 5 — Genetic Variation and Genomic Technologies</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden;background:radial-gradient(ellipse at 40% 50%, rgba(56,189,248,.05) 0%, transparent 60%)}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.2rem,5.5vw,4.2rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:860px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:560px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:680px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 2rem}
+.plot-box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;margin-bottom:2rem}
+.plot-caption{font:.85rem/1.5 system-ui;color:var(--muted);margin-top:1rem;text-align:center}
+.detail-panel{display:none;background:rgba(196,163,90,.07);border:1px solid rgba(196,163,90,.25);border-radius:12px;padding:1.4rem 1.6rem;margin-top:1rem}
+.detail-panel.visible{display:block}
+.detail-panel h4{font:700 .9rem/1.3 'SF Mono',monospace;color:var(--gold);margin-bottom:.6rem}
+.detail-panel p{font:.92rem/1.6 system-ui;color:var(--text)}
+.btn-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1.5rem}
+.tog-btn{padding:.4rem 1rem;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);font:.82rem/1 system-ui;cursor:pointer;transition:.2s}
+.tog-btn.active{color:#fff;border-color:var(--gold);background:var(--gold-dim)}
+</style>
+</head>
+<body>
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <div class="hero-ch">Chapter 5</div>
+  <h1 data-ko="유전적 변이와 게놈 기술" data-en="Genetic Variation and Genomic Technologies"></h1>
+  <p class="hero-sub" data-ko="인간 게놈의 변이 지형을 탐색하고, 서열 분석 기술의 트레이드오프를 이해합니다." data-en="Explore the variant landscape of the human genome and understand sequencing technology trade-offs."></p>
+  <div class="hero-scroll" onclick="document.querySelector('.section').scrollIntoView({behavior:'smooth'})">&#9662; scroll</div>
+</section>
+
+<!-- Section 1: Variant Landscape -->
+<section class="section">
+  <div class="section-label" data-ko="인간 변이 지형" data-en="Human Variant Landscape"></div>
+  <h2 class="section-title" data-ko="내 게놈 속 변이는 어디에 있나?" data-en="Where Are the Variants in My Genome?"></h2>
+  <p class="section-body" data-ko="전형적인 인간 게놈에는 수백만 개의 변이가 있습니다. SNV가 가장 많지만, CNV와 SV도 표현형에 큰 영향을 줄 수 있습니다. 각 조각을 클릭해 세부 정보를 확인하세요." data-en="A typical human genome contains millions of variants. SNVs are most abundant, but CNVs and SVs can have outsized phenotypic impact. Click each segment to expand details."></p>
+  <div class="plot-box">
+    <div id="donut-plot" style="height:420px"></div>
+    <p class="plot-caption" data-ko="각 섹터를 클릭하면 아래에 해당 변이 유형의 세부 설명이 나타납니다." data-en="Click a sector to show a detailed description of that variant type below."></p>
+  </div>
+  <div class="detail-panel" id="variant-detail">
+    <h4 id="variant-detail-title"></h4>
+    <p id="variant-detail-body"></p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- Section 2: Allele Frequency Spectrum -->
+<section class="section">
+  <div class="section-label" data-ko="대립 유전자 빈도 스펙트럼" data-en="Allele Frequency Spectrum"></div>
+  <h2 class="section-title" data-ko="대부분의 변이는 왜 희귀한가?" data-en="Why Are Most Variants Rare?"></h2>
+  <p class="section-body" data-ko="대립 유전자 빈도 분포는 인구 집단의 역사와 자연 선택을 반영합니다. 아프리카 집단은 더 많은 희귀 변이를 가지며, 유럽과 동아시아 집단은 병목 효과로 인해 분포가 다릅니다." data-en="The allele frequency distribution reflects population history and natural selection. African populations harbor more rare variants; European and East Asian populations show different spectra due to bottleneck effects."></p>
+  <div class="btn-row" id="pop-toggles">
+    <button class="tog-btn active" data-pop="AFR" onclick="switchPop(this)">African (AFR)</button>
+    <button class="tog-btn" data-pop="EUR" onclick="switchPop(this)">European (EUR)</button>
+    <button class="tog-btn" data-pop="EAS" onclick="switchPop(this)">East Asian (EAS)</button>
+  </div>
+  <div class="plot-box">
+    <div id="afs-plot" style="height:420px"></div>
+    <p class="plot-caption" data-ko="x축: 소수 대립 유전자 빈도 (MAF), y축: 변이 수 (천 단위). 음영 영역은 초희귀 / 희귀 / 흔한 변이 구간을 나타냅니다." data-en="x: minor allele frequency (MAF), y: variant count (thousands). Shaded regions denote ultra-rare / rare / common variant classes."></p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- Section 3: Sequencing Tech Trade-offs -->
+<section class="section">
+  <div class="section-label" data-ko="시퀀싱 기술 비교" data-en="Sequencing Technology Trade-offs"></div>
+  <h2 class="section-title" data-ko="읽기 길이 vs. 정확도: 어떤 플랫폼을 선택할까?" data-en="Read Length vs. Accuracy: Which Platform to Choose?"></h2>
+  <p class="section-body" data-ko="각 시퀀싱 플랫폼은 읽기 길이, 정확도, 처리량, 비용 사이에서 트레이드오프를 가집니다. 점 크기는 처리량, 색상은 게놈당 비용을 나타냅니다. 각 점을 호버하여 상세 사양을 확인하세요." data-en="Each sequencing platform trades off read length, accuracy, throughput, and cost. Point size = throughput, color = cost per genome. Hover for detailed specs."></p>
+  <div class="plot-box">
+    <div id="seq-plot" style="height:460px"></div>
+    <p class="plot-caption" data-ko="x축: 읽기 길이 (로그 스케일), y축: 정확도 (%), 점 크기: 처리량(Gb/run), 색상: 게놈당 비용" data-en="x: read length (log scale), y: accuracy (%), bubble size: throughput (Gb/run), color: cost per genome"></p>
+  </div>
+</section>
+
+<script>
+let currentLang = 'ko';
+function setLang(l) {
+  currentLang = l;
+  document.querySelectorAll('[data-ko]').forEach(el => { el.textContent = el.dataset[l]; });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.lang-btn:' + (l==='ko' ? 'first' : 'last') + '-child').classList.add('active');
+  // Re-render plots with updated annotations
+  buildAFS(document.querySelector('#pop-toggles .tog-btn.active').dataset.pop);
+  updatePlotLanguage(l);
+}
+document.querySelectorAll('[data-ko]').forEach(el => { el.textContent = el.dataset.ko; });
+
+// ── Bilingual plot labels ─────────────────────────────────────────────────────
+const plotLabels = {
+  afsPlot: {
+    xaxis: { ko: '소수 대립 유전자 빈도 (MAF)', en: 'Minor Allele Frequency (MAF)' },
+    yaxis: { ko: '변이 수 (천 단위)', en: 'Number of Variants (thousands)' },
+    annotations: [
+      { ko: '초희귀<br><0.01%', en: 'Ultra-rare<br><0.01%' },
+      { ko: '희귀<br>0.01–1%',  en: 'Rare<br>0.01–1%' },
+      { ko: '흔함<br>>5%',      en: 'Common<br>>5%' }
+    ],
+    hover: { ko: 'MAF: %{x:.4f}<br>변이 수: %{y:.0f}k<extra></extra>', en: 'MAF: %{x:.4f}<br>Variants: %{y:.0f}k<extra></extra>' }
+  },
+  seqPlot: {
+    xaxis: { ko: '읽기 길이 (bp, 로그 스케일)', en: 'Read Length (bp, log scale)' },
+    yaxis: { ko: '정확도 (%)', en: 'Accuracy (%)' },
+    colorbar: { ko: '게놈당 비용 ($)', en: 'Cost/Genome ($)' },
+    hover: {
+      ko: '<b>%{customdata[4]}</b><br>읽기 길이: %{customdata[0]} bp<br>정확도: %{customdata[1]}%<br>처리량: %{customdata[2]} Gb/run<br>게놈당 비용: $%{customdata[3]}<extra></extra>',
+      en: '<b>%{customdata[4]}</b><br>Read length: %{customdata[0]} bp<br>Accuracy: %{customdata[1]}%<br>Throughput: %{customdata[2]} Gb/run<br>Cost/genome: $%{customdata[3]}<extra></extra>'
+    }
+  }
+};
+
+function updatePlotLanguage(l) {
+  // seq-plot: update axis titles, colorbar title, hover
+  const sp = document.getElementById('seq-plot');
+  if (sp && sp.data && sp.data.length) {
+    Plotly.relayout(sp, {
+      'xaxis.title.text': plotLabels.seqPlot.xaxis[l],
+      'yaxis.title.text': plotLabels.seqPlot.yaxis[l]
+    });
+    Plotly.restyle(sp, {
+      hovertemplate: plotLabels.seqPlot.hover[l],
+      'marker.colorbar.title': plotLabels.seqPlot.colorbar[l]
+    }, [0]);
+  }
+}
+
+const darkLayout = {
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor: 'rgba(20,20,31,1)',
+  font: { color: '#e4e0d8', family: 'system-ui, sans-serif' }
+};
+const cfg = { responsive: true, displayModeBar: false };
+
+// ── Donut chart ───────────────────────────────────────────────────────────────
+const variantDetails = {
+  ko: {
+    0: { title: 'SNV (단일 염기 변이)', body: '약 400만 개. 단일 염기가 다른 염기로 치환된 변이입니다. GWAS 연구의 주요 대상이며, 대부분은 무해하지만 소수는 질병 위험을 높입니다.' },
+    1: { title: 'Indel (삽입/결실)', body: '약 50만 개. 짧은 서열의 삽입 또는 결실입니다. 코딩 영역에서 발생하면 프레임시프트 돌연변이를 일으킬 수 있습니다.' },
+    2: { title: 'CNV (복제수 변이)', body: '약 1,000개. 큰 DNA 절편(보통 1 kb 이상)의 복제수 변화입니다. 자폐증, 조현병 등 신경발달 장애와 관련이 깊습니다.' },
+    3: { title: 'SV (구조 변이)', body: '약 5,000개. 전좌, 역위, 중복 등 50 bp 이상의 대규모 게놈 재배열입니다. 긴 읽기 시퀀싱으로만 완전히 탐지할 수 있습니다.' }
+  },
+  en: {
+    0: { title: 'SNV (Single Nucleotide Variant)', body: '~4 million. A single base substitution. The primary target of GWAS studies; most are benign but a small fraction elevate disease risk.' },
+    1: { title: 'Indel (Insertion/Deletion)', body: '~500 thousand. Short insertions or deletions. In coding regions they can cause frameshift mutations with severe consequences.' },
+    2: { title: 'CNV (Copy Number Variant)', body: '~1,000. Changes in the copy number of large DNA segments (typically >1 kb). Strongly associated with neurodevelopmental disorders.' },
+    3: { title: 'SV (Structural Variant)', body: '~5,000. Large-scale genomic rearrangements >50 bp including translocations, inversions, and duplications. Only fully detected by long-read sequencing.' }
+  }
+};
+
+Plotly.newPlot('donut-plot', [{
+  type: 'pie', hole: 0.52,
+  labels: ['SNV ~4M', 'Indel ~500K', 'CNV ~1K', 'SV ~5K'],
+  values: [4000000, 500000, 1000, 5000],
+  marker: { colors: ['#38bdf8','#4ade80','#a78bfa','#f87171'], line: { color: '#0b0b11', width: 2 } },
+  textinfo: 'label+percent',
+  textfont: { size: 13 },
+  hovertemplate: '<b>%{label}</b><br>Count: %{value:,}<extra></extra>'
+}], {
+  ...darkLayout,
+  margin: { t: 20, r: 20, b: 20, l: 20 },
+  legend: { font: { size: 13 } }
+}, cfg);
+
+document.getElementById('donut-plot').on('plotly_click', function(data) {
+  const idx = data.points[0].pointIndex;
+  const info = variantDetails[currentLang][idx];
+  if (!info) return;
+  document.getElementById('variant-detail-title').textContent = info.title;
+  document.getElementById('variant-detail-body').textContent = info.body;
+  document.getElementById('variant-detail').classList.add('visible');
+});
+
+// ── Allele Frequency Spectrum ─────────────────────────────────────────────────
+const popParams = {
+  AFR: { scale: 1.4, color: '#4ade80', decay: 4.5, label: 'African (AFR)' },
+  EUR: { scale: 1.0, color: '#38bdf8', decay: 5.5, label: 'European (EUR)' },
+  EAS: { scale: 0.85, color: '#a78bfa', decay: 6.0, label: 'East Asian (EAS)' }
+};
+
+// Seed PRNG for deterministic noise
+function seededRand(seed) {
+  let s = seed;
+  return function() { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+}
+
+function buildAFS(pop) {
+  const p = popParams[pop];
+  const rand = seededRand(42);
+  const x = [], y = [];
+  for (let i = 1; i <= 500; i++) {
+    const maf = i / 1000;
+    x.push(maf);
+    const val = p.scale * (3200 * Math.exp(-p.decay * maf) + 180 * Math.exp(-maf * 0.4));
+    y.push(Math.max(0, val + (rand() - 0.5) * 40));
+  }
+  const shapes = [
+    { type:'rect', x0:0.0001, x1:0.0002, y0:0, y1:3600, fillcolor:'rgba(248,113,113,.08)', line:{width:0}, layer:'below' },
+    { type:'rect', x0:0.0002, x1:0.01, y0:0, y1:3600, fillcolor:'rgba(251,146,60,.06)', line:{width:0}, layer:'below' },
+    { type:'rect', x0:0.05, x1:0.5, y0:0, y1:3600, fillcolor:'rgba(74,222,128,.05)', line:{width:0}, layer:'below' }
+  ];
+  const annotations = [
+    { x: Math.log10(0.00015), y: 3400, text: plotLabels.afsPlot.annotations[0][currentLang], showarrow:false, font:{size:10,color:'#f87171'}, xanchor:'center' },
+    { x: Math.log10(0.003), y: 3400, text: plotLabels.afsPlot.annotations[1][currentLang], showarrow:false, font:{size:10,color:'#fb923c'}, xanchor:'center' },
+    { x: Math.log10(0.2), y: 3400, text: plotLabels.afsPlot.annotations[2][currentLang], showarrow:false, font:{size:10,color:'#4ade80'}, xanchor:'center' }
+  ];
+  Plotly.react('afs-plot', [{
+    type:'scatter', mode:'lines', x, y,
+    fill:'tozeroy',
+    fillcolor: p.color + '26',
+    line: { color: p.color, width: 2.5 },
+    name: p.label,
+    hovertemplate: plotLabels.afsPlot.hover[currentLang]
+  }], {
+    ...darkLayout,
+    shapes, annotations,
+    xaxis: { gridcolor:'#22222e', title: plotLabels.afsPlot.xaxis[currentLang], type:'log',
+      range:[Math.log10(0.0001), Math.log10(0.5)], titlefont:{size:12} },
+    yaxis: { gridcolor:'#22222e', title: plotLabels.afsPlot.yaxis[currentLang], titlefont:{size:12} },
+    margin: { t:40, r:30, b:70, l:80 }
+  }, cfg);
+}
+buildAFS('AFR');
+
+function switchPop(btn) {
+  document.querySelectorAll('#pop-toggles .tog-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildAFS(btn.dataset.pop);
+}
+
+// ── Sequencing scatter ────────────────────────────────────────────────────────
+(function buildSeqPlot() {
+  const platforms = [
+    { name:'Illumina NovaSeq 6000', readLen:150, accuracy:99.9, throughput:6000, costPerGenome:600 },
+    { name:'PacBio HiFi (Revio)', readLen:20000, accuracy:99.8, throughput:1300, costPerGenome:900 },
+    { name:'Oxford Nanopore (PromethION)', readLen:100000, accuracy:97.5, throughput:12000, costPerGenome:500 },
+    { name:'Element Biosciences (AVITI)', readLen:150, accuracy:99.95, throughput:800, costPerGenome:400 }
+  ];
+  const maxTp = Math.max(...platforms.map(p => p.throughput));
+  Plotly.newPlot('seq-plot', [{
+    type: 'scatter', mode: 'markers+text',
+    x: platforms.map(p => p.readLen),
+    y: platforms.map(p => p.accuracy),
+    text: platforms.map(p => p.name.split(' ')[0]),
+    textposition: 'top center',
+    textfont: { size: 12 },
+    marker: {
+      size: platforms.map(p => 20 + (p.throughput / maxTp) * 36),
+      color: platforms.map(p => p.costPerGenome),
+      colorscale: [[0,'#4ade80'],[0.5,'#c4a35a'],[1,'#f87171']],
+      showscale: true,
+      colorbar: { title: plotLabels.seqPlot.colorbar[currentLang], thickness: 14, len: 0.7, titlefont:{size:11} },
+      line: { color: '#22222e', width: 1.5 }
+    },
+    customdata: platforms.map(p => [p.readLen.toLocaleString(), p.accuracy, p.throughput.toLocaleString(), p.costPerGenome, p.name]),
+    hovertemplate: plotLabels.seqPlot.hover[currentLang]
+  }], {
+    ...darkLayout,
+    xaxis: { gridcolor:'#22222e', title: plotLabels.seqPlot.xaxis[currentLang], type:'log', titlefont:{size:12} },
+    yaxis: { gridcolor:'#22222e', title: plotLabels.seqPlot.yaxis[currentLang], range:[96.8, 100.2], titlefont:{size:12} },
+    margin: { t:30, r:100, b:70, l:70 }
+  }, cfg);
+})();
+</script>
+</body>
+</html>

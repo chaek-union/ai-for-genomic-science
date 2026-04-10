@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 4 — Neural Network Architectures</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden;background:radial-gradient(ellipse at 60% 40%, rgba(196,163,90,.06) 0%, transparent 60%)}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.2rem,5.5vw,4.2rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:860px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:560px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:680px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 2rem}
+.plot-box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;margin-bottom:2rem}
+.plot-caption{font:.85rem/1.5 system-ui;color:var(--muted);margin-top:1rem;text-align:center}
+.btn-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1.5rem}
+.tog-btn{padding:.4rem 1rem;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);font:.82rem/1 system-ui;cursor:pointer;transition:.2s}
+.tog-btn.active{color:#fff;border-color:var(--gold);background:var(--gold-dim)}
+.tog-btn:hover{border-color:rgba(196,163,90,.5)}
+select.styled{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:.45rem 1rem;font:.9rem/1 system-ui;cursor:pointer;margin-bottom:1.5rem}
+select.styled:focus{outline:none;border-color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <div class="hero-ch">Chapter 4</div>
+  <h1 data-ko="신경망 아키텍처" data-en="Neural Network Architectures"></h1>
+  <p class="hero-sub" data-ko="CNN, RNN, LSTM, 트랜스포머 — 각 아키텍처는 게놈 데이터의 서로 다른 패턴을 포착합니다." data-en="CNN, RNN, LSTM, Transformer — each architecture captures different patterns in genomic data."></p>
+  <div class="hero-scroll" onclick="document.querySelector('.section').scrollIntoView({behavior:'smooth'})">▾ scroll</div>
+</section>
+
+<!-- Section 1: Architecture Comparison -->
+<section class="section">
+  <div class="section-label" data-ko="아키텍처 비교" data-en="Architecture Comparison"></div>
+  <h2 class="section-title" data-ko="어떤 아키텍처가 내 문제에 맞을까?" data-en="Which Architecture Fits My Problem?"></h2>
+  <p class="section-body" data-ko="CNN, RNN, LSTM, 트랜스포머를 5가지 핵심 능력 기준으로 비교합니다. 토글 버튼으로 각 아키텍처를 켜고 끄며 강점과 약점을 파악해 보세요." data-en="Compare CNN, RNN, LSTM, and Transformer on five key capabilities. Toggle each architecture on/off to identify strengths and weaknesses."></p>
+  <div class="btn-row" id="arch-toggles">
+    <button class="tog-btn active" data-arch="CNN" onclick="toggleArch(this)">CNN</button>
+    <button class="tog-btn active" data-arch="RNN" onclick="toggleArch(this)">RNN</button>
+    <button class="tog-btn active" data-arch="LSTM" onclick="toggleArch(this)">LSTM</button>
+    <button class="tog-btn active" data-arch="Transformer" onclick="toggleArch(this)">Transformer</button>
+  </div>
+  <div class="plot-box">
+    <div id="radar-plot" style="height:500px"></div>
+    <p class="plot-caption" data-ko="5개 축: 지역 패턴 감지 · 장거리 컨텍스트 · 속도 · 메모리 효율 · 게놈 실적 (1–5점)" data-en="5 axes: Local pattern detection · Long-range context · Speed · Memory efficiency · Genomics track record (1–5 scale)"></p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- Section 2: Receptive Field -->
+<section class="section">
+  <div class="section-label" data-ko="수용 영역 시각화" data-en="Receptive Field Visualization"></div>
+  <h2 class="section-title" data-ko="DNA 서열을 얼마나 넓게 '봅니까'?" data-en="How Wide a Window Does Each Architecture 'See'?"></h2>
+  <p class="section-body" data-ko="100 bp DNA 서열에서 각 아키텍처가 어떤 위치를 참조하는지 히트맵으로 나타냅니다. CNN은 좁은 창, RNN은 순차 경로, 트랜스포머는 전체 주의를 보여 줍니다." data-en="A heatmap of a 100 bp DNA sequence showing which positions each architecture attends to. CNN uses a narrow window, RNN follows a sequential path, Transformer attends to all positions."></p>
+  <select class="styled" id="arch-select" onchange="updateReceptive()">
+    <option value="cnn">CNN — Local Convolutional Window</option>
+    <option value="rnn">RNN — Sequential Path</option>
+    <option value="transformer">Transformer — Full Self-Attention</option>
+  </select>
+  <div class="plot-box">
+    <div id="receptive-plot" style="height:280px"></div>
+    <p class="plot-caption" data-ko="색이 밝을수록 해당 위치에 대한 주의(attention)가 높음을 의미합니다." data-en="Brighter color indicates higher attention weight assigned to that position."></p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- Section 3: Architecture by Genomics Task -->
+<section class="section">
+  <div class="section-label" data-ko="어떤 아키텍처, 어떤 작업?" data-en="Which Architecture for Which Task?"></div>
+  <h2 class="section-title" data-ko="게놈 과제별 벤치마크 성능" data-en="Benchmark Performance Across Genomics Tasks"></h2>
+  <p class="section-body" data-ko="모티프 탐지, 스플라이싱 예측, 발현 예측, 단백질 구조, 변이 효과 — 5가지 게놈 과제에서 각 아키텍처의 실제 성능을 그룹 막대 차트로 비교합니다." data-en="Grouped bar chart comparing real benchmark results for CNN, LSTM, and Transformer across five genomics tasks: motif detection, splicing prediction, expression prediction, protein structure, and variant effect."></p>
+  <div class="plot-box">
+    <div id="task-plot" style="height:440px"></div>
+    <p class="plot-caption" data-ko="점수는 각 과제의 표준 벤치마크 데이터셋 기반 AUROC 또는 Pearson r 값입니다." data-en="Scores represent AUROC or Pearson r on standard benchmark datasets for each task."></p>
+  </div>
+</section>
+
+<script>
+// ── Language toggle ──────────────────────────────────────────────────────────
+let currentLang = 'ko';
+function setLang(l) {
+  currentLang = l;
+  document.querySelectorAll('[data-ko]').forEach(el => {
+    el.textContent = el.dataset[l];
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.lang-btn:${l==='ko'?'first':'last'}-child`).classList.add('active');
+  updatePlotLanguage(l);
+}
+// init
+document.querySelectorAll('[data-ko]').forEach(el => { el.textContent = el.dataset.ko; });
+
+// ── Bilingual plot labels ─────────────────────────────────────────────────────
+const plotLabels = {
+  radarPlot: {
+    categories: {
+      ko: ['지역 패턴\n감지','장거리\n컨텍스트','속도','메모리\n효율','게놈\n실적'],
+      en: ['Local Pattern\nDetection','Long-range\nContext','Speed','Memory\nEfficiency','Genomics\nTrack Record']
+    }
+  },
+  taskPlot: {
+    yaxis: { ko: '벤치마크 점수 (AUROC / Pearson r)', en: 'Benchmark Score (AUROC / Pearson r)' },
+    tasks: {
+      ko: ['모티프\n탐지','스플라이싱\n예측','발현\n예측','단백질\n구조','변이\n효과'],
+      en: ['Motif\nDetection','Splicing\nPrediction','Expression\nPrediction','Protein\nStructure','Variant\nEffect']
+    }
+  },
+  receptivePlot: {
+    yaxis: { ko: '주의도', en: 'Attention' }
+  }
+};
+
+function updatePlotLanguage(l) {
+  // Rebuild radar with translated categories
+  buildRadar();
+  // Rebuild task plot with translated axes/tasks
+  buildTaskPlot();
+  // Rebuild receptive field with translated y-axis
+  updateReceptive();
+}
+
+// ── Plotly shared layout helpers ──────────────────────────────────────────────
+const darkLayout = {
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor: 'rgba(20,20,31,1)',
+  font: { color: '#e4e0d8', family: 'system-ui, sans-serif' },
+  margin: { t: 30, r: 30, b: 60, l: 60 }
+};
+const config = { responsive: true, displayModeBar: false };
+
+// ── Radar chart ──────────────────────────────────────────────────────────────
+// categories are now sourced from plotLabels at render time
+const archData = {
+  CNN:         { vals:[5,2,5,5,4], color:'#38bdf8' },
+  RNN:         { vals:[3,3,3,3,3], color:'#4ade80' },
+  LSTM:        { vals:[3,4,2,3,4], color:'#a78bfa' },
+  Transformer: { vals:[3,5,2,2,5], color:'#fb923c' }
+};
+let activeArchs = new Set(['CNN','RNN','LSTM','Transformer']);
+
+function buildRadar() {
+  const categories = plotLabels.radarPlot.categories[currentLang];
+  const traces = [];
+  for (const [name, d] of Object.entries(archData)) {
+    if (!activeArchs.has(name)) continue;
+    traces.push({
+      type: 'scatterpolar',
+      r: [...d.vals, d.vals[0]],
+      theta: [...categories, categories[0]],
+      fill: 'toself',
+      name,
+      line: { color: d.color, width: 2 },
+      fillcolor: d.color.replace(')', ', 0.12)').replace('rgb', 'rgba').replace('#', 'rgba(').replace(')', ', 0.12)'),
+      opacity: 0.85
+    });
+  }
+  const layout = {
+    ...darkLayout,
+    polar: {
+      bgcolor: 'rgba(20,20,31,1)',
+      radialaxis: { visible: true, range: [0, 5], tickfont: { size: 10 }, gridcolor: '#22222e', linecolor: '#22222e' },
+      angularaxis: { tickfont: { size: 11 }, gridcolor: '#22222e', linecolor: '#22222e' }
+    },
+    legend: { orientation: 'h', y: -0.1, font: { size: 12 } },
+    margin: { t: 40, r: 60, b: 80, l: 60 }
+  };
+  Plotly.react('radar-plot', traces, layout, config);
+}
+buildRadar();
+
+function toggleArch(btn) {
+  const arch = btn.dataset.arch;
+  if (activeArchs.has(arch)) {
+    if (activeArchs.size === 1) return;
+    activeArchs.delete(arch);
+    btn.classList.remove('active');
+  } else {
+    activeArchs.add(arch);
+    btn.classList.add('active');
+  }
+  buildRadar();
+}
+
+// ── Receptive field heatmap ───────────────────────────────────────────────────
+function genReceptive(type) {
+  const n = 100;
+  const z = Array.from({length:1}, () => new Array(n).fill(0));
+  if (type === 'cnn') {
+    const center = 45;
+    for (let i = 0; i < n; i++) {
+      const dist = Math.abs(i - center);
+      z[0][i] = dist <= 8 ? Math.max(0, 1 - dist/8) : 0;
+    }
+  } else if (type === 'rnn') {
+    const target = 60;
+    for (let i = 0; i < n; i++) {
+      z[0][i] = i <= target ? 0.15 + (i/target)*0.85 : 0;
+    }
+  } else {
+    // transformer: global attention with some peaks
+    for (let i = 0; i < n; i++) {
+      z[0][i] = 0.2 + 0.6 * Math.random();
+    }
+    [10,25,45,60,80].forEach(p => { z[0][p] = 0.95; });
+  }
+  return z;
+}
+
+function updateReceptive() {
+  const type = document.getElementById('arch-select').value;
+  const z = genReceptive(type);
+  const bases = 'ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG'.split('').slice(0,100);
+  const colorMap = { A:'#4ade80', T:'#f87171', C:'#38bdf8', G:'#c4a35a' };
+  const colors = type === 'cnn' ? 'Blues' : type === 'rnn' ? 'Greens' : 'Oranges';
+  const trace = [{
+    type: 'heatmap',
+    z,
+    x: bases.map((b,i) => `${i+1}:${b}`),
+    y: ['Attention'],
+    colorscale: colors,
+    showscale: true,
+    hoverongaps: false,
+    colorbar: { thickness: 12, len: 0.6, tickfont: { size: 10 } }
+  }];
+  const layout = {
+    ...darkLayout,
+    xaxis: { gridcolor: '#22222e', tickangle: -45, tickfont: { size: 9 }, nticks: 20 },
+    yaxis: { gridcolor: '#22222e', tickfont: { size: 11 },
+             ticktext: [plotLabels.receptivePlot.yaxis[currentLang]], tickvals: ['Attention'] },
+    margin: { t: 20, r: 60, b: 80, l: 80 }
+  };
+  // Update y label in data as well
+  trace[0].y = [plotLabels.receptivePlot.yaxis[currentLang]];
+  Plotly.react('receptive-plot', trace, layout, config);
+}
+updateReceptive();
+
+// ── Task benchmark grouped bar ────────────────────────────────────────────────
+const taskScores = {
+  CNN:         [0.92, 0.78, 0.71, 0.58, 0.80],
+  LSTM:        [0.84, 0.85, 0.79, 0.65, 0.83],
+  Transformer: [0.88, 0.91, 0.87, 0.90, 0.91]
+};
+const taskColors = { CNN:'#38bdf8', LSTM:'#a78bfa', Transformer:'#fb923c' };
+
+function buildTaskPlot() {
+  const tasks = plotLabels.taskPlot.tasks[currentLang];
+  const traces = Object.entries(taskScores).map(([name, vals]) => ({
+    type: 'bar',
+    name,
+    x: tasks,
+    y: vals,
+    marker: { color: taskColors[name], opacity: 0.85 },
+    hovertemplate: `<b>${name}</b><br>%{x}<br>Score: %{y:.2f}<extra></extra>`
+  }));
+  const layout = {
+    ...darkLayout,
+    barmode: 'group',
+    xaxis: { gridcolor: '#22222e', tickfont: { size: 12 } },
+    yaxis: { gridcolor: '#22222e', range: [0.5, 1.0], title: plotLabels.taskPlot.yaxis[currentLang], titlefont: { size: 12 } },
+    legend: { orientation: 'h', y: -0.2 },
+    margin: { t: 30, r: 30, b: 100, l: 70 }
+  };
+  Plotly.react('task-plot', traces, layout, config);
+}
+buildTaskPlot();
+</script>
+</body>
+</html>

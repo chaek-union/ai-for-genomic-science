@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 17 — Toward Whole-Cell Modeling</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.2rem,5.5vw,4.2rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:580px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+#hero-canvas{position:absolute;inset:0;opacity:.35;pointer-events:none}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:680px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 auto;max-width:960px}
+.chart-wrap{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem}
+.annotation-box{margin-top:1rem;padding:1rem 1.2rem;background:rgba(255,255,255,.03);border-left:2px solid var(--gold);border-radius:0 6px 6px 0;font:.9rem/1.6 system-ui;color:var(--muted)}
+.controls-row{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1.2rem}
+.ctrl-label{font:.82rem/1 'SF Mono',monospace;color:var(--muted);flex-shrink:0}
+select.sel{background:var(--card);border:1px solid var(--line);color:var(--text);padding:.4rem .8rem;border-radius:6px;font:.88rem/1 system-ui;cursor:pointer;outline:none}
+select.sel:focus{border-color:var(--gold)}
+.slider-wrap{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1.2rem}
+.slider-wrap label{font:.82rem/1 'SF Mono',monospace;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--gold)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:640px){.two-col{grid-template-columns:1fr}}
+/* Network canvas */
+#network-canvas{width:100%;border-radius:12px;cursor:pointer;background:#14141f;display:block}
+.ko-btn-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+.ko-btn{padding:.4rem 1rem;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:.82rem/1 system-ui;cursor:pointer;transition:.2s}
+.ko-btn.active{border-color:var(--red);background:rgba(248,113,113,.12);color:var(--red)}
+/* Gauge */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.gauge-arc{position:relative;width:120px;height:65px;overflow:hidden}
+.gauge-arc svg{position:absolute;top:0;left:0}
+.gauge-val{font:700 1.1rem/1 'SF Mono',monospace;color:var(--gold);text-align:center}
+.gauge-lbl{font:.75rem/1 system-ui;color:var(--muted);text-align:center}
+/* Multi-scale panels */
+.scale-panels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+@media(max-width:640px){.scale-panels{grid-template-columns:1fr}}
+.scale-panel{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:1rem;transition:.4s}
+.scale-panel.lit{border-color:var(--gold);background:var(--gold-dim)}
+.scale-panel-title{font:600 .88rem/1.3 system-ui;color:#fff;margin-bottom:.4rem}
+.scale-panel-val{font:700 1.3rem/1 'SF Mono',monospace;margin-bottom:.3rem;transition:.4s}
+.scale-panel-body{font:.78rem/1.5 system-ui;color:var(--muted)}
+.arrow-connector{display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:1.4rem;padding-top:1.5rem}
+@media(max-width:640px){.arrow-connector{display:none}}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+.page-footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-ch">Chapter 17</div>
+  <h1 class="t" data-ko="전세포 모델링을 향하여" data-en="Toward Whole-Cell Modeling"></h1>
+  <p class="hero-sub t"
+     data-ko="유전자 녹아웃의 연쇄 파급, 대사 흐름의 재분배, 유전자에서 표현형까지 — 세포를 통합 시스템으로 시뮬레이션합니다."
+     data-en="Cascade effects of gene knockouts, redistribution of metabolic flux, gene to phenotype — simulating the cell as an integrated system.">
+  </p>
+  <div class="hero-scroll" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+    <div class="t" data-ko="스크롤하여 탐색" data-en="scroll to explore"></div>
+    <div style="font-size:1.4rem;margin-top:.4rem">↓</div>
+  </div>
+</section>
+
+<!-- SECTION 1: GENE KNOCKOUT CASCADE -->
+<div class="section" id="s1">
+  <div class="section-label t" data-ko="유전자 녹아웃 연쇄 시뮬레이터" data-en="Gene Knockout Cascade Simulator"></div>
+  <h2 class="section-title t" data-ko="하나의 유전자를 끄면 네트워크 전체가 반응한다" data-en="Knock Out One Gene — The Entire Network Responds"></h2>
+  <p class="section-body t"
+     data-ko="아래 네트워크에서 유전자를 선택해 녹아웃하세요. 직접 표적은 즉시 변합니다. 간접 표적은 지연 후 변합니다. 일부 보상 경로는 활성화됩니다. 이것이 상호연결된 시스템의 창발적 행동입니다."
+     data-en="Select a gene to knock out in the network below. Direct targets change immediately. Indirect targets change with delay. Some compensatory pathways activate. This is the emergent behavior of interconnected systems.">
+  </p>
+  <div class="ko-btn-row" id="ko-btn-row"></div>
+  <div class="chart-wrap" style="padding:1rem">
+    <canvas id="network-canvas" height="340"></canvas>
+  </div>
+  <div class="chart-wrap" style="padding:1rem;margin-top:0">
+    <div id="plot-cascade-bars" style="width:100%;height:220px"></div>
+  </div>
+  <div class="annotation-box t" id="cascade-annotation"
+       data-ko="유전자를 선택해 연쇄 반응을 시뮬레이션합니다. 시스템은 단순한 선형 경로가 아닙니다 — 피드백 루프와 보상 경로가 존재합니다."
+       data-en="Select a gene to simulate the cascade. The system is not a simple linear pathway — feedback loops and compensatory pathways exist.">
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: FLUX BALANCE ANALYSIS -->
+<div class="section" id="s2">
+  <div class="section-label t" data-ko="플럭스 균형 분석" data-en="Flux Balance Analysis"></div>
+  <h2 class="section-title t" data-ko="세포는 어떻게 자원을 최적 배분하는가" data-en="How Does the Cell Optimally Allocate Resources?"></h2>
+  <p class="section-body t"
+     data-ko="산소 수준과 포도당 가용성을 조절하면 대사 흐름이 재분배됩니다. FBA는 화학양론 행렬 S·v=0(정상 상태)을 만족하며 선형 계획법으로 바이오매스를 최대화합니다. 호기성 조건에서는 산화적 인산화(~30 ATP/포도당)가 지배합니다. 저산소 조건에서는 해당과정이 급증하고 젖산이 축적됩니다(~2 ATP/포도당) — 워버그 효과입니다. 암세포는 산소가 있어도 이 경로를 선택합니다(호기성 해당과정)."
+     data-en="Adjust oxygen level and glucose availability — metabolic fluxes redistribute. FBA satisfies the stoichiometric constraint S·v=0 (steady state) and uses linear programming to maximize biomass. In aerobic conditions, oxidative phosphorylation (~30 ATP/glucose) dominates. In hypoxia, glycolysis surges and lactate accumulates (~2 ATP/glucose) — the Warburg effect. Cancer cells choose this route even with oxygen available (aerobic glycolysis).">
+  </p>
+  <div class="two-col">
+    <div>
+      <div class="slider-wrap">
+        <label><span class="t" data-ko="산소 수준:" data-en="Oxygen level:"></span>
+          <span id="o2-val" style="color:var(--blue);margin-left:.4rem">100%</span>
+        </label>
+        <input type="range" id="o2-slider" min="0" max="100" step="5" value="100" oninput="onFluxChange()">
+      </div>
+      <div class="slider-wrap">
+        <label><span class="t" data-ko="포도당 가용성:" data-en="Glucose availability:"></span>
+          <span id="glc-val" style="color:var(--green);margin-left:.4rem">100%</span>
+        </label>
+        <input type="range" id="glc-slider" min="10" max="200" step="10" value="100" oninput="onFluxChange()">
+      </div>
+      <div id="plot-flux-bar" style="width:100%;height:280px"></div>
+    </div>
+    <div>
+      <div id="plot-flux-sankey" style="width:100%;height:400px"></div>
+    </div>
+  </div>
+  <div class="annotation-box t" id="flux-annotation"
+       data-ko="산소를 줄이면 TCA 사이클 플럭스가 감소하고 해당과정과 젖산 생산이 증가합니다. 포도당을 늘리면 전체 플럭스가 확대됩니다."
+       data-en="Reducing oxygen decreases TCA flux and increases glycolysis and lactate production. Increasing glucose scales up overall flux.">
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: MULTI-SCALE PREDICTION -->
+<div class="section" id="s3">
+  <div class="section-label t" data-ko="다중 스케일 예측" data-en="Multi-Scale Prediction"></div>
+  <h2 class="section-title t" data-ko="유전자 → 단백질 → 대사산물 → 표현형" data-en="Gene → Protein → Metabolite → Phenotype"></h2>
+  <p class="section-body t"
+     data-ko="왼쪽 슬라이더로 유전자 발현을 바꾸면 단백질 수준이 변하고(수 분 지연), 대사산물 농도가 바뀌며(수 초 지연), 최종적으로 세포 성장률이 달라집니다(수 시간). HIF1A를 높이면 워버그 효과를 체험할 수 있습니다. 2012년 Karr 등은 이 모든 스케일을 동시에 시뮬레이션하는 최초의 전세포 모델을 Mycoplasma genitalium(인간 병원체, 유전자 ~525개)으로 구현했습니다 — 28개 서브모델로 구성."
+     data-en="Change gene expression with the left slider — protein levels shift (minutes delay), metabolite concentrations change (seconds), and finally cell growth rate updates (hours). Increase HIF1A to experience the Warburg effect. In 2012, Karr et al. built the first whole-cell model simulating all these scales simultaneously — in Mycoplasma genitalium (human pathogen, ~525 genes), comprising 28 submodels.">
+  </p>
+  <div class="controls-row">
+    <span class="ctrl-label t" data-ko="유전자 선택:" data-en="Select gene:"></span>
+    <select class="sel" id="ms-gene-select" onchange="onMSGeneChange(this.value)">
+      <option value="HIF1A">HIF1A (저산소 반응 / hypoxia response)</option>
+      <option value="MYC">MYC (세포 증식 / cell proliferation)</option>
+      <option value="TP53">TP53 (세포 사멸 / apoptosis)</option>
+      <option value="AMPK">AMPK (에너지 감지 / energy sensing)</option>
+    </select>
+  </div>
+  <div class="slider-wrap">
+    <label><span class="t" data-ko="유전자 발현 수준:" data-en="Gene expression level:"></span>
+      <span id="ms-expr-val" style="color:var(--gold);margin-left:.4rem">100%</span>
+    </label>
+    <input type="range" id="ms-expr-slider" min="0" max="200" step="5" value="100" oninput="onMSExprChange(this.value)">
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:.5rem;align-items:start">
+    <div class="scale-panel" id="ms-panel-gene">
+      <div class="scale-panel-title t" data-ko="유전자 수준" data-en="Gene Level"></div>
+      <div class="scale-panel-val" id="ms-gene-val" style="color:var(--blue)">100%</div>
+      <div class="scale-panel-body t" id="ms-gene-body" data-ko="HIF1A mRNA 발현" data-en="HIF1A mRNA expression"></div>
+      <div style="margin-top:.8rem"><div id="ms-gene-bar" style="height:8px;border-radius:4px;background:var(--blue);transition:.5s;width:50%"></div></div>
+    </div>
+    <div class="arrow-connector">→</div>
+    <div class="scale-panel" id="ms-panel-protein">
+      <div class="scale-panel-title t" data-ko="단백질 수준" data-en="Protein Level"></div>
+      <div class="scale-panel-val" id="ms-protein-val" style="color:var(--purple)">—</div>
+      <div class="scale-panel-body" id="ms-protein-body" style="color:var(--muted)"></div>
+      <div style="margin-top:.8rem"><div id="ms-protein-bar" style="height:8px;border-radius:4px;background:var(--purple);transition:.5s;width:0%"></div></div>
+    </div>
+    <div class="arrow-connector">→</div>
+    <div class="scale-panel" id="ms-panel-phenotype">
+      <div class="scale-panel-title t" data-ko="표현형" data-en="Phenotype"></div>
+      <div class="scale-panel-val" id="ms-phenotype-val" style="color:var(--green)">—</div>
+      <div class="scale-panel-body" id="ms-phenotype-body" style="color:var(--muted)"></div>
+      <div style="margin-top:.8rem">
+        <div class="gauge-wrap">
+          <canvas id="gauge-canvas" width="120" height="70"></canvas>
+          <div class="gauge-lbl t" data-ko="성장률" data-en="Growth Rate"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:1rem">
+    <div id="plot-ms-timeseries" style="width:100%;height:200px"></div>
+  </div>
+  <div class="annotation-box t" id="ms-annotation"
+       data-ko="유전자 발현 변화는 단백질(수 분 지연), 대사산물(수 초 지연), 표현형(수 시간 지연)으로 파급됩니다. 전세포 모델링은 이 모든 스케일을 동시에 추적합니다."
+       data-en="Gene expression changes propagate to protein (minutes delay), metabolites (seconds), and phenotype (hours). Whole-cell modeling tracks all these scales simultaneously.">
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p class="t" data-ko="AI for Genomic Science — 챕터 17 인터랙티브" data-en="AI for Genomic Science — Chapter 17 Interactive"></p>
+  <p style="margin-top:.5rem"><a href="../chapters/chapter17.md" class="t" data-ko="← 챕터 17 본문으로" data-en="← Back to Chapter 17">← 챕터 17 본문으로</a></p>
+  <p class="source-note" style="font-size:.75rem;color:var(--muted);margin-top:1rem;line-height:1.8">
+    Based on: Karr et al. (2012) <em>Cell</em> 150:389–401 — first whole-cell model of <em>Mycoplasma genitalium</em> (28 submodels) ·
+    Orth et al. (2010) <em>Nature Biotechnology</em> 28:245–248 — Flux Balance Analysis (S·v=0, linear programming) ·
+    Bunne et al. (2024) <em>Cell</em> 189:3728–3748 — AI Virtual Cell (universal representations across modalities) ·
+    Warburg (1956) <em>Science</em> — aerobic glycolysis in cancer cells ·
+    Kierans &amp; Taylor (2021) <em>J. Physiology</em> — HIF-1α regulation of glycolysis (GLUT1, HK2, LDHA, PDK1)
+  </p>
+</footer>
+
+<script>
+// ─── LANGUAGE ────────────────────────────────────────────────────────────────
+let lang = 'ko';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===l.toUpperCase()));
+  document.querySelectorAll('[data-'+l+']').forEach(el=>{
+    if(el.tagName!=='BUTTON'&&el.tagName!=='INPUT'&&el.tagName!=='SELECT') el.textContent=el.dataset[l];
+  });
+  updatePlotLanguage(l);
+}
+function updatePlotLanguage(l) {
+  drawNetwork();
+  drawCascadeBars();
+  onFluxChange();
+  onMSExprChange(document.getElementById('ms-expr-slider').value);
+}
+
+// ─── HERO CANVAS ─────────────────────────────────────────────────────────────
+(function(){
+  const c=document.getElementById('hero-canvas'),ctx=c.getContext('2d');
+  let W,H,dots;
+  function resize(){W=c.width=c.offsetWidth;H=c.height=c.offsetHeight;dots=Array.from({length:160},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+.4,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,a:Math.random()}));}
+  window.addEventListener('resize',resize);resize();
+  (function draw(){ctx.clearRect(0,0,W,H);dots.forEach(d=>{d.x+=d.vx;d.y+=d.vy;if(d.x<0)d.x=W;if(d.x>W)d.x=0;if(d.y<0)d.y=H;if(d.y>H)d.y=0;ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,Math.PI*2);ctx.fillStyle=`rgba(196,163,90,${d.a*.6})`;ctx.fill();});requestAnimationFrame(draw);})();
+})();
+
+const db={paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(20,20,31,1)',font:{color:'#e4e0d8',family:'system-ui'},xaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},yaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},margin:{t:40,r:20,b:50,l:60},legend:{bgcolor:'rgba(0,0,0,0)',bordercolor:'#22222e',borderwidth:1}};
+
+// ─── SECTION 1: NETWORK CASCADE ─────────────────────────────────────────────
+// Nodes: id, label_ko, label_en, type(tf/enzyme/metabolite/signaling), x, y
+const NODES = [
+  {id:'MTOR', lk:'mTOR', le:'mTOR', type:'tf', x:0.5, y:0.12},
+  {id:'MYC',  lk:'MYC', le:'MYC', type:'tf', x:0.2, y:0.25},
+  {id:'TP53', lk:'TP53', le:'TP53', type:'tf', x:0.8, y:0.25},
+  {id:'HIF1A',lk:'HIF1A',le:'HIF1A', type:'tf', x:0.5, y:0.35},
+  {id:'GLYC', lk:'해당과정',le:'Glycolysis', type:'enzyme', x:0.2, y:0.5},
+  {id:'TCA',  lk:'TCA사이클',le:'TCA Cycle', type:'enzyme', x:0.8, y:0.5},
+  {id:'LDHA', lk:'LDHA',le:'LDHA', type:'enzyme', x:0.1, y:0.65},
+  {id:'ATP',  lk:'ATP',le:'ATP', type:'metabolite', x:0.5, y:0.6},
+  {id:'LACT', lk:'젖산',le:'Lactate', type:'metabolite', x:0.1, y:0.8},
+  {id:'ROS',  lk:'활성산소',le:'ROS', type:'metabolite', x:0.9, y:0.65},
+  {id:'CDKN1A',lk:'p21',le:'p21', type:'tf', x:0.65, y:0.38},
+  {id:'MDM2', lk:'MDM2',le:'MDM2', type:'signaling', x:0.92, y:0.38},
+  {id:'AMPK', lk:'AMPK',le:'AMPK', type:'signaling', x:0.35, y:0.6},
+  {id:'VEGF', lk:'VEGF',le:'VEGF', type:'signaling', x:0.5, y:0.78},
+  {id:'CYCB', lk:'Cyclin B',le:'Cyclin B', type:'enzyme', x:0.35, y:0.22},
+];
+
+// Directed edges: from, to, sign(+/-), weight
+const EDGES = [
+  {f:'MTOR',t:'MYC',s:1},{f:'MTOR',t:'CYCB',s:1},
+  {f:'MYC',t:'GLYC',s:1},{f:'MYC',t:'CYCB',s:1},
+  {f:'TP53',t:'CDKN1A',s:1},{f:'TP53',t:'MDM2',s:1},{f:'TP53',t:'MYC',s:-1},
+  {f:'MDM2',t:'TP53',s:-1},
+  {f:'HIF1A',t:'GLYC',s:1},{f:'HIF1A',t:'LDHA',s:1},{f:'HIF1A',t:'VEGF',s:1},{f:'HIF1A',t:'TCA',s:-1},
+  {f:'GLYC',t:'ATP',s:1},{f:'GLYC',t:'LACT',s:1},
+  {f:'TCA',t:'ATP',s:1},{f:'TCA',t:'ROS',s:1},
+  {f:'LDHA',t:'LACT',s:1},
+  {f:'ATP',t:'AMPK',s:-1},{f:'AMPK',t:'MTOR',s:-1},{f:'AMPK',t:'GLYC',s:1},
+  {f:'ROS',t:'TP53',s:1},{f:'CDKN1A',t:'CYCB',s:-1},
+];
+
+// Scenarios per KO gene
+const KO_SCENARIOS = {
+  MTOR: {
+    direct:['MYC','CYCB'], indirect:['GLYC','CDKN1A'], compensate:['AMPK'],
+    ann_ko:{ko:'mTOR 녹아웃: 세포 성장 신호가 끊깁니다. MYC 감소, AMPK 보상 활성화.',en:'mTOR KO: Cell growth signaling severed. MYC decreases, AMPK compensates.'}
+  },
+  MYC: {
+    direct:['GLYC','CYCB'], indirect:['ATP','LACT'], compensate:['TP53'],
+    ann_ko:{ko:'MYC 녹아웃: 해당과정과 세포 주기가 억제됩니다. TP53 경로가 보상적으로 활성화됩니다.',en:'MYC KO: Glycolysis and cell cycle suppressed. TP53 pathway compensates.'}
+  },
+  TP53: {
+    direct:['CDKN1A','MDM2'], indirect:['CYCB'], compensate:['ROS'],
+    ann_ko:{ko:'TP53 녹아웃: 세포 주기 억제자 p21이 감소합니다. Cyclin B가 상승해 세포 주기가 가속됩니다.',en:'TP53 KO: Cell cycle inhibitor p21 decreases. Cyclin B rises, accelerating the cell cycle.'}
+  },
+  HIF1A: {
+    direct:['GLYC','LDHA','TCA','VEGF'], indirect:['ATP','LACT','ROS'], compensate:['MTOR'],
+    ann_ko:{ko:'HIF1A 녹아웃: 저산소 적응이 실패합니다. 해당과정 감소, TCA 반등, VEGF 감소로 혈관신생 저해.',en:'HIF1A KO: Hypoxia adaptation fails. Glycolysis drops, TCA rebounds, VEGF falls — angiogenesis impaired.'}
+  },
+  AMPK: {
+    direct:['MTOR','GLYC'], indirect:['MYC','ATP'], compensate:['TP53'],
+    ann_ko:{ko:'AMPK 녹아웃: 에너지 감지가 사라집니다. mTOR 탈억제 → 무분별한 성장 신호.',en:'AMPK KO: Energy sensing lost. mTOR disinhibited → unchecked growth signaling.'}
+  },
+};
+
+let selectedKO = null;
+let nodeStates = {}; // 'normal','ko','direct','indirect','compensate'
+let cascadeTimer = null;
+
+function initNodeStates() {
+  NODES.forEach(n=>{ nodeStates[n.id]='normal'; });
+}
+
+function getNodeColor(id) {
+  const s=nodeStates[id]||'normal';
+  if(s==='ko') return '#f87171';
+  if(s==='direct') return '#fb923c';
+  if(s==='indirect') return '#fbbf24';
+  if(s==='compensate') return '#4ade80';
+  return '#38bdf8';
+}
+
+function getNodeSize(id) {
+  const s=nodeStates[id]||'normal';
+  return s==='normal'?20:s==='ko'?24:22;
+}
+
+function drawNetwork() {
+  const canvas=document.getElementById('network-canvas');
+  if(!canvas) return;
+  const W=canvas.clientWidth||800;
+  canvas.width=W; canvas.height=340;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,340);
+
+  // Draw edges
+  EDGES.forEach(e=>{
+    const from=NODES.find(n=>n.id===e.f);
+    const to=NODES.find(n=>n.id===e.t);
+    if(!from||!to) return;
+    const x1=from.x*W, y1=from.y*340;
+    const x2=to.x*W, y2=to.y*340;
+    // Determine edge activation
+    const fs=nodeStates[e.f]||'normal';
+    const ts=nodeStates[e.t]||'normal';
+    const active=fs!=='normal'||ts!=='normal';
+    ctx.beginPath();
+    ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+    if(active){
+      ctx.strokeStyle=e.s>0?'rgba(74,222,128,0.6)':'rgba(248,113,113,0.6)';
+      ctx.lineWidth=2;
+    } else {
+      ctx.strokeStyle='rgba(34,34,46,0.9)';
+      ctx.lineWidth=1;
+    }
+    ctx.stroke();
+    // Arrowhead
+    const angle=Math.atan2(y2-y1,x2-x1);
+    const nr=getNodeSize(to.id);
+    const ax=x2-Math.cos(angle)*(nr+4);
+    const ay=y2-Math.sin(angle)*(nr+4);
+    ctx.beginPath();
+    ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-8*Math.cos(angle-0.4),ay-8*Math.sin(angle-0.4));
+    ctx.lineTo(ax-8*Math.cos(angle+0.4),ay-8*Math.sin(angle+0.4));
+    ctx.closePath();
+    ctx.fillStyle=active?(e.s>0?'rgba(74,222,128,0.7)':'rgba(248,113,113,0.7)'):'rgba(34,34,46,0.9)';
+    ctx.fill();
+  });
+
+  // Draw nodes
+  NODES.forEach(n=>{
+    const x=n.x*W, y=n.y*340;
+    const r=getNodeSize(n.id);
+    const col=getNodeColor(n.id);
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=col+'33';
+    ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.fillStyle='#e4e0d8';
+    ctx.font=`600 ${r>20?11:10}px system-ui`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(lang==='ko'?n.lk:n.le,x,y);
+  });
+}
+
+function startCascade(koId) {
+  if(cascadeTimer) clearTimeout(cascadeTimer);
+  initNodeStates();
+  if(!koId){drawNetwork();drawCascadeBars();return;}
+  nodeStates[koId]='ko';
+  drawNetwork();drawCascadeBars();
+  const sc=KO_SCENARIOS[koId];
+  if(!sc) return;
+  cascadeTimer=setTimeout(()=>{
+    sc.direct.forEach(id=>{if(nodeStates[id]==='normal')nodeStates[id]='direct';});
+    drawNetwork();drawCascadeBars();
+    cascadeTimer=setTimeout(()=>{
+      sc.indirect.forEach(id=>{if(nodeStates[id]==='normal')nodeStates[id]='indirect';});
+      drawNetwork();drawCascadeBars();
+      cascadeTimer=setTimeout(()=>{
+        sc.compensate.forEach(id=>{if(nodeStates[id]==='normal')nodeStates[id]='compensate';});
+        drawNetwork();drawCascadeBars();
+      },600);
+    },700);
+  },500);
+  // Update annotation
+  const annEl=document.getElementById('cascade-annotation');
+  if(annEl) annEl.textContent=lang==='ko'?sc.ann_ko.ko:sc.ann_ko.en;
+}
+
+function buildKOButtons() {
+  const row=document.getElementById('ko-btn-row');
+  row.innerHTML='';
+  const genes=['MTOR','MYC','TP53','HIF1A','AMPK'];
+  const labels={ko:{MTOR:'mTOR 녹아웃',MYC:'MYC 녹아웃',TP53:'TP53 녹아웃',HIF1A:'HIF1A 녹아웃',AMPK:'AMPK 녹아웃'},
+                 en:{MTOR:'KO mTOR',MYC:'KO MYC',TP53:'KO TP53',HIF1A:'KO HIF1A',AMPK:'KO AMPK'}};
+  genes.forEach(g=>{
+    const btn=document.createElement('button');
+    btn.className='ko-btn';
+    btn.textContent=labels[lang][g];
+    btn.onclick=()=>{
+      if(selectedKO===g){selectedKO=null;document.querySelectorAll('.ko-btn').forEach(b=>b.classList.remove('active'));initNodeStates();drawNetwork();drawCascadeBars();document.getElementById('cascade-annotation').textContent=lang==='ko'?'유전자를 선택해 연쇄 반응을 시뮬레이션합니다.':'Select a gene to simulate the cascade.';}
+      else{selectedKO=g;document.querySelectorAll('.ko-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');startCascade(g);}
+    };
+    row.appendChild(btn);
+  });
+}
+
+function drawCascadeBars() {
+  const nodeOrder=['MTOR','MYC','TP53','HIF1A','GLYC','TCA','LDHA','ATP','LACT','ROS','CDKN1A','MDM2','AMPK','VEGF','CYCB'];
+  const labels=nodeOrder.map(id=>{const n=NODES.find(x=>x.id===id);return lang==='ko'?n.lk:n.le;});
+  const baseline=100;
+  const vals=nodeOrder.map(id=>{
+    const s=nodeStates[id]||'normal';
+    if(s==='ko') return 0;
+    if(s==='direct') return 30;
+    if(s==='indirect') return 55;
+    if(s==='compensate') return 145;
+    return baseline;
+  });
+  const colors=nodeOrder.map(id=>{
+    const s=nodeStates[id]||'normal';
+    if(s==='ko') return '#f87171';
+    if(s==='direct') return '#fb923c';
+    if(s==='indirect') return '#fbbf24';
+    if(s==='compensate') return '#4ade80';
+    return '#38bdf8';
+  });
+  Plotly.react('plot-cascade-bars',[{
+    x:labels, y:vals, type:'bar',
+    marker:{color:colors, opacity:0.85},
+    hovertemplate:'<b>%{x}</b><br>%{y}%<extra></extra>'
+  }],{
+    ...db,
+    title:{text:lang==='ko'?'노드 활성도 (기준선=100%)':'Node Activity Level (baseline=100%)',font:{size:12,color:'#e4e0d8'}},
+    xaxis:{...db.xaxis,tickfont:{size:9},tickangle:-25,automargin:true},
+    yaxis:{...db.yaxis,title:'%',range:[0,170],zeroline:false},
+    shapes:[{type:'line',x0:-0.5,x1:nodeOrder.length-0.5,y0:100,y1:100,xref:'x',yref:'y',line:{color:'rgba(255,255,255,0.2)',width:1,dash:'dot'}}],
+    margin:{t:35,r:10,b:80,l:55}
+  },{responsive:true,displayModeBar:false});
+}
+
+// ─── SECTION 2: FLUX BALANCE ANALYSIS ───────────────────────────────────────
+// Biologically calibrated model (Orth et al. 2010 FBA; Warburg 1956):
+//   Aerobic:   glycolysis ~10 units, TCA/OXPHOS ~90 units → ~30 ATP/glucose
+//   Anaerobic: glycolysis ~100 units, TCA ~2 units → ~2 ATP/glucose (fermentation)
+//   Warburg (cancer, aerobic): glycolysis ~80-100 even with O2 present
+//   Glycolysis:Lactate — in fermentation essentially all pyruvate → lactate
+//   ATP aerobic yield ≈ 15x anaerobic per unit glucose (30 ATP vs 2 ATP)
+function computeFluxes(o2, glc) {
+  const o2n  = o2/100;   // 0..1  (1 = fully aerobic)
+  const glcn = glc/100;  // 0.1..2 (1 = normal glucose)
+
+  // Glycolysis flux: low in aerobic, high in hypoxia (Warburg: ~10x increase)
+  // At O2=100%: glycFlux ≈ glcn*10; at O2=0%: glycFlux ≈ glcn*100
+  const glycFlux = glcn * (10 + (1-o2n) * 90);
+
+  // TCA + OXPHOS: dominant in aerobic, nearly zero in anoxia
+  // Each unit of TCA-fed OXPHOS produces ~15x more ATP than glycolysis per glucose
+  const tcaFlux  = glcn * o2n * 90;
+
+  // ATP: aerobic oxidative phosphorylation ~30 ATP/glucose,
+  //       anaerobic glycolysis ~2 ATP/glucose
+  const atpAer   = tcaFlux  * 0.33;  // TCA/OXPHOS: 30 ATP for 90 flux units → 0.33
+  const atpAnAer = glycFlux * 0.02;  // Glycolysis alone: 2 ATP for 100 flux units → 0.02
+  const atpTotal = atpAer + atpAnAer;
+
+  // Lactate: in fermentation (no O2) nearly all glycolytic pyruvate → lactate (LDHA)
+  //          in aerobic, most pyruvate enters TCA → minimal lactate
+  //          lactate fraction = 1 - (proportion entering TCA)
+  const lacFrac  = 1 - o2n * 0.92;   // aerobic: ~8% lactate; anaerobic: ~100%
+  const lact     = glycFlux * lacFrac;
+
+  // ROS: generated by electron transport chain (proportional to OXPHOS activity)
+  const rosFlux  = tcaFlux * 0.06 * glcn;
+
+  return {glycFlux, tcaFlux, atpTotal, lact, rosFlux};
+}
+
+function onFluxChange() {
+  const o2=parseInt(document.getElementById('o2-slider').value);
+  const glc=parseInt(document.getElementById('glc-slider').value);
+  document.getElementById('o2-val').textContent=o2+'%';
+  document.getElementById('glc-val').textContent=glc+'%';
+  const f=computeFluxes(o2,glc);
+
+  // Bar chart
+  const labels_ko=['해당과정','TCA 사이클','ATP 생산','젖산 분비','활성산소'];
+  const labels_en=['Glycolysis','TCA Cycle','ATP Production','Lactate Export','ROS'];
+  const labels=lang==='ko'?labels_ko:labels_en;
+  const vals=[f.glycFlux,f.tcaFlux,f.atpTotal,f.lact,f.rosFlux];
+  const colors=['#c4a35a','#38bdf8','#4ade80','#f87171','#fb923c'];
+  Plotly.react('plot-flux-bar',[{
+    x:labels, y:vals.map(v=>parseFloat(v.toFixed(1))), type:'bar',
+    marker:{color:colors,opacity:0.85},
+    hovertemplate:'<b>%{x}</b><br>%{y:.1f} units<extra></extra>'
+  }],{
+    ...db,
+    title:{text:lang==='ko'?'대사 플럭스 (O2='+o2+'%, Glc='+glc+'%)':'Metabolic Flux (O2='+o2+'%, Glc='+glc+'%)',font:{size:11,color:'#e4e0d8'}},
+    xaxis:{...db.xaxis,tickfont:{size:9}},
+    yaxis:{...db.yaxis,title:lang==='ko'?'플럭스 (임의 단위)':'Flux (arbitrary units)',range:[0,200]},
+    margin:{t:40,r:10,b:60,l:60}
+  },{responsive:true,displayModeBar:false});
+
+  // Sankey — biologically accurate flux proportions:
+  //   Glucose → Glycolysis (all glucose enters glycolysis)
+  //   Glycolysis → Pyruvate (glycolytic output = glycFlux)
+  //   Pyruvate → TCA (aerobic: most pyruvate → TCA; anaerobic: very little)
+  //   Pyruvate → Lactate (LDHA: remainder that doesn't go to TCA → lactate)
+  //   TCA → ATP (OXPHOS: main ATP source aerobically, ~30 ATP/glucose)
+  //   TCA → CO₂ (byproduct of oxidative decarboxylation)
+  //   Glycolysis → ATP (substrate-level: 2 ATP/glucose regardless of O2)
+  const glcIn=Math.max(10, Math.round(glc*1.0));
+  const gly=Math.max(1, Math.round(f.glycFlux));
+  const tca=Math.max(1, Math.round(f.tcaFlux));
+  const atp=Math.max(1, Math.round(f.atpTotal));
+  const lac=Math.max(1, Math.round(f.lact));
+  const ros=Math.max(1, Math.round(f.rosFlux));
+  // Pyruvate that enters TCA vs goes to lactate
+  const pyrToTCA  = tca;
+  const pyrToLact = lac;
+  // Substrate-level ATP from glycolysis (always ~2 ATP per 100 flux units)
+  const atpFromGlyc = Math.max(1, Math.round(gly * 0.02));
+  // OXPHOS ATP from TCA (bulk of ATP in aerobic)
+  const atpFromTCA  = Math.max(1, Math.round(tca * 0.33));
+  // CO₂ from TCA (each TCA turn releases CO₂)
+  const co2 = Math.max(1, Math.round(tca * 0.5));
+
+  const sNodes=lang==='ko'
+    ?['포도당','해당과정','피루브산','TCA+산화적인산화','ATP','젖산','CO₂','활성산소']
+    :['Glucose','Glycolysis','Pyruvate','TCA+OXPHOS','ATP','Lactate','CO₂','ROS'];
+
+  // Sankey link indices:
+  //   0=Glc, 1=Glycolysis, 2=Pyruvate, 3=TCA+OXPHOS, 4=ATP, 5=Lactate, 6=CO₂, 7=ROS
+  // Links: Glc→Glyc, Glyc→Pyr, Pyr→TCA, Pyr→Lactate, TCA→ATP, TCA→CO₂, Glyc→ATP(substrate)
+  const linkSrc=[0,   1,   2,       2,        3,          3,    1             ];
+  const linkTgt=[1,   2,   3,       5,        4,          6,    4             ];
+  const linkVal=[
+    glcIn,          // Glucose → Glycolysis
+    gly,            // Glycolysis → Pyruvate
+    pyrToTCA,       // Pyruvate → TCA+OXPHOS (aerobic: most; anaerobic: nearly 0)
+    pyrToLact,      // Pyruvate → Lactate (anaerobic/Warburg: most; aerobic: ~8%)
+    atpFromTCA,     // TCA+OXPHOS → ATP (bulk: ~30 ATP/glucose aerobically)
+    co2,            // TCA → CO₂
+    atpFromGlyc,    // Glycolysis → ATP (substrate-level: ~2 ATP always)
+  ];
+  const linkColors=['rgba(196,163,90,0.4)','rgba(196,163,90,0.35)','rgba(56,189,248,0.35)','rgba(248,113,113,0.35)','rgba(74,222,128,0.4)','rgba(56,189,248,0.3)','rgba(74,222,128,0.3)'];
+
+  Plotly.react('plot-flux-sankey',[{
+    type:'sankey',
+    orientation:'v',
+    node:{
+      pad:12,thickness:20,
+      label:sNodes,
+      color:['#c4a35a','#c4a35a','#38bdf8','#38bdf8','#4ade80','#f87171','#7a756d','#fb923c'],
+      line:{color:'rgba(0,0,0,0.3)',width:0.5}
+    },
+    link:{source:linkSrc,target:linkTgt,value:linkVal,color:linkColors}
+  }],{
+    ...db,
+    title:{text:lang==='ko'?'대사 플럭스 흐름 (Sankey)':'Metabolic Flux Flow (Sankey)',font:{size:12,color:'#e4e0d8'}},
+    margin:{t:40,r:20,b:20,l:20}
+  },{responsive:true,displayModeBar:false});
+
+  // Update annotation — biologically accurate descriptions
+  const annEl=document.getElementById('flux-annotation');
+  if(annEl){
+    const msgs={
+      ko:o2<30
+        ?`저산소 (O2=${o2}%): 워버그 효과 — 해당과정 ${gly} 단위(↑급증), TCA ${tca} 단위(↓거의 정지). 피루브산 대부분이 LDHA에 의해 젖산(${lac} 단위)으로 전환. 포도당 1분자당 ATP ~2개 생산(호기성의 1/15 수준).`
+        :o2>70
+        ?`호기성 (O2=${o2}%): 산화적 인산화가 지배 — 해당과정 ${gly} 단위(낮음), TCA+OXPHOS ${tca} 단위(높음). 포도당 1분자당 ~30 ATP 생산. 젖산 최소 (${lac} 단위, 피루브산의 ~8%만 LDHA 경유).`
+        :`혼합 조건 (O2=${o2}%): 해당과정 ${gly} 단위, TCA+OXPHOS ${tca} 단위. O2 감소 → HIF-1α 안정화 → GLUT1/HK2/LDHA 상향 조절 → 해당과정 증가.`,
+      en:o2<30
+        ?`Hypoxia (O2=${o2}%): Warburg effect — Glycolysis ${gly} units (↑surge), TCA ${tca} units (↓near-halt). Most pyruvate converted to lactate (${lac} units) by LDHA. Only ~2 ATP/glucose (vs ~30 aerobic).`
+        :o2>70
+        ?`Aerobic (O2=${o2}%): Oxidative phosphorylation dominates — Glycolysis ${gly} units (low), TCA+OXPHOS ${tca} units (high). ~30 ATP/glucose. Minimal lactate (${lac} units; only ~8% of pyruvate via LDHA).`
+        :`Mixed conditions (O2=${o2}%): Glycolysis ${gly} units, TCA+OXPHOS ${tca} units. Decreasing O2 → HIF-1α stabilization → GLUT1/HK2/LDHA upregulation → glycolysis surge.`
+    };
+    annEl.textContent=msgs[lang];
+  }
+}
+
+// ─── SECTION 3: MULTI-SCALE PREDICTION ──────────────────────────────────────
+let msGene = 'HIF1A';
+let msExpr = 100;
+let msAnimTimer = null;
+
+const MS_GENE_DEFS = {
+  HIF1A:{
+    protein_ko:{ko:'HIF-1α 단백질 (안정화)',en:'HIF-1α Protein (stabilized)'},
+    phenotype_ko:{ko:'워버그 효과 / 혈관신생',en:'Warburg effect / angiogenesis'},
+    proteinFn: x => Math.min(200, x * 1.2 + 10),
+    growthFn: (x,p) => 80 + (p-80)*0.15 + Math.random()*3,
+    metab_ko:{ko:'젖산 ↑, ATP(혐기성) ↑',en:'Lactate ↑, ATP(anaerobic) ↑'}
+  },
+  MYC:{
+    protein_ko:{ko:'c-Myc 단백질',en:'c-Myc Protein'},
+    phenotype_ko:{ko:'세포 증식률',en:'Cell Proliferation Rate'},
+    proteinFn: x => Math.min(200, x * 0.95),
+    growthFn: (x,p) => 60 + p * 0.4 + Math.random()*3,
+    metab_ko:{ko:'뉴클레오타이드 합성 ↑',en:'Nucleotide synthesis ↑'}
+  },
+  TP53:{
+    protein_ko:{ko:'p53 단백질',en:'p53 Protein'},
+    phenotype_ko:{ko:'세포 사멸률 (반비례)',en:'Apoptosis Rate (inverse)'},
+    proteinFn: x => Math.min(200, x * 1.05),
+    growthFn: (x,p) => Math.max(5, 100 - p * 0.25 + Math.random()*3),
+    metab_ko:{ko:'CDKN1A(p21) ↑, BCL2 ↓',en:'CDKN1A(p21) ↑, BCL2 ↓'}
+  },
+  AMPK:{
+    protein_ko:{ko:'AMPK (인산화)',en:'AMPK (phosphorylated)'},
+    phenotype_ko:{ko:'대사 에너지 효율',en:'Metabolic Energy Efficiency'},
+    proteinFn: x => Math.min(200, x * 0.9 + 5),
+    growthFn: (x,p) => 50 + p * 0.3 + Math.random()*3,
+    metab_ko:{ko:'mTOR 억제, 지방산 산화 ↑',en:'mTOR inhibition, fatty acid oxidation ↑'}
+  }
+};
+
+let msProteinTarget = 95;
+let msProteinCurrent = 95;
+let msGrowthTarget = 80;
+let msGrowthCurrent = 80;
+const msTSData = {t:[],gene:[],protein:[],growth:[]};
+let msTick = 0;
+
+function onMSGeneChange(g) {
+  msGene=g;
+  const d=MS_GENE_DEFS[g];
+  document.getElementById('ms-gene-body').textContent=lang==='ko'?g+' mRNA':g+' mRNA';
+  document.getElementById('ms-protein-body').textContent=lang==='ko'?d.metab_ko.ko:d.metab_ko.en;
+  msTSData.t=[];msTSData.gene=[];msTSData.protein=[];msTSData.growth=[];msTick=0;
+  onMSExprChange(document.getElementById('ms-expr-slider').value);
+}
+
+function drawGauge(pct) {
+  const canvas=document.getElementById('gauge-canvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,120,70);
+  const cx=60,cy=65,r=52;
+  // Background arc
+  ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,2*Math.PI);
+  ctx.strokeStyle='#22222e';ctx.lineWidth=10;ctx.stroke();
+  // Value arc
+  const angle=Math.PI+(pct/100)*Math.PI;
+  ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,angle);
+  const hue=pct>70?'#4ade80':pct>40?'#c4a35a':'#f87171';
+  ctx.strokeStyle=hue;ctx.lineWidth=10;ctx.stroke();
+  // Center text
+  ctx.fillStyle='#e4e0d8';ctx.font='700 14px system-ui';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(pct.toFixed(0)+'%',cx,cy-10);
+}
+
+function onMSExprChange(val) {
+  msExpr=parseInt(val);
+  document.getElementById('ms-expr-val').textContent=msExpr+'%';
+  const barPct=msExpr/200*100;
+  document.getElementById('ms-gene-bar').style.width=barPct+'%';
+  document.getElementById('ms-gene-val').textContent=msExpr+'%';
+
+  const d=MS_GENE_DEFS[msGene];
+  msProteinTarget=Math.round(d.proteinFn(msExpr));
+  msGrowthTarget=Math.max(0,Math.min(100,Math.round(d.growthFn(msExpr,msProteinTarget))));
+
+  // Animate protein & growth with delay
+  if(msAnimTimer) clearInterval(msAnimTimer);
+  let step=0;
+  msAnimTimer=setInterval(()=>{
+    step++;
+    const tP=Math.min(step/12,1);
+    const tG=Math.max(0,Math.min((step-6)/10,1));
+    msProteinCurrent=Math.round(msProteinCurrent+(msProteinTarget-msProteinCurrent)*tP*0.4);
+    msGrowthCurrent=Math.round(msGrowthCurrent+(msGrowthTarget-msGrowthCurrent)*tG*0.4);
+    document.getElementById('ms-protein-val').textContent=msProteinCurrent+'%';
+    document.getElementById('ms-protein-bar').style.width=(msProteinCurrent/200*100)+'%';
+    document.getElementById('ms-phenotype-val').textContent=msGrowthCurrent+'%';
+    drawGauge(msGrowthCurrent);
+    // Timeseries push
+    msTick++;
+    msTSData.t.push(msTick);
+    msTSData.gene.push(msExpr);
+    msTSData.protein.push(msProteinCurrent);
+    msTSData.growth.push(msGrowthCurrent);
+    if(msTSData.t.length>60){msTSData.t.shift();msTSData.gene.shift();msTSData.protein.shift();msTSData.growth.shift();}
+    if(step>30){clearInterval(msAnimTimer);msAnimTimer=null;}
+    drawMSTimeSeries();
+  },60);
+
+  // Panel lighting
+  document.getElementById('ms-panel-gene').classList.add('lit');
+  setTimeout(()=>{document.getElementById('ms-panel-gene').classList.remove('lit');document.getElementById('ms-panel-protein').classList.add('lit');},400);
+  setTimeout(()=>{document.getElementById('ms-panel-protein').classList.remove('lit');document.getElementById('ms-panel-phenotype').classList.add('lit');},900);
+  setTimeout(()=>{document.getElementById('ms-panel-phenotype').classList.remove('lit');},1400);
+
+  // Update annotation
+  const msgs={
+    ko:{HIF1A:`HIF1A ${msExpr}%: ${msExpr>120?'과발현 — 워버그 효과 유도, 젖산 생산 증가, 혈관신생 신호 활성화.':msExpr<60?'저발현 — 저산소 적응 실패, TCA 사이클 의존.':'정상 범위 — 기본 저산소 반응.'}`,MYC:`MYC ${msExpr}%: ${msExpr>130?'과발현 — 세포 증식 가속, 뉴클레오타이드 합성 증가.':'정상 또는 저발현.'}`,TP53:`TP53 ${msExpr}%: ${msExpr>120?'과발현 — p21 활성화, 세포 주기 정지, 세포 사멸 유도.':msExpr<60?'저발현 — 종양 억제 약화, 무분별한 증식 위험.':'정상 범위.'}`,AMPK:`AMPK ${msExpr}%: ${msExpr>130?'과활성화 — mTOR 억제, 에너지 절약 모드.':msExpr<60?'저발현 — 에너지 감지 실패, mTOR 탈억제.':'정상 에너지 항상성.'}`},
+    en:{HIF1A:`HIF1A ${msExpr}%: ${msExpr>120?'Overexpressed — Warburg effect induced, lactate increases, angiogenic signals activated.':msExpr<60?'Underexpressed — hypoxia adaptation fails, TCA cycle reliance.':'Normal range — baseline hypoxia response.'}`,MYC:`MYC ${msExpr}%: ${msExpr>130?'Overexpressed — accelerated cell proliferation, nucleotide synthesis increases.':'Normal or reduced expression.'}`,TP53:`TP53 ${msExpr}%: ${msExpr>120?'Overexpressed — p21 activated, cell cycle arrest, apoptosis induced.':msExpr<60?'Underexpressed — tumor suppression weakened, risk of unchecked proliferation.':'Normal range.'}`,AMPK:`AMPK ${msExpr}%: ${msExpr>130?'Hyperactivated — mTOR inhibited, energy conservation mode.':msExpr<60?'Underexpressed — energy sensing fails, mTOR disinhibited.':'Normal energy homeostasis.'}`}
+  };
+  const annEl=document.getElementById('ms-annotation');
+  if(annEl) annEl.textContent=(msgs[lang][msGene]||'');
+}
+
+function drawMSTimeSeries() {
+  if(!msTSData.t.length) return;
+  const d=MS_GENE_DEFS[msGene];
+  Plotly.react('plot-ms-timeseries',[
+    {x:msTSData.t,y:msTSData.gene,type:'scatter',mode:'lines',name:lang==='ko'?msGene+' mRNA':msGene+' mRNA',line:{color:'#38bdf8',width:2}},
+    {x:msTSData.t,y:msTSData.protein,type:'scatter',mode:'lines',name:lang==='ko'?(d.protein_ko.ko):(d.protein_ko.en),line:{color:'#a78bfa',width:2,dash:'dot'}},
+    {x:msTSData.t,y:msTSData.growth,type:'scatter',mode:'lines',name:lang==='ko'?(d.phenotype_ko.ko):(d.phenotype_ko.en),line:{color:'#4ade80',width:2,dash:'dashdot'}},
+  ],{
+    ...db,
+    title:{text:lang==='ko'?'다중 스케일 동역학 (시뮬레이션 시간)':'Multi-Scale Dynamics (Simulation Time)',font:{size:12,color:'#e4e0d8'}},
+    xaxis:{...db.xaxis,title:lang==='ko'?'시뮬레이션 단계':'Simulation steps'},
+    yaxis:{...db.yaxis,title:'%',range:[0,210]},
+    margin:{t:35,r:10,b:50,l:55}
+  },{responsive:true,displayModeBar:false});
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  setLang('ko');
+  initNodeStates();
+  buildKOButtons();
+  drawNetwork();
+  drawCascadeBars();
+  onFluxChange();
+  onMSGeneChange('HIF1A');
+  onMSExprChange(100);
+  drawGauge(80);
+});
+
+// Resize: redraw canvas
+window.addEventListener('resize',()=>{
+  drawNetwork();
+});
+</script>
+</body>
+</html>

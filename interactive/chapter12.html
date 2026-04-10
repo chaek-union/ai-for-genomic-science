@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 12 — Foundation Models for Genomics</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.2rem,6vw,4.5rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:560px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+#hero-canvas{position:absolute;inset:0;opacity:.3;pointer-events:none}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:680px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:4rem 0;max-width:960px;margin-left:auto;margin-right:auto}
+.plot-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;overflow:hidden}
+.plot-title{font:700 1rem/1.3 system-ui;color:var(--gold);margin-bottom:.4rem}
+.plot-desc{font:.88rem/1.6 system-ui;color:var(--muted);margin-bottom:1.2rem}
+.toggle-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.2rem;align-items:center}
+.toggle-btn{padding:.4rem .95rem;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font:.82rem/1 system-ui;cursor:pointer;transition:.2s}
+.toggle-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+.insight-box{margin-top:1.2rem;padding:1rem 1.2rem;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.18);border-radius:8px;font:.9rem/1.6 system-ui;color:var(--text)}
+.insight-box strong{color:var(--green)}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+.page-footer a:hover{text-decoration:underline}
+
+/* DNA sequence viewer */
+.seq-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:1rem;user-select:none}
+.nuc{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:6px;font:700 .9rem/1 'SF Mono',monospace;cursor:pointer;transition:all .15s;border:2px solid transparent;flex-shrink:0}
+.nuc:hover{opacity:.8;transform:scale(1.05)}
+.nuc.masked{background:#3a3a4a!important;color:#666!important;border-color:#555!important}
+.nuc-A{background:rgba(74,222,128,.2);color:#4ade80;border-color:rgba(74,222,128,.4)}
+.nuc-C{background:rgba(56,189,248,.2);color:#38bdf8;border-color:rgba(56,189,248,.4)}
+.nuc-G{background:rgba(196,163,90,.2);color:#c4a35a;border-color:rgba(196,163,90,.4)}
+.nuc-T{background:rgba(248,113,113,.2);color:#f87171;border-color:rgba(248,113,113,.4)}
+.seq-label{font:.75rem/1 'SF Mono',monospace;color:var(--muted);margin-bottom:.4rem;letter-spacing:.08em}
+.predict-btn{padding:.55rem 1.4rem;border-radius:8px;background:var(--gold);color:#0b0b11;border:0;font:700 .88rem/1 system-ui;cursor:pointer;transition:.2s;margin-top:.5rem}
+.predict-btn:hover{background:#d4b36a}
+.predict-btn:disabled{opacity:.4;cursor:not-allowed}
+.mask-hint{font:.82rem/1.5 system-ui;color:var(--muted);margin-top:.5rem}
+
+/* Layer feature cards */
+.layer-info{margin-top:1rem;padding:1rem 1.2rem;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.2);border-radius:8px;font:.9rem/1.6 system-ui;color:var(--text);min-height:60px;transition:all .2s}
+.layer-info strong{color:var(--purple)}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-ch">Chapter 12</div>
+  <h1 class="t" data-ko="게놈 파운데이션 모델" data-en="Foundation Models for Genomics"></h1>
+  <p class="hero-sub t"
+     data-ko="마스킹으로 배우고, 파인튜닝으로 특화된다. 모델이 서열 패턴을 예측하며 생물학적 언어를 학습하는 방법을 직접 체험해보세요."
+     data-en="Learn by masking, specialize by fine-tuning. Experience how a model learns biological language by predicting sequence patterns."></p>
+  <div class="hero-scroll" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+    <div class="t" data-ko="스크롤하여 탐색" data-en="scroll to explore">scroll to explore</div>
+    <div style="font-size:1.4rem;margin-top:.4rem">↓</div>
+  </div>
+</section>
+
+<!-- SECTION 1: MASKED SEQUENCE PREDICTION -->
+<div class="section" id="s1">
+  <div class="section-label t" data-ko="마스킹 언어 모델" data-en="Masked Language Modeling">Masked Language Modeling</div>
+  <h2 class="section-title t"
+      data-ko="모델은 빈칸 채우기로 배운다"
+      data-en="The Model Learns by Filling in the Blanks"></h2>
+  <p class="section-body t"
+     data-ko="뉴클레오타이드를 클릭해 마스킹한 뒤 Predict를 누르세요. 사전학습 시 토큰의 약 15%가 무작위로 마스킹되며, 모델은 마스킹된 위치에 대해 어휘 전체에 걸친 소프트맥스 확률을 출력하고 크로스-엔트로피 손실로 학습합니다 (Ji et al. 2021, DNABERT). CpG 위치, TATA 박스, 무작위 서열은 각각 다른 확신도를 만들어냅니다."
+     data-en="Click a nucleotide to mask it, then press Predict. During pre-training, ~15% of tokens are randomly masked; the model outputs a softmax probability over the full vocabulary for each masked position and trains with cross-entropy loss (Ji et al. 2021, DNABERT). A CpG site, a TATA box, and a random region each produce different confidence levels."></p>
+  <div class="plot-card">
+    <div class="plot-title t" data-ko="마스킹 서열 예측 — 맥락이 예측을 결정한다" data-en="Masked Sequence Prediction — Context Determines the Prediction">마스킹 서열 예측</div>
+    <div class="plot-desc t"
+         data-ko="뉴클레오타이드를 클릭하면 회색 '?'로 마스킹됩니다. Predict 버튼으로 모델의 예측을 확인하세요."
+         data-en="Click any nucleotide to mask it (turns gray '?'). Press Predict to see the model's probability distribution.">뉴클레오타이드를 클릭해 마스킹하세요.</div>
+
+    <div class="seq-label t" data-ko="서열 선택:" data-en="Select sequence:">서열 선택:</div>
+    <div class="toggle-row" style="margin-bottom:.8rem">
+      <button class="toggle-btn active" id="seq-btn-0" onclick="selectSeq(0)">TATA box</button>
+      <button class="toggle-btn" id="seq-btn-1" onclick="selectSeq(1)">CpG context</button>
+      <button class="toggle-btn" id="seq-btn-2" onclick="selectSeq(2)" data-ko="무작위 서열" data-en="Random region">무작위 서열</button>
+    </div>
+
+    <div class="seq-label t" data-ko="클릭하여 마스킹:" data-en="Click to mask:">클릭하여 마스킹:</div>
+    <div class="seq-row" id="seq-display"></div>
+    <div class="mask-hint t" id="mask-hint"
+         data-ko="위치를 클릭하면 해당 뉴클레오타이드가 마스킹됩니다"
+         data-en="Click a position to mask that nucleotide">위치를 클릭하면 해당 뉴클레오타이드가 마스킹됩니다</div>
+
+    <button class="predict-btn t" id="predict-btn" onclick="runPrediction()"
+            data-ko="Predict — 모델 예측 실행" data-en="Predict — Run Model">Predict — 모델 예측 실행</button>
+
+    <div id="plot-mask-pred" style="height:280px;margin-top:1rem"></div>
+
+    <div class="insight-box t" id="mask-insight"
+         data-ko="<strong>메커니즘:</strong> 모델은 마스킹된 위치의 <em>양방향 문맥</em>을 보고 어휘 전체에 대한 소프트맥스 확률을 출력합니다. 손실함수는 크로스-엔트로피입니다. DNABERT는 사전학습 시 처음 100k 스텝에서 15%, 마지막 20k 스텝에서 20%의 k-mer를 마스킹합니다 (Ji et al. 2021). TATA 박스의 핵심 위치는 거의 항상 T 또는 A — 수억 개의 서열에서 학습된 패턴입니다."
+         data-en="<strong>Mechanism:</strong> The model uses <em>bidirectional context</em> to output a softmax probability over the full token vocabulary for the masked position. The loss function is cross-entropy. DNABERT masks ~15% of k-mers for the first 100k training steps, then increases to 20% for the final 20k steps (Ji et al. 2021). A core TATA box position is almost always T or A — a pattern learned from hundreds of millions of sequences.">
+      <strong>메커니즘:</strong> 마스킹된 위치의 주변 문맥을 보고 예측합니다. 뉴클레오타이드를 클릭하고 Predict를 눌러보세요.
+    </div>
+    <p class="source-note" style="font-size:.75rem;color:var(--muted);margin-top:.5rem">
+      Based on: Ji et al. (2021) DNABERT, <em>Bioinformatics</em> 37:2112; Zhou et al. (2023) DNABERT-2, <em>ICLR 2024</em>
+    </p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: EMBEDDING SPACE BEFORE/AFTER FINE-TUNING -->
+<div class="section" id="s2">
+  <div class="section-label t" data-ko="파인튜닝의 효과" data-en="Effect of Fine-tuning">Effect of Fine-tuning</div>
+  <h2 class="section-title t"
+      data-ko="파인튜닝은 임베딩 공간을 재조직한다"
+      data-en="Fine-tuning Reorganizes the Embedding Space"></h2>
+  <p class="section-body t"
+     data-ko="200개의 게놈 서열이 벡터 공간에 어떻게 배치되는지 보세요. 사전학습된 임베딩은 완전히 무작위가 아닙니다 — 일반적인 서열 패턴에 의한 약한 클러스터링이 이미 존재합니다. 그러나 인핸서 검출 과제로 파인튜닝하면 기능별로 서열이 훨씬 명확히 분리됩니다."
+     data-en="See how 200 genomic sequences are arranged in vector space. Pre-trained embeddings are not completely random — weak clustering already exists from general sequence patterns. Fine-tuning for enhancer detection then sharpens this into clear functional separation."></p>
+  <div class="plot-card">
+    <div class="toggle-row">
+      <button class="toggle-btn active t" id="emb-btn-pre" onclick="showEmb('pre')"
+              data-ko="사전학습 임베딩" data-en="Pre-trained Embeddings">사전학습 임베딩</button>
+      <button class="toggle-btn t" id="emb-btn-ft" onclick="showEmb('ft')"
+              data-ko="파인튜닝 후 (인핸서 검출)" data-en="Fine-tuned (Enhancer Detection)">파인튜닝 후 (인핸서 검출)</button>
+    </div>
+    <div id="plot-embedding" style="height:460px"></div>
+    <div class="insight-box t" id="emb-insight"
+         data-ko="<strong>사전학습 임베딩:</strong> 모델이 서열의 일반적 패턴을 인코딩합니다. 클러스터가 형성되기 시작하지만 인핸서·프로모터·무작위 서열이 섞여 있습니다."
+         data-en="<strong>Pre-trained embeddings:</strong> The model encodes general sequence patterns. Clusters begin to form but enhancers, promoters, and random sequences still overlap.">
+      <strong>사전학습 임베딩:</strong> 서열의 일반적 패턴이 인코딩됩니다. 클러스터가 형성되기 시작하지만 겹침이 있습니다.
+    </div>
+    <p class="source-note" style="font-size:.75rem;color:var(--muted);margin-top:.5rem">
+      Based on: Ji et al. (2021) DNABERT Fig. 3 UMAP; Dalla-Torre et al. (2023) Nucleotide Transformer, <em>Nature Methods</em>
+    </p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: WHAT EACH LAYER LEARNS -->
+<div class="section" id="s3">
+  <div class="section-label t" data-ko="레이어별 학습 내용" data-en="What Each Layer Learns">What Each Layer Learns</div>
+  <h2 class="section-title t"
+      data-ko="깊은 레이어일수록 더 추상적인 생물학을 배운다"
+      data-en="Deeper Layers Learn More Abstract Biology"></h2>
+  <p class="section-body t"
+     data-ko="12층 트랜스포머의 각 레이어가 무엇을 감지하는지 클릭해서 확인하세요. 초기 레이어는 뉴클레오타이드 조성과 단순 모티프를 처리하지만, Nucleotide Transformer 연구(Dalla-Torre et al. 2023)에 따르면 TF 결합 부위·프로모터·3'UTR 같은 조절 요소는 초기 레이어에서도 감지됩니다. 후기 레이어는 세포 유형별 조절 문법 등 더 추상적인 특징을 통합합니다."
+     data-en="Click each layer of a 12-layer transformer to see what it detects. Early layers handle nucleotide composition and simple motifs, but research on the Nucleotide Transformer (Dalla-Torre et al. 2023) found that regulatory elements — TF binding sites, promoters, 3′UTR — are also detectable in early layers. Later layers integrate more abstract features such as cell-type-specific regulatory grammar."></p>
+  <div class="plot-card">
+    <div class="plot-desc t"
+         data-ko="막대를 클릭해 해당 레이어가 학습한 특징을 확인하세요"
+         data-en="Click a bar to see what features that layer has learned">막대를 클릭해 레이어 특징을 확인하세요</div>
+    <div id="plot-layers" style="height:340px"></div>
+    <div class="layer-info t" id="layer-info"
+         data-ko="레이어를 클릭하면 해당 레이어가 감지하는 생물학적 특징이 표시됩니다."
+         data-en="Click a layer bar to see the biological features it detects.">레이어를 클릭하면 감지하는 생물학적 특징이 표시됩니다.</div>
+    <p class="source-note" style="font-size:.75rem;color:var(--muted);margin-top:.5rem">
+      Based on: Dalla-Torre et al. (2023) Nucleotide Transformer, <em>Nature Methods</em>; Ji et al. (2021) DNABERT, <em>Bioinformatics</em> 37:2112. Note: the "biological complexity score" axis is illustrative — actual layer-wise feature distributions are non-linear and model-dependent.
+    </p>
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p class="t" data-ko="AI for Genomic Science — 챕터 12 인터랙티브" data-en="AI for Genomic Science — Chapter 12 Interactive">AI for Genomic Science — Chapter 12 Interactive</p>
+  <p style="margin-top:.5rem"><a href="../chapters/chapter12.md" class="t" data-ko="← 챕터 12 본문으로" data-en="← Back to Chapter 12">← 챕터 12 본문으로</a></p>
+</footer>
+
+<script>
+// ─── LANGUAGE ────────────────────────────────────────────────────────────────
+let lang = 'ko';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === l.toUpperCase()));
+  document.querySelectorAll('[data-' + l + ']').forEach(el => {
+    const v = el.dataset[l];
+    if (!v) return;
+    if (['DIV','P','H1','H2','SPAN','BUTTON'].includes(el.tagName)) el.innerHTML = v;
+    else el.textContent = v;
+  });
+  updatePlotLanguage(l);
+}
+
+// ─── PLOT LABELS ─────────────────────────────────────────────────────────────
+const plotLabels = {
+  'plot-mask-pred': {
+    xaxis: { ko: '뉴클레오타이드', en: 'Nucleotide' },
+    yaxis: { ko: '예측 확률', en: 'Predicted Probability' }
+  },
+  'plot-layers': {
+    xaxis: { ko: '레이어 번호', en: 'Layer Number' },
+    yaxis: { ko: '생물학적 복잡도 점수', en: 'Biological Complexity Score' }
+  }
+};
+
+function updatePlotLanguage(l) {
+  Object.keys(plotLabels).forEach(divId => {
+    const el = document.getElementById(divId);
+    if (!el || !el.data) return;
+    const lbs = plotLabels[divId];
+    const upd = {};
+    if (lbs.xaxis) upd['xaxis.title.text'] = lbs.xaxis[l];
+    if (lbs.yaxis) upd['yaxis.title.text'] = lbs.yaxis[l];
+    if (Object.keys(upd).length) Plotly.relayout(el, upd);
+  });
+  showEmb(embState);
+  renderLayersPlot();
+}
+
+// ─── HERO PARTICLES ──────────────────────────────────────────────────────────
+(function(){
+  const cv = document.getElementById('hero-canvas'), ctx = cv.getContext('2d');
+  let W, H, dots;
+  function resize(){
+    W = cv.width = cv.offsetWidth; H = cv.height = cv.offsetHeight;
+    dots = Array.from({length:120}, () => ({x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.4+.3, vx:(Math.random()-.5)*.2, vy:(Math.random()-.5)*.2, a:Math.random()}));
+  }
+  window.addEventListener('resize', resize); resize();
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d => {
+      d.x+=d.vx; d.y+=d.vy; d.a+=.005;
+      if(d.x<0||d.x>W) d.vx*=-1; if(d.y<0||d.y>H) d.vy*=-1;
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(196,163,90,${.25+.25*Math.sin(d.a)})`; ctx.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ─── PLOTLY THEME ─────────────────────────────────────────────────────────────
+const PT = {
+  paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(20,20,31,1)',
+  font:{color:'#e4e0d8', family:'system-ui,sans-serif'},
+  xaxis:{gridcolor:'#22222e', zerolinecolor:'#22222e'},
+  yaxis:{gridcolor:'#22222e', zerolinecolor:'#22222e'},
+  margin:{t:30,r:20,b:60,l:60}
+};
+
+// ─── PLOT 1: MASKED SEQUENCE PREDICTION ─────────────────────────────────────
+const SEQUENCES = [
+  // TATA box: TATAAA is a known transcription factor binding motif
+  { seq: 'GCATGCTATAAAAGGCTA', name: 'TATA box',
+    // context-based probabilities for each position (what a model would predict if masked)
+    probs: [
+      {A:.1,C:.55,G:.3,T:.05}, {A:.05,C:.1,G:.8,T:.05}, {A:.6,C:.1,G:.1,T:.2},
+      {A:.1,C:.1,G:.15,T:.65}, {A:.05,C:.1,G:.75,T:.1}, {A:.05,C:.2,G:.1,T:.65},
+      // TATAAA positions: highly conserved
+      {A:.07,C:.03,G:.03,T:.87}, {A:.9,C:.03,G:.04,T:.03},
+      {A:.06,C:.03,G:.03,T:.88}, {A:.91,C:.03,G:.03,T:.03},
+      {A:.92,C:.03,G:.03,T:.02}, {A:.93,C:.02,G:.03,T:.02},
+      // flanking
+      {A:.05,C:.1,G:.8,T:.05}, {A:.05,C:.1,G:.8,T:.05},
+      {A:.3,C:.1,G:.1,T:.5}, {A:.3,C:.4,G:.2,T:.1},
+      {A:.1,C:.3,G:.5,T:.1}, {A:.6,C:.1,G:.2,T:.1}
+    ],
+    motifRange:[6,11],
+    insightKo:'<strong>TATA 박스:</strong> 위치 7-12(TATAAA)는 전사인자 TBP 결합 모티프입니다. 모델이 해당 위치에서 매우 높은 확신도를 보이는 것은 수억 개의 프로모터 서열에서 이 패턴을 학습했기 때문입니다.',
+    insightEn:'<strong>TATA box:</strong> Positions 7-12 (TATAAA) form the TBP binding motif. The model shows very high confidence here because it learned this pattern from hundreds of millions of promoter sequences.'
+  },
+  // CpG context: C in CpG is often methylated; neighboring G strongly predicted
+  { seq: 'ATGCGCATCGTACGCATG', name: 'CpG context',
+    probs: [
+      {A:.75,C:.1,G:.1,T:.05}, {A:.1,C:.1,G:.1,T:.7}, {A:.1,C:.1,G:.75,T:.05},
+      {A:.05,C:.8,G:.1,T:.05},
+      // CG dinucleotide — C predicts G strongly
+      {A:.04,C:.04,G:.88,T:.04}, {A:.05,C:.82,G:.08,T:.05},
+      {A:.75,C:.1,G:.1,T:.05}, {A:.1,C:.1,G:.1,T:.7},
+      {A:.05,C:.8,G:.1,T:.05},
+      // another CG
+      {A:.04,C:.04,G:.88,T:.04}, {A:.1,C:.1,G:.1,T:.7},
+      {A:.75,C:.1,G:.1,T:.05}, {A:.05,C:.8,G:.1,T:.05},
+      {A:.04,C:.04,G:.88,T:.04},
+      // CG again
+      {A:.05,C:.82,G:.08,T:.05}, {A:.04,C:.04,G:.88,T:.04},
+      {A:.75,C:.1,G:.1,T:.05}, {A:.1,C:.1,G:.1,T:.7}
+    ],
+    motifRange:[3,5],
+    insightKo:'<strong>CpG 문맥:</strong> C 다음에 G가 올 확률이 매우 높습니다 (CpG 다이뉴클레오타이드). CpG 섬은 프로모터 근처에서 특히 풍부하며, 모델은 이 강한 편향을 학습합니다.',
+    insightEn:'<strong>CpG context:</strong> G is highly predicted after C (CpG dinucleotide). CpG islands are enriched near promoters, and the model learns this strong bias from genomic data.'
+  },
+  // Random: uniform-ish predictions, model is uncertain
+  { seq: 'GCTATACGTAATGCATCG', name: 'Random',
+    probs: [
+      {A:.2,C:.3,G:.4,T:.1}, {A:.15,C:.25,G:.2,T:.4}, {A:.3,C:.1,G:.1,T:.5},
+      {A:.5,C:.15,G:.2,T:.15}, {A:.25,C:.25,G:.3,T:.2}, {A:.4,C:.2,G:.2,T:.2},
+      {A:.15,C:.35,G:.3,T:.2}, {A:.3,C:.3,G:.25,T:.15}, {A:.2,C:.2,G:.35,T:.25},
+      {A:.4,C:.2,G:.2,T:.2}, {A:.25,C:.25,G:.25,T:.25}, {A:.3,C:.3,G:.2,T:.2},
+      {A:.15,C:.25,G:.35,T:.25}, {A:.35,C:.2,G:.25,T:.2}, {A:.4,C:.2,G:.2,T:.2},
+      {A:.25,C:.3,G:.25,T:.2}, {A:.2,C:.2,G:.3,T:.3}, {A:.3,C:.25,G:.25,T:.2}
+    ],
+    motifRange:[-1,-1],
+    insightKo:'<strong>무작위 서열:</strong> 특별한 생물학적 모티프가 없으면 모델의 예측이 불확실해집니다 — 4개 뉴클레오타이드에 걸쳐 확률이 고르게 분포합니다. 엔트로피가 높습니다.',
+    insightEn:'<strong>Random sequence:</strong> Without a known biological motif, the model becomes uncertain — probability is spread across all four nucleotides. High entropy prediction.'
+  }
+];
+
+let currentSeq = 0;
+let maskedPos = -1;
+
+function selectSeq(idx) {
+  currentSeq = idx;
+  maskedPos = -1;
+  document.querySelectorAll('[id^="seq-btn-"]').forEach((b,i) => b.classList.toggle('active', i===idx));
+  renderSeq();
+  // clear prediction
+  const el = document.getElementById('plot-mask-pred');
+  if (el.data) Plotly.purge('plot-mask-pred');
+  updateMaskInsight();
+}
+
+function renderSeq() {
+  const container = document.getElementById('seq-display');
+  const s = SEQUENCES[currentSeq];
+  container.innerHTML = '';
+  s.seq.split('').forEach((c, i) => {
+    const div = document.createElement('div');
+    const isMasked = i === maskedPos;
+    if (isMasked) {
+      div.className = 'nuc masked';
+      div.textContent = '?';
+    } else {
+      div.className = `nuc nuc-${c}`;
+      div.textContent = c;
+    }
+    // highlight motif range
+    const [m0,m1] = s.motifRange;
+    if (!isMasked && i >= m0 && i <= m1) {
+      div.style.boxShadow = '0 0 0 2px rgba(196,163,90,0.7)';
+    }
+    div.onclick = () => { maskedPos = (maskedPos === i) ? -1 : i; renderSeq(); updateMaskInsight(); };
+    container.appendChild(div);
+  });
+  const hint = document.getElementById('mask-hint');
+  if (maskedPos >= 0) {
+    hint.innerHTML = lang === 'ko'
+      ? `위치 ${maskedPos+1} 마스킹됨 — 다시 클릭하면 마스크 해제`
+      : `Position ${maskedPos+1} masked — click again to unmask`;
+  } else {
+    hint.innerHTML = lang === 'ko' ? '위치를 클릭하면 해당 뉴클레오타이드가 마스킹됩니다' : 'Click a position to mask that nucleotide';
+  }
+}
+
+function runPrediction() {
+  if (maskedPos < 0) {
+    alert(lang === 'ko' ? '먼저 뉴클레오타이드를 클릭해 마스킹하세요.' : 'Please click a nucleotide to mask it first.');
+    return;
+  }
+  const s = SEQUENCES[currentSeq];
+  const p = s.probs[maskedPos];
+  const nucs = ['A','C','G','T'];
+  const colors = ['#4ade80','#38bdf8','#c4a35a','#f87171'];
+  const vals = nucs.map(n => p[n]);
+  const trace = [{
+    type:'bar', x:nucs, y:vals,
+    marker:{color:colors, opacity:0.85, line:{color:'rgba(255,255,255,.15)',width:1}},
+    hovertemplate:'%{x}: %{y:.0%}<extra></extra>',
+    text: vals.map(v => (v*100).toFixed(0)+'%'),
+    textposition: 'outside',
+    textfont:{color:'#e4e0d8', size:11}
+  }];
+  const layout = {
+    ...PT,
+    xaxis:{...PT.xaxis, title:{text: lang==='ko'?'뉴클레오타이드':'Nucleotide', font:{color:'#7a756d',size:12}}, tickfont:{color:'#e4e0d8',size:13}},
+    yaxis:{...PT.yaxis, title:{text: lang==='ko'?'예측 확률':'Predicted Probability', font:{color:'#7a756d',size:12}}, range:[0,1.1], tickformat:'.0%', tickfont:{color:'#7a756d',size:10}},
+    showlegend:false, margin:{t:20,r:20,b:50,l:60}
+  };
+  Plotly.react('plot-mask-pred', trace, layout, {displayModeBar:false, responsive:true});
+  updateMaskInsight(true);
+}
+
+function updateMaskInsight(predicted) {
+  const s = SEQUENCES[currentSeq];
+  const box = document.getElementById('mask-insight');
+  if (predicted) {
+    box.innerHTML = lang==='ko' ? s.insightKo : s.insightEn;
+  } else {
+    const defaultKo = '<strong>메커니즘:</strong> 마스킹된 위치의 주변 문맥을 보고 예측합니다. 뉴클레오타이드를 클릭하고 Predict를 눌러보세요.';
+    const defaultEn = '<strong>Mechanism:</strong> The model uses surrounding context to predict the masked position. Click a nucleotide and press Predict.';
+    box.innerHTML = lang==='ko' ? defaultKo : defaultEn;
+  }
+}
+
+// Initialize sequence
+selectSeq(0);
+
+// ─── PLOT 2: EMBEDDING SPACE ─────────────────────────────────────────────────
+let embState = 'pre';
+
+function seededRand(seed) {
+  let s = seed;
+  return () => { s = (s*16807+0)%2147483647; return (s-1)/2147483646; };
+}
+
+function generateEmb(state) {
+  const rand = seededRand(7777);
+  const gaussian = (r) => {
+    const u1=r(), u2=r();
+    return [Math.sqrt(-2*Math.log(u1+1e-9))*Math.cos(2*Math.PI*u2),
+            Math.sqrt(-2*Math.log(u1+1e-9))*Math.sin(2*Math.PI*u2)];
+  };
+
+  const cats = [
+    {name:'Enhancer', nameKo:'인핸서', color:'#c4a35a', n:70, preCx:0, preCy:0, preSpread:2.8, ftCx:3, ftCy:2.5, ftSpread:0.7},
+    {name:'Promoter', nameKo:'프로모터', color:'#38bdf8', n:70, preCx:-1, preCy:.5, preSpread:2.8, ftCx:-3, ftCy:2.5, ftSpread:0.7},
+    {name:'Random',   nameKo:'무작위', color:'#7a756d', n:60, preCx:.5, preCy:-1, preSpread:3.2, ftCx:0, ftCy:-3, ftSpread:0.9}
+  ];
+
+  return cats.map(c => {
+    const xs=[], ys=[], texts=[];
+    const cx = state==='pre' ? c.preCx : c.ftCx;
+    const cy = state==='pre' ? c.preCy : c.ftCy;
+    const sp = state==='pre' ? c.preSpread : c.ftSpread;
+    for(let i=0;i<c.n;i++){
+      const [z0,z1] = gaussian(rand);
+      xs.push(cx + z0*sp); ys.push(cy + z1*sp);
+      const conf = state==='ft' ? (0.7 + Math.random()*0.28).toFixed(2) : (0.3+Math.random()*0.5).toFixed(2);
+      texts.push(`${lang==='ko'?c.nameKo:c.name}<br>Conf: ${conf}`);
+    }
+    return {type:'scatter', mode:'markers', name: lang==='ko'?c.nameKo:c.name,
+      x:xs, y:ys, text:texts, hoverinfo:'text',
+      marker:{color:c.color, size:7, opacity:0.75, line:{color:'rgba(255,255,255,.15)',width:.5}}};
+  });
+}
+
+function showEmb(state) {
+  embState = state;
+  document.getElementById('emb-btn-pre').classList.toggle('active', state==='pre');
+  document.getElementById('emb-btn-ft').classList.toggle('active', state==='ft');
+
+  const titleKo = state==='pre' ? '사전학습 임베딩 — UMAP 투영' : '파인튜닝 후 — UMAP 투영 (인핸서 검출)';
+  const titleEn = state==='pre' ? 'Pre-trained Embeddings — UMAP Projection' : 'After Fine-tuning — UMAP Projection (Enhancer Detection)';
+
+  const layout = {
+    ...PT,
+    title:{text:lang==='ko'?titleKo:titleEn, font:{color:'#e4e0d8',size:13}},
+    xaxis:{...PT.xaxis, title:{text:'UMAP 1', font:{color:'#7a756d',size:11}}, showticklabels:false},
+    yaxis:{...PT.yaxis, title:{text:'UMAP 2', font:{color:'#7a756d',size:11}}, showticklabels:false},
+    legend:{font:{color:'#e4e0d8',size:11}, bgcolor:'rgba(20,20,31,.85)', bordercolor:'#22222e',borderwidth:1},
+    margin:{t:50,r:20,b:50,l:50}
+  };
+  Plotly.react('plot-embedding', generateEmb(state), layout, {displayModeBar:false, responsive:true});
+
+  const box = document.getElementById('emb-insight');
+  if (state==='pre') {
+    box.dataset.ko = '<strong>사전학습 임베딩:</strong> 모델이 서열의 일반적 패턴을 인코딩합니다. 클러스터가 형성되기 시작하지만 인핸서·프로모터·무작위 서열이 섞여 있습니다.';
+    box.dataset.en = '<strong>Pre-trained embeddings:</strong> The model encodes general sequence patterns. Clusters begin to form but enhancers, promoters, and random sequences still overlap.';
+  } else {
+    box.dataset.ko = '<strong>파인튜닝 후:</strong> 세 가지 범주가 뚜렷하게 분리됩니다. 파인튜닝이 임베딩 공간을 <em>재조직</em>해 과제에 관련된 특징을 더 잘 구분하게 합니다.';
+    box.dataset.en = '<strong>After fine-tuning:</strong> The three categories are cleanly separated. Fine-tuning <em>reorganizes</em> the embedding space to better distinguish task-relevant features.';
+  }
+  box.innerHTML = box.dataset[lang];
+}
+
+showEmb('pre');
+
+// ─── PLOT 3: LAYER FEATURES ────────────────────────────────────────────────
+// Layer feature descriptions informed by:
+// - Dalla-Torre et al. (2023) Nucleotide Transformer: found TF binding sites, promoters,
+//   3'UTR detectable even in early layers; not strictly a simple→complex gradient.
+// - Ji et al. (2021) DNABERT: attention heads in multiple layers highlight known motifs.
+// - The "biological complexity score" axis is illustrative — real probing shows non-linear
+//   distribution with some regulatory features peaking in middle/early layers.
+const LAYER_DATA = {
+  en: [
+    {l:1, score:1.5, title:'Layer 1', feat:'Nucleotide composition and k-mer statistics: GC content, poly-A/T runs, CpG frequency. Also: some attention heads already show specificity for promoter-like sequences (Dalla-Torre et al. 2023).'},
+    {l:2, score:2.2, title:'Layer 2', feat:'Dinucleotide and trinucleotide frequencies: CpG, TpA biases. Strand-specific patterns begin to emerge. Early TF binding site signals detectable via probing.'},
+    {l:3, score:3.1, title:'Layer 3', feat:'Short motif detection (~4–6 bp): partial SP1, E-box (CANNTG), TATA-like elements. Nucleotide Transformer shows 3\'UTR signal appearing in layer 3 attention heads.'},
+    {l:4, score:4.0, title:'Layer 4', feat:'TFBS core recognition: CTCF (CCGCGNGGNGGCAG), GATA (WGATAR), AP-1 (TGASTCA). Note: regulatory element detection is NOT exclusive to late layers — probing studies show strong signal here.'},
+    {l:5, score:4.6, title:'Layer 5', feat:'TFBS affinity discrimination: distinguishes strong vs. weak binding site variants (e.g. TATAAAA vs. TATAATA for TBP). Enzymatic function information peaks around layers 4–6 (Genomic LM probing studies).'},
+    {l:6, score:5.2, title:'Layer 6', feat:'Composite regulatory elements: paired CTCF sites, clustered AP-1 sites, GC-rich insulator elements. Middle layers show high specialisation for promoter/enhancer classification.'},
+    {l:7, score:5.8, title:'Layer 7', feat:'Regulatory element boundaries: open chromatin edges, H3K27ac peak flanks, nucleosome positioning signals. Representations useful for chromatin accessibility prediction.'},
+    {l:8, score:6.5, title:'Layer 8', feat:'Enhancer subtype discrimination: super-enhancers vs. typical enhancers, poised vs. active states. Sequence grammar differences begin to separate cell-type classes.'},
+    {l:9, score:7.1, title:'Layer 9', feat:'Promoter architecture: spacing between core elements (TATA, Inr, DPE), distance constraints for cofactor recruitment. Integration of local and distal signals.'},
+    {l:10,score:7.9, title:'Layer 10',feat:'Regulatory syntax encoding: TF binding order and orientation that determines cooperative vs. competitive binding. Long-range dependencies become prominent.'},
+    {l:11,score:8.6, title:'Layer 11',feat:'Cell-type-specific regulatory grammar: liver enhancer TF combinations differ from neuronal enhancers. Representations diverge by tissue context.'},
+    {l:12,score:9.3, title:'Layer 12',feat:'Integrative regulatory logic: combines motif identity, spacing, orientation, and genomic context. Last-layer [CLS] token used for sequence-level classification tasks.'}
+  ],
+  ko: [
+    {l:1, score:1.5, title:'레이어 1', feat:'뉴클레오타이드 조성과 k-mer 통계: GC 함량, poly-A/T 반복, CpG 빈도. 주목: 일부 어텐션 헤드는 초기부터 프로모터 유사 서열에 특이성을 보입니다 (Dalla-Torre et al. 2023).'},
+    {l:2, score:2.2, title:'레이어 2', feat:'다이뉴클레오타이드·트리뉴클레오타이드 빈도: CpG, TpA 편향. 가닥별 패턴이 나타나기 시작하며, 탐침 연구에서 초기 TF 결합 신호가 감지됩니다.'},
+    {l:3, score:3.1, title:'레이어 3', feat:'짧은 모티프(~4–6 bp) 감지: SP1, E-box(CANNTG), TATA 유사 요소. Nucleotide Transformer 연구에서 레이어 3 어텐션 헤드에서 3\'UTR 신호가 나타남이 확인됩니다.'},
+    {l:4, score:4.0, title:'레이어 4', feat:'TFBS 코어 인식: CTCF, GATA, AP-1. 중요: 조절 요소 감지는 후기 레이어에만 국한되지 않습니다 — 탐침 연구에서 초·중기 레이어에서도 강한 신호가 나타납니다.'},
+    {l:5, score:4.6, title:'레이어 5', feat:'TFBS 친화도 구분: 강한 결합 부위 변이체 vs. 약한 변이체 (예: TATAAAA vs. TATAATA). 효소 기능 정보는 레이어 4–6에서 정점에 달합니다 (게놈 LM 탐침 연구).'},
+    {l:6, score:5.2, title:'레이어 6', feat:'복합 조절 요소: 쌍을 이루는 CTCF 사이트, 클러스터 AP-1, GC 풍부 절연체. 중간 레이어에서 프로모터/인핸서 분류 특이성이 높습니다.'},
+    {l:7, score:5.8, title:'레이어 7', feat:'조절 요소 경계: 열린 크로마틴 가장자리, H3K27ac 피크 측면, 뉴클레오솜 위치 신호. 크로마틴 접근성 예측에 유용한 표현.'},
+    {l:8, score:6.5, title:'레이어 8', feat:'인핸서 하위 유형 구분: 슈퍼인핸서 vs. 일반 인핸서, 준비된 vs. 활성 상태. 세포 유형 분류를 위한 서열 문법 차이가 분리됩니다.'},
+    {l:9, score:7.1, title:'레이어 9', feat:'프로모터 구조: 코어 요소(TATA, Inr, DPE) 간격 및 거리 제약. 국소 및 원거리 신호의 통합이 시작됩니다.'},
+    {l:10,score:7.9, title:'레이어 10',feat:'조절 문법 인코딩: 협력적 vs. 경쟁적 결합을 결정하는 TF 결합 순서와 방향. 장거리 의존성이 두드러집니다.'},
+    {l:11,score:8.6, title:'레이어 11',feat:'세포 유형별 조절 문법: 간 인핸서 TF 조합은 신경 인핸서와 다릅니다. 표현이 조직 맥락별로 분기됩니다.'},
+    {l:12,score:9.3, title:'레이어 12',feat:'통합 조절 논리: 모티프 정체성, 간격, 방향, 게놈 맥락을 결합. 마지막 레이어의 [CLS] 토큰이 서열 수준 분류 과제에 사용됩니다.'}
+  ]
+};
+
+function renderLayersPlot() {
+  const d = LAYER_DATA[lang];
+  const colors = d.map((_, i) => {
+    const t = i / 11;
+    return `rgba(${Math.round(56 + (167-56)*t)},${Math.round(189+(139-189)*t)},${Math.round(248+(250-248)*t)},0.85)`;
+  });
+  const trace = [{
+    type:'bar', x:d.map(x=>x.l), y:d.map(x=>x.score),
+    marker:{color:colors, line:{color:'rgba(255,255,255,.1)',width:1}},
+    hovertemplate:'%{customdata}<extra></extra>',
+    customdata: d.map(x=>x.feat),
+    text: d.map(x=>x.title),
+    textposition:'outside', textfont:{color:'var(--muted)',size:9}
+  }];
+  const layout = {
+    ...PT,
+    xaxis:{...PT.xaxis, title:{text:lang==='ko'?'레이어 번호':'Layer Number', font:{color:'#7a756d',size:12}},
+      tickvals:d.map(x=>x.l), ticktext:d.map(x=>x.l), tickfont:{color:'#7a756d',size:10}},
+    yaxis:{...PT.yaxis, title:{text:lang==='ko'?'생물학적 복잡도 점수':'Biological Complexity Score', font:{color:'#7a756d',size:12}},
+      range:[0,11], tickfont:{color:'#7a756d',size:10}},
+    showlegend:false, margin:{t:30,r:20,b:55,l:65}
+  };
+  Plotly.react('plot-layers', trace, layout, {displayModeBar:false, responsive:true});
+
+  document.getElementById('plot-layers').on('plotly_click', (data) => {
+    const idx = data.points[0].pointIndex;
+    const item = LAYER_DATA[lang][idx];
+    const box = document.getElementById('layer-info');
+    box.innerHTML = `<strong>${item.title}:</strong> ${item.feat}`;
+  });
+}
+
+renderLayersPlot();
+
+// Init
+document.addEventListener('DOMContentLoaded', () => setLang('ko'));
+</script>
+</body>
+</html>

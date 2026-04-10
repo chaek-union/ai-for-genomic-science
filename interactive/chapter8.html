@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 8 — The Rise of Deep Learning in Genomics</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.4rem,6.5vw,5rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:580px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+#hero-canvas{position:absolute;inset:0;opacity:.35;pointer-events:none}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:700px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 auto;max-width:960px}
+.plot-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2rem;margin-bottom:2rem;overflow:hidden}
+.plot-card-title{font:.78rem/1 'SF Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:1.2rem}
+.plot-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:700px){.plot-grid-2{grid-template-columns:1fr}}
+.input-row{display:flex;gap:.75rem;margin-bottom:1.5rem;align-items:center;flex-wrap:wrap}
+.dna-input{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.55rem 1rem;color:var(--text);font:1rem/1 'SF Mono',monospace;flex:1;min-width:220px;letter-spacing:.08em;text-transform:uppercase}
+.dna-input:focus{outline:none;border-color:var(--gold)}
+.action-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.3rem;border-radius:8px;border:1px solid var(--gold);background:var(--gold-dim);color:var(--gold);font:600 .88rem/1 system-ui;cursor:pointer;transition:.2s;white-space:nowrap}
+.action-btn:hover{background:rgba(196,163,90,.22)}
+.ctrl-row{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+.styled-select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.55rem 1rem;color:var(--text);font:.9rem/1 system-ui;cursor:pointer}
+.styled-select:focus{outline:none;border-color:var(--gold)}
+.insight-box{margin-top:1.5rem;padding:1rem 1.2rem;background:rgba(255,255,255,.03);border-left:2px solid var(--gold);border-radius:0 6px 6px 0;font:.88rem/1.6 system-ui;color:var(--muted)}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+.page-footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-ch">Chapter 8</div>
+  <h1 class="t" data-ko="유전체학에서의 딥러닝 부상" data-en="The Rise of Deep Learning in Genomics"></h1>
+  <p class="hero-sub t"
+     data-ko="규칙 기반 방법에서 학습된 표현으로 — CNN이 DNA에서 직접 조절 문법을 발견하는 방법을 시각화합니다."
+     data-en="From hand-crafted rules to learned representations — visualize how CNNs discover regulatory grammar directly from DNA sequences."></p>
+  <div class="hero-scroll" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+    <div class="t" data-ko="스크롤하여 탐색" data-en="scroll to explore">scroll to explore</div>
+    <div style="font-size:1.4rem;margin-top:.4rem">↓</div>
+  </div>
+</section>
+
+<!-- SECTION 1: CNN Motif Filter -->
+<div class="section" id="s1">
+  <div class="section-label t" data-ko="규칙에서 학습된 특성으로" data-en="From Rules to Learned Features">From Rules to Learned Features</div>
+  <h2 class="section-title t" data-ko="CNN이 학습한 모티프 필터" data-en="CNN Learned Motif Filters"></h2>
+  <p class="section-body t"
+     data-ko="딥러닝 이전에는 전문가가 손으로 만든 위치 가중치 행렬(PWM)로 전사인자 결합 부위를 탐색했습니다. CNN은 수백만 개의 서열에서 이러한 패턴을 자동으로 학습합니다. 두 행렬을 비교해보세요: 전문가가 만든 CTCF 모티프와 딥러닝이 학습한 필터."
+     data-en="Before deep learning, experts built position weight matrices (PWMs) by hand to scan for transcription factor binding sites. CNNs learn these patterns automatically from millions of sequences. Compare the expert-crafted CTCF motif to what a deep learning filter discovers."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="전문가 설계 vs CNN 학습 필터 (8 위치 × 4 염기)" data-en="Expert-Crafted vs CNN-Learned Filter (8 positions × 4 bases)">Expert-Crafted vs CNN-Learned Filter</div>
+    <div class="plot-grid-2">
+      <div id="plot-ctcf-known" style="height:300px"></div>
+      <div id="plot-ctcf-cnn" style="height:300px"></div>
+    </div>
+    <div class="insight-box t"
+         data-ko="왼쪽: JASPAR 데이터베이스의 실험 기반 CTCF PWM. 오른쪽: CNN 훈련 중 학습된 필터. 두 행렬은 유사한 GGC 코어 패턴을 보이지만, CNN 필터는 추가적인 맥락 위치를 학습했습니다."
+         data-en="Left: Experimental CTCF PWM from JASPAR database. Right: A filter learned during CNN training. Both matrices share a similar GGC core motif, but the CNN filter has additionally learned flanking context positions.">
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: One-Hot Encoding -->
+<div class="section" id="s2">
+  <div class="section-label t" data-ko="DNA의 수치 표현" data-en="Numerical Representation of DNA">Numerical Representation of DNA</div>
+  <h2 class="section-title t" data-ko="DNA 원-핫 인코딩" data-en="One-Hot Encoding of DNA"></h2>
+  <p class="section-body t"
+     data-ko="신경망은 숫자만 처리할 수 있습니다. DNA 서열(A, C, G, T)은 각 위치가 4행을 갖는 이진 행렬로 변환됩니다. 아래에 서열을 입력하면 실시간으로 행렬이 시각화됩니다."
+     data-en="Neural networks process only numbers. DNA sequences are converted to a binary matrix where each position has 4 rows — one per nucleotide. Type a sequence below to visualize the matrix live."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="라이브 원-핫 인코딩 시각화" data-en="Live One-Hot Encoding Visualizer">Live One-Hot Encoding Visualizer</div>
+    <div class="input-row">
+      <input class="dna-input" id="dna-seq-input" type="text" maxlength="28"
+             placeholder="ATCGATCG..."
+             value="ATCGGATCCATG"
+             oninput="renderOneHot()">
+      <button class="action-btn" onclick="randomDNA()">
+        <span>⚄</span>
+        <span class="t" data-ko="무작위 서열" data-en="Random Sequence">무작위 서열</span>
+      </button>
+    </div>
+    <div id="plot-onehot" style="height:280px"></div>
+    <div class="insight-box t"
+         data-ko="각 열은 하나의 뉴클레오타이드 위치입니다. '1' (금색)은 해당 행의 염기가 그 위치에 존재함을 의미합니다. 이 희소 이진 행렬이 CNN 첫 번째 합성곱 계층의 입력이 됩니다."
+         data-en="Each column is one nucleotide position. A '1' (gold) means that row's base is present at that position. This sparse binary matrix is the input fed into the CNN's first convolutional layer.">
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: Chromatin State Prediction -->
+<div class="section" id="s3">
+  <div class="section-label t" data-ko="크로마틴 상태 예측" data-en="Chromatin State Prediction">Chromatin State Prediction</div>
+  <h2 class="section-title t" data-ko="1kb 게놈 영역의 크로마틴 마크 예측" data-en="Predicted Chromatin Marks Across a 1kb Region"></h2>
+  <p class="section-body t"
+     data-ko="딥러닝 모델은 DNA 서열만으로 여러 히스톤 변형과 크로마틴 접근성을 동시에 예측할 수 있습니다. 아래 그래프는 다양한 조절 요소에서 다섯 가지 크로마틴 마크의 예측 신호를 보여줍니다."
+     data-en="Deep learning models predict multiple histone modifications and chromatin accessibility simultaneously from DNA sequence alone. The chart shows predicted signals for five chromatin marks across different regulatory elements."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="크로마틴 마크 예측 신호" data-en="Predicted Chromatin Signal">Predicted Chromatin Signal</div>
+    <div class="ctrl-row">
+      <select class="styled-select" id="region-select" onchange="renderChromatin()">
+        <option value="tal1">TAL1 인핸서 +51kb (활성 인핸서) / TAL1 enhancer +51kb (active enhancer)</option>
+        <option value="hbb">HBB 프로모터 (활성 프로모터) / HBB promoter (active promoter)</option>
+        <option value="ctcf">CTCF 절연자 (경계 요소) / CTCF insulator (boundary element)</option>
+      </select>
+    </div>
+    <div id="plot-chromatin" style="height:380px"></div>
+    <div class="insight-box t" id="chromatin-note"
+         data-ko="활성 인핸서는 H3K27ac와 DNase 신호가 높고 H3K27me3가 낮습니다. 단일 DNA 서열 입력에서 이 모든 트랙을 동시에 예측하는 것이 딥러닝의 핵심 강점입니다."
+         data-en="Active enhancers show high H3K27ac and DNase signal with low H3K27me3. Predicting all these tracks simultaneously from a single DNA sequence input is a core strength of deep learning.">
+    </div>
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p class="t" data-ko="AI for Genomic Science — 챕터 8 인터랙티브" data-en="AI for Genomic Science — Chapter 8 Interactive">AI for Genomic Science — Chapter 8 Interactive</p>
+  <p style="margin-top:.5rem"><a href="../chapters/chapter8.md" class="t" data-ko="← 챕터 8 본문으로" data-en="← Back to Chapter 8">← 챕터 8 본문으로</a></p>
+</footer>
+
+<script>
+// ─── LANGUAGE ─────────────────────────────────────────────
+let lang = 'ko';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  document.querySelectorAll('[data-' + l + ']').forEach(el => { el.textContent = el.dataset[l]; });
+  renderAll();
+}
+
+// ─── HERO PARTICLES ───────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, dots;
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    dots = Array.from({length:200}, () => ({
+      x:Math.random()*W, y:Math.random()*H,
+      r:Math.random()*1.4+.4,
+      vx:(Math.random()-.5)*.25, vy:(Math.random()-.5)*.25,
+      a:Math.random()
+    }));
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d => {
+      d.x+=d.vx; d.y+=d.vy;
+      if(d.x<0)d.x=W; if(d.x>W)d.x=0;
+      if(d.y<0)d.y=H; if(d.y>H)d.y=0;
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(196,163,90,${d.a*.55})`; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ─── PLOTLY DEFAULTS ──────────────────────────────────────
+const PBASE = {
+  paper_bgcolor:'rgba(0,0,0,0)',
+  plot_bgcolor:'rgba(20,20,31,1)',
+  font:{color:'#e4e0d8', family:'Georgia,serif'},
+  xaxis:{gridcolor:'#22222e', zerolinecolor:'#22222e'},
+  yaxis:{gridcolor:'#22222e', zerolinecolor:'#22222e'},
+  margin:{t:40,r:20,b:50,l:50}
+};
+const CFG = {displayModeBar:false, responsive:true};
+
+// ─── SECTION 1: CNN FILTER HEATMAPS ───────────────────────
+const BASES = ['A','C','G','T'];
+const POSITIONS = ['P1','P2','P3','P4','P5','P6','P7','P8'];
+
+const CTCF_KNOWN = [
+  [0.05,0.08,1.20,1.85,0.30,0.12,0.08,0.60],
+  [0.10,0.05,0.80,0.20,1.90,1.75,0.15,0.22],
+  [1.80,1.72,0.18,0.10,0.12,0.25,1.65,1.40],
+  [0.15,0.25,0.12,0.05,0.08,0.08,0.22,0.18],
+];
+const CTCF_CNN = [
+  [0.12,0.22,1.35,1.75,0.40,0.20,0.18,0.72],
+  [0.18,0.10,0.65,0.30,1.78,1.68,0.22,0.35],
+  [1.65,1.60,0.22,0.18,0.22,0.35,1.55,1.30],
+  [0.25,0.28,0.18,0.12,0.15,0.12,0.30,0.22],
+];
+
+const MOTIF_COLORSCALE = [
+  [0,'#0a1628'],[0.25,'#1e3a6e'],[0.5,'#ffffff'],[0.75,'#8b6914'],[1,'#c4a35a']
+];
+
+function renderMotifHeatmaps() {
+  const titleKnown = lang==='ko' ? 'JASPAR CTCF 모티프 (실험 기반)' : 'JASPAR CTCF Motif (Experimental)';
+  const titleCNN   = lang==='ko' ? 'CNN 학습 필터 (DeepSEA 스타일)' : 'CNN Learned Filter (DeepSEA-style)';
+
+  const makeTrace = (z) => [{
+    type:'heatmap', z, x:POSITIONS, y:BASES,
+    colorscale:MOTIF_COLORSCALE, zmin:0, zmax:2,
+    showscale:true,
+    colorbar:{thickness:12,len:0.8,tickfont:{color:'#7a756d',size:10},
+      title:{text:lang==='ko'?'가중치':'Weight',font:{color:'#7a756d',size:10}}},
+    hovertemplate:(lang==='ko'?'염기':'Base')+': %{y}<br>'+(lang==='ko'?'위치':'Position')+': %{x}<br>'+(lang==='ko'?'가중치':'Weight')+': %{z:.2f}<extra></extra>'
+  }];
+
+  const layout = {
+    ...PBASE,
+    yaxis:{...PBASE.yaxis, autorange:'reversed', tickfont:{color:'#e4e0d8',size:14,family:'SF Mono,monospace'}},
+    margin:{t:45,r:65,b:40,l:40}
+  };
+
+  Plotly.newPlot('plot-ctcf-known', makeTrace(CTCF_KNOWN),
+    {...layout, title:{text:titleKnown, font:{size:13,color:'#e4e0d8'}}}, CFG);
+  Plotly.newPlot('plot-ctcf-cnn', makeTrace(CTCF_CNN),
+    {...layout, title:{text:titleCNN, font:{size:13,color:'#e4e0d8'}}}, CFG);
+}
+
+// ─── SECTION 2: ONE-HOT ENCODING ──────────────────────────
+function renderOneHot() {
+  const raw = document.getElementById('dna-seq-input').value.toUpperCase().replace(/[^ACGT]/g,'');
+  const seq = raw.slice(0,24);
+  if (!seq.length) return;
+
+  const Z = [[],[],[],[]];
+  for (let i=0;i<seq.length;i++) {
+    Z[0].push(seq[i]==='A'?1:0);
+    Z[1].push(seq[i]==='C'?1:0);
+    Z[2].push(seq[i]==='G'?1:0);
+    Z[3].push(seq[i]==='T'?1:0);
+  }
+  const cols = seq.split('').map((b,i)=>`${i+1}:${b}`);
+  const titleTxt = lang==='ko' ? `원-핫 행렬 — ${seq.length}bp 서열` : `One-Hot Matrix — ${seq.length}bp sequence`;
+
+  Plotly.newPlot('plot-onehot', [{
+    type:'heatmap', z:Z, x:cols, y:BASES,
+    colorscale:[[0,'rgba(20,20,31,1)'],[1,'#c4a35a']],
+    showscale:false, zmin:0, zmax:1,
+    hovertemplate:(lang==='ko'?'염기 행':'Base row')+': %{y}<br>'+(lang==='ko'?'위치':'Position')+': %{x}<br>'+(lang==='ko'?'값':'Value')+': %{z}<extra></extra>'
+  }], {
+    ...PBASE,
+    title:{text:titleTxt, font:{size:13,color:'#e4e0d8'}},
+    yaxis:{...PBASE.yaxis, autorange:'reversed', tickfont:{color:'#e4e0d8',size:14,family:'SF Mono,monospace'}},
+    xaxis:{...PBASE.xaxis, tickfont:{color:'#7a756d',size:10}},
+    margin:{t:45,r:20,b:45,l:45}
+  }, CFG);
+}
+
+function randomDNA() {
+  const bases=['A','C','G','T'];
+  const len=10+Math.floor(Math.random()*10);
+  document.getElementById('dna-seq-input').value=Array.from({length:len},()=>bases[Math.floor(Math.random()*4)]).join('');
+  renderOneHot();
+}
+
+// ─── SECTION 3: CHROMATIN STATE ───────────────────────────
+function gpeak(n,c,h,s){return Array.from({length:n},(_,i)=>h*Math.exp(-0.5*((i-c)/s)**2));}
+function noise(arr,a=0.03){return arr.map(v=>Math.max(0,v+(Math.random()-.5)*a));}
+
+const CHROM = {
+  tal1:{
+    noteKo:'이 영역은 적혈구 세포에서 활성화된 인핸서입니다. H3K27ac(인핸서 활성)와 DNase(열린 크로마틴) 신호가 높고, H3K27me3(억제) 신호는 낮습니다.',
+    noteEn:'This region is an active enhancer in erythroid cells. High H3K27ac (enhancer activity) and DNase (open chromatin), with low H3K27me3 (repression).',
+    tracks:{
+      'H3K4me3 (active promoter)':{color:'#4ade80',peaks:[{c:30,h:0.15,s:5}]},
+      'H3K27ac (active enhancer)':{color:'#c4a35a',peaks:[{c:50,h:0.92,s:10}]},
+      'H3K27me3 (repressed)':     {color:'#f87171',peaks:[{c:20,h:0.08,s:8}]},
+      'CTCF (insulator)':         {color:'#a78bfa',peaks:[{c:80,h:0.05,s:3}]},
+      'DNase (open chromatin)':   {color:'#38bdf8',peaks:[{c:50,h:0.88,s:12},{c:75,h:0.25,s:5}]},
+    }
+  },
+  hbb:{
+    noteKo:'활성 프로모터는 H3K4me3가 가장 특징적인 마커입니다. H3K27ac도 함께 높아 활성 전사를 나타냅니다.',
+    noteEn:'Active promoters are most characterized by high H3K4me3. H3K27ac co-occurs, indicating active transcription.',
+    tracks:{
+      'H3K4me3 (active promoter)':{color:'#4ade80',peaks:[{c:45,h:0.95,s:8}]},
+      'H3K27ac (active enhancer)':{color:'#c4a35a',peaks:[{c:45,h:0.80,s:9}]},
+      'H3K27me3 (repressed)':     {color:'#f87171',peaks:[{c:50,h:0.06,s:6}]},
+      'CTCF (insulator)':         {color:'#a78bfa',peaks:[{c:15,h:0.10,s:3}]},
+      'DNase (open chromatin)':   {color:'#38bdf8',peaks:[{c:45,h:0.90,s:10},{c:30,h:0.30,s:4}]},
+    }
+  },
+  ctcf:{
+    noteKo:'CTCF 절연자는 특징적인 날카로운 CTCF 결합 신호를 갖습니다. H3K4me3와 H3K27ac는 낮아 프로모터/인핸서가 아님을 보여줍니다.',
+    noteEn:'CTCF insulators show a characteristic sharp CTCF binding peak. Low H3K4me3 and H3K27ac confirm this is not a promoter or enhancer.',
+    tracks:{
+      'H3K4me3 (active promoter)':{color:'#4ade80',peaks:[{c:30,h:0.08,s:5}]},
+      'H3K27ac (active enhancer)':{color:'#c4a35a',peaks:[{c:55,h:0.12,s:7}]},
+      'H3K27me3 (repressed)':     {color:'#f87171',peaks:[{c:40,h:0.45,s:15},{c:75,h:0.55,s:12}]},
+      'CTCF (insulator)':         {color:'#a78bfa',peaks:[{c:50,h:0.94,s:4}]},
+      'DNase (open chromatin)':   {color:'#38bdf8',peaks:[{c:50,h:0.70,s:5}]},
+    }
+  }
+};
+
+const FILL_MAP = {
+  '#4ade80':'rgba(74,222,128,0.07)',
+  '#c4a35a':'rgba(196,163,90,0.07)',
+  '#f87171':'rgba(248,113,113,0.07)',
+  '#a78bfa':'rgba(167,139,250,0.07)',
+  '#38bdf8':'rgba(56,189,248,0.07)',
+};
+
+function renderChromatin() {
+  const key = document.getElementById('region-select').value;
+  const data = CHROM[key];
+  const N=100;
+  const xs=Array.from({length:N},(_,i)=>i*10);
+  const bio = {
+    'H3K4me3 (active promoter)': lang==='ko'?'활성 프로모터 마커':'Active promoter mark',
+    'H3K27ac (active enhancer)': lang==='ko'?'활성 인핸서 마커':'Active enhancer mark',
+    'H3K27me3 (repressed)':      lang==='ko'?'폴리콤 억제':'Polycomb repression',
+    'CTCF (insulator)':          lang==='ko'?'경계/절연자 요소':'Boundary/insulator element',
+    'DNase (open chromatin)':    lang==='ko'?'열린 크로마틴':'Open chromatin',
+  };
+  const traces = Object.entries(data.tracks).map(([name,cfg])=>{
+    let ys=new Array(N).fill(0);
+    cfg.peaks.forEach(p=>{ys=ys.map((v,i)=>v+gpeak(N,p.c,p.h,p.s)[i]);});
+    ys=noise(ys,0.025);
+    return {
+      type:'scatter',mode:'lines',name,x:xs,y:ys,
+      line:{color:cfg.color,width:2.5,shape:'spline',smoothing:0.8},
+      fill:'tozeroy',fillcolor:FILL_MAP[cfg.color]||'rgba(255,255,255,0.04)',
+      hovertemplate:`<b>${name}</b><br>${lang==='ko'?'위치':'Position'}: %{x}bp<br>${lang==='ko'?'예측 신호':'Predicted signal'}: %{y:.2f}<br>${bio[name]||''}<extra></extra>`
+    };
+  });
+
+  const titleTxt = lang==='ko'?'예측 크로마틴 신호 (1kb 영역)':'Predicted Chromatin Signal (1kb region)';
+  Plotly.newPlot('plot-chromatin', traces, {
+    ...PBASE,
+    title:{text:titleTxt, font:{size:13,color:'#e4e0d8'}},
+    xaxis:{...PBASE.xaxis,title:{text:lang==='ko'?'게놈 위치 (bp)':'Genomic position (bp)',font:{color:'#7a756d',size:11}}},
+    yaxis:{...PBASE.yaxis,title:{text:lang==='ko'?'예측 신호':'Predicted signal',font:{color:'#7a756d',size:11}},range:[0,1.12]},
+    legend:{bgcolor:'rgba(0,0,0,0)',font:{color:'#e4e0d8',size:11}},
+    margin:{t:50,r:20,b:60,l:65},
+    hovermode:'x unified'
+  }, CFG);
+
+  document.getElementById('chromatin-note').textContent = lang==='ko'?data.noteKo:data.noteEn;
+}
+
+// ─── INIT ──────────────────────────────────────────────────
+function renderAll() {
+  renderMotifHeatmaps();
+  renderOneHot();
+  renderChromatin();
+}
+document.addEventListener('DOMContentLoaded', () => { setLang('ko'); });
+</script>
+</body>
+</html>

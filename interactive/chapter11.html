@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 11 — Introduction to Language Models</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.4rem,6.5vw,5rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:580px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+#hero-canvas{position:absolute;inset:0;opacity:.35;pointer-events:none}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:700px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 auto;max-width:960px}
+.plot-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2rem;margin-bottom:2rem;overflow:hidden}
+.plot-card-title{font:.78rem/1 'SF Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:1.2rem}
+.ctrl-row{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+.styled-select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.55rem 1rem;color:var(--text);font:.9rem/1 system-ui;cursor:pointer}
+.styled-select:focus{outline:none;border-color:var(--gold)}
+.insight-box{margin-top:1.5rem;padding:1rem 1.2rem;background:rgba(255,255,255,.03);border-left:2px solid var(--gold);border-radius:0 6px 6px 0;font:.88rem/1.6 system-ui;color:var(--muted)}
+.masked-sentence{margin-bottom:1.5rem;padding:1.2rem 1.4rem;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;font:1.05rem/1.7 'SF Mono',monospace;color:var(--text);letter-spacing:.02em}
+.mask-token{background:rgba(167,139,250,.2);color:var(--purple);border:1px solid rgba(167,139,250,.4);border-radius:4px;padding:.1em .4em;font-weight:700}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+.page-footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-ch">Chapter 11</div>
+  <h1 class="t" data-ko="언어 모델 입문" data-en="Introduction to Language Models"></h1>
+  <p class="hero-sub t"
+     data-ko="단어 임베딩 공간, 마스크드 언어 모델링, 그리고 전이 학습 파이프라인을 시각화합니다 — 생물학 문맥에서."
+     data-en="Visualize word embedding spaces, masked language modeling, and the transfer learning pipeline — all in a biological context."></p>
+  <div class="hero-scroll" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+    <div class="t" data-ko="스크롤하여 탐색" data-en="scroll to explore">scroll to explore</div>
+    <div style="font-size:1.4rem;margin-top:.4rem">↓</div>
+  </div>
+</section>
+
+<!-- SECTION 1: Word Embedding Space -->
+<div class="section" id="s1">
+  <div class="section-label t" data-ko="표현 학습" data-en="Representation Learning">Representation Learning</div>
+  <h2 class="section-title t" data-ko="생물학적 용어의 임베딩 공간" data-en="Word Embedding Space of Biological Terms"></h2>
+  <p class="section-body t"
+     data-ko="언어 모델은 의미적으로 유사한 단어들을 벡터 공간에서 가깝게 배치합니다. '전사인자'는 '프로모터'와 '인핸서' 근처에 있지만, '항체'와는 멀리 떨어집니다. 아래 3D 플롯을 회전하여 클러스터를 탐색해보세요."
+     data-en="Language models place semantically similar words close together in vector space. 'Transcription factor' is near 'promoter' and 'enhancer' but far from 'antibody'. Rotate the 3D plot below to explore the clusters."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="3D 임베딩 공간 (t-SNE 투영, 클릭하여 회전)" data-en="3D Embedding Space (t-SNE projection, click to rotate)">3D Embedding Space</div>
+    <div id="plot-embed3d" style="height:480px"></div>
+    <div class="insight-box t"
+         data-ko="초록색: 유전자 조절 용어 (전사인자, 인핸서, 프로모터 등). 파란색: 세포 주기 용어. 보라색: 면역 용어. 점 크기는 해당 용어의 학습 데이터 내 빈도를 반영합니다."
+         data-en="Green: Gene regulation terms (transcription factor, enhancer, promoter, etc.). Blue: Cell cycle terms. Purple: Immune terms. Point size reflects the frequency of that term in the training corpus.">
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: Masked Language Modeling -->
+<div class="section" id="s2">
+  <div class="section-label t" data-ko="마스크드 언어 모델링" data-en="Masked Language Modeling">Masked Language Modeling</div>
+  <h2 class="section-title t" data-ko="[MASK] 토큰 예측" data-en="Predicting the [MASK] Token"></h2>
+  <p class="section-body t"
+     data-ko="BERT 스타일 언어 모델은 문장에서 일부 단어를 마스킹하고 그 단어를 예측하는 훈련을 통해 생물학적 맥락을 학습합니다. 아래에서 다양한 마스킹 문장을 선택하고 모델의 상위 5개 예측과 확률을 확인해보세요."
+     data-en="BERT-style language models learn biological context by masking words in sentences and predicting them. Select a masked sentence below to see the model's top 5 predictions with probabilities."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="상위 5개 예측 단어 및 확률" data-en="Top 5 Predicted Words and Probabilities">Top-5 Mask Predictions</div>
+    <div class="ctrl-row">
+      <select class="styled-select" id="mask-select" onchange="renderMask()">
+        <option value="tf">문장 A: "[MASK] binds to the promoter and activates transcription"</option>
+        <option value="dna">문장 B: "The CRISPR-Cas9 system uses guide RNA to target [MASK] sequences"</option>
+        <option value="cell">문장 C: "Histone acetylation is associated with [MASK] gene expression"</option>
+        <option value="disease">문장 D: "A missense variant in BRCA1 [MASK] its tumor suppressor function"</option>
+      </select>
+    </div>
+    <div id="mask-sentence" class="masked-sentence"></div>
+    <div id="plot-mask" style="height:320px"></div>
+    <div class="insight-box t" id="mask-note"
+         data-ko="'전사인자'가 가장 높은 확률로 예측됩니다. 모델은 '프로모터에 결합'한다는 문맥에서 전사인자를 강하게 연상합니다."
+         data-en="'Transcription factor' receives the highest predicted probability. The model strongly associates the context 'binds to the promoter' with transcription factors.">
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: Transfer Learning Pipeline -->
+<div class="section" id="s3">
+  <div class="section-label t" data-ko="전이 학습" data-en="Transfer Learning">Transfer Learning</div>
+  <h2 class="section-title t" data-ko="사전 훈련 → 파인튜닝 파이프라인" data-en="Pre-training → Fine-tuning Pipeline"></h2>
+  <p class="section-body t"
+     data-ko="대규모 데이터로 사전 훈련된 모델을 소규모 레이블 데이터로 파인튜닝하면 훨씬 높은 정확도를 달성할 수 있습니다. 아래 폭포수 차트는 각 단계에서 모델 정확도가 어떻게 향상되는지 보여줍니다."
+     data-en="Fine-tuning a pre-trained model on small labeled data achieves far higher accuracy than training from scratch. The waterfall chart below shows how model accuracy improves at each stage."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="전이 학습 단계별 변이 분류 정확도" data-en="Transfer Learning Stage-by-Stage Variant Classification Accuracy">Transfer Learning Accuracy Pipeline</div>
+    <div id="plot-transfer" style="height:400px"></div>
+    <div class="insight-box t"
+         data-ko="무작위 분류기는 50%에서 시작합니다. 사전 훈련만으로도 65%로 올라갑니다 — 모델이 생물학적 언어를 학습했기 때문입니다. 5,000개의 레이블 변이로 파인튜닝하면 92%에 도달합니다."
+         data-en="A random classifier starts at 50%. Pre-training alone reaches 65% — the model has learned biological language. Fine-tuning on 5,000 labeled variants reaches 92%.">
+    </div>
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p class="t" data-ko="AI for Genomic Science — 챕터 11 인터랙티브" data-en="AI for Genomic Science — Chapter 11 Interactive">AI for Genomic Science — Chapter 11 Interactive</p>
+  <p style="margin-top:.5rem"><a href="../chapters/chapter11.md" class="t" data-ko="← 챕터 11 본문으로" data-en="← Back to Chapter 11">← 챕터 11 본문으로</a></p>
+</footer>
+
+<script>
+// ─── LANGUAGE ─────────────────────────────────────────────
+let lang = 'ko';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  document.querySelectorAll('[data-' + l + ']').forEach(el => { el.textContent = el.dataset[l]; });
+  renderAll();
+}
+
+// ─── HERO PARTICLES ───────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, dots;
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    dots = Array.from({length:180}, () => ({
+      x:Math.random()*W, y:Math.random()*H,
+      r:Math.random()*1.4+.4,
+      vx:(Math.random()-.5)*.28, vy:(Math.random()-.5)*.28,
+      a:Math.random()
+    }));
+  }
+  window.addEventListener('resize', resize); resize();
+  (function draw() {
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d=>{
+      d.x+=d.vx; d.y+=d.vy;
+      if(d.x<0)d.x=W; if(d.x>W)d.x=0;
+      if(d.y<0)d.y=H; if(d.y>H)d.y=0;
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(196,163,90,${d.a*.55})`; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  })();
+})();
+
+// ─── PLOTLY DEFAULTS ──────────────────────────────────────
+const PBASE = {
+  paper_bgcolor:'rgba(0,0,0,0)',
+  plot_bgcolor:'rgba(20,20,31,1)',
+  font:{color:'#e4e0d8',family:'Georgia,serif'},
+  xaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  yaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  margin:{t:40,r:20,b:60,l:60}
+};
+const CFG = {displayModeBar:false,responsive:true};
+
+// ─── SECTION 1: 3D EMBEDDING ──────────────────────────────
+const EMBED_TERMS = {
+  // Gene regulation cluster (green)
+  reg: [
+    {t:'transcription factor', tko:'전사인자',    x:1.2, y:0.8, z:0.5,  sz:14},
+    {t:'promoter',             tko:'프로모터',    x:1.5, y:1.2, z:0.2,  sz:13},
+    {t:'enhancer',             tko:'인핸서',      x:0.9, y:1.4, z:0.7,  sz:12},
+    {t:'silencer',             tko:'사일런서',    x:1.1, y:0.5, z:1.0,  sz:9},
+    {t:'CTCF',                 tko:'CTCF',        x:0.7, y:1.0, z:0.3,  sz:10},
+    {t:'chromatin',            tko:'크로마틴',    x:1.8, y:0.6, z:0.9,  sz:11},
+    {t:'histone',              tko:'히스톤',      x:1.4, y:1.6, z:1.1,  sz:12},
+    {t:'epigenome',            tko:'후성유전체',  x:0.6, y:1.8, z:0.8,  sz:10},
+  ],
+  // Cell cycle cluster (blue)
+  cell: [
+    {t:'CDK',        tko:'CDK',          x:-1.4, y:0.5, z:0.3,  sz:11},
+    {t:'cyclin',     tko:'사이클린',     x:-1.8, y:0.2, z:0.7,  sz:12},
+    {t:'p53',        tko:'p53',          x:-1.1, y:0.8, z:1.1,  sz:13},
+    {t:'apoptosis',  tko:'세포자살',     x:-1.6, y:1.0, z:0.4,  sz:11},
+    {t:'mitosis',    tko:'유사분열',     x:-1.3, y:-0.2,z:0.8,  sz:10},
+    {t:'checkpoint', tko:'체크포인트',   x:-0.9, y:0.3, z:1.4,  sz:10},
+  ],
+  // Immune cluster (purple)
+  imm: [
+    {t:'antibody',    tko:'항체',        x:0.3, y:-1.6, z:0.5,  sz:13},
+    {t:'T cell',      tko:'T 세포',      x:0.8, y:-1.4, z:0.2,  sz:12},
+    {t:'B cell',      tko:'B 세포',      x:-0.2,y:-1.8, z:0.7,  sz:12},
+    {t:'cytokine',    tko:'사이토카인',  x:0.5, y:-1.1, z:1.1,  sz:10},
+    {t:'antigen',     tko:'항원',        x:1.0, y:-1.5, z:0.9,  sz:11},
+    {t:'MHC',         tko:'MHC',         x:-0.4,y:-1.2, z:0.3,  sz:10},
+  ]
+};
+
+function renderEmbed3D() {
+  const traces = [
+    {cluster:'reg', color:'#4ade80', nameKo:'유전자 조절 용어', nameEn:'Gene regulation terms'},
+    {cluster:'cell',color:'#38bdf8', nameKo:'세포 주기 용어',   nameEn:'Cell cycle terms'},
+    {cluster:'imm', color:'#a78bfa', nameKo:'면역 용어',         nameEn:'Immune terms'},
+  ].map(({cluster,color,nameKo,nameEn}) => {
+    const pts = EMBED_TERMS[cluster];
+    return {
+      type:'scatter3d', mode:'markers+text',
+      name: lang==='ko' ? nameKo : nameEn,
+      x:pts.map(p=>p.x), y:pts.map(p=>p.y), z:pts.map(p=>p.z),
+      text:pts.map(p=>lang==='ko'?p.tko:p.t),
+      textposition:'top center',
+      textfont:{color,size:9},
+      marker:{color, size:pts.map(p=>p.sz), opacity:0.8, line:{color:'rgba(255,255,255,0.15)',width:1}},
+      hovertemplate:pts.map(p=>`<b>${lang==='ko'?p.tko:p.t}</b><br>${lang==='ko'?'빈도 반영 크기':'Size reflects frequency'}: ${p.sz}<extra></extra>`)
+    };
+  });
+
+  Plotly.newPlot('plot-embed3d', traces, {
+    paper_bgcolor:'rgba(0,0,0,0)',
+    font:{color:'#e4e0d8',family:'Georgia,serif'},
+    scene:{
+      xaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e',backgroundcolor:'rgba(20,20,31,1)',title:{text:'Dim 1',font:{color:'#7a756d',size:10}}},
+      yaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e',backgroundcolor:'rgba(20,20,31,1)',title:{text:'Dim 2',font:{color:'#7a756d',size:10}}},
+      zaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e',backgroundcolor:'rgba(20,20,31,1)',title:{text:'Dim 3',font:{color:'#7a756d',size:10}}},
+      bgcolor:'rgba(20,20,31,1)',
+    },
+    title:{text:lang==='ko'?'생물학 용어 3D 임베딩 공간 (t-SNE 투영)':'Biological Term 3D Embedding Space (t-SNE projection)',font:{size:13,color:'#e4e0d8'}},
+    legend:{bgcolor:'rgba(0,0,0,0)',font:{color:'#e4e0d8',size:11}},
+    margin:{t:50,r:20,b:20,l:20}
+  }, {...CFG, displayModeBar:true, modeBarButtonsToRemove:['toImage']});
+}
+
+// ─── SECTION 2: MASKED LANGUAGE MODELING ─────────────────
+const MASK_DATA = {
+  tf: {
+    sentKo: 'The [MASK] binds to the promoter and activates transcription',
+    sentEn: 'The [MASK] binds to the promoter and activates transcription',
+    predsKo: ['전사인자','단백질','효소','리프레서','활성화인자'],
+    predsEn: ['transcription factor','protein','enzyme','repressor','activator'],
+    probs:   [0.35, 0.22, 0.16, 0.14, 0.13],
+    noteKo: '가장 높은 예측 확률: "전사인자"(35%). "프로모터에 결합"이라는 문맥이 전사인자를 강하게 연상시킵니다.',
+    noteEn: 'Highest predicted probability: "transcription factor" (35%). The context "binds to the promoter" strongly implies a transcription factor.',
+  },
+  dna: {
+    sentKo: 'The CRISPR-Cas9 system uses guide RNA to target [MASK] sequences',
+    sentEn: 'The CRISPR-Cas9 system uses guide RNA to target [MASK] sequences',
+    predsKo: ['DNA','게놈','특정','상보적','표적'],
+    predsEn: ['DNA','genomic','specific','complementary','target'],
+    probs:   [0.42, 0.28, 0.14, 0.09, 0.07],
+    noteKo: '"DNA"가 가장 높은 확률(42%)을 받습니다. CRISPR-Cas9 문맥에서 모델이 DNA 절단 메커니즘을 학습했습니다.',
+    noteEn: '"DNA" receives the highest probability (42%). The model has learned CRISPR-Cas9\'s DNA cutting mechanism from the training corpus.',
+  },
+  cell: {
+    sentKo: 'Histone acetylation is associated with [MASK] gene expression',
+    sentEn: 'Histone acetylation is associated with [MASK] gene expression',
+    predsKo: ['활성화된','증가된','높은','향상된','촉진된'],
+    predsEn: ['activated','increased','elevated','enhanced','promoted'],
+    probs:   [0.38, 0.27, 0.18, 0.10, 0.07],
+    noteKo: '"활성화된"이 38%의 확률로 예측됩니다. 히스톤 아세틸화가 유전자 활성화와 연관되는 생물학적 지식을 모델이 습득했습니다.',
+    noteEn: '"Activated" is predicted with 38% probability. The model has acquired the biological knowledge that histone acetylation is associated with gene activation.',
+  },
+  disease: {
+    sentKo: 'A missense variant in BRCA1 [MASK] its tumor suppressor function',
+    sentEn: 'A missense variant in BRCA1 [MASK] its tumor suppressor function',
+    predsKo: ['손상시킨다','방해한다','파괴한다','감소시킨다','변경한다'],
+    predsEn: ['disrupts','impairs','abolishes','reduces','alters'],
+    probs:   [0.34, 0.25, 0.20, 0.12, 0.09],
+    noteKo: '"손상시킨다"(34%)가 1위. BRCA1 미스센스 변이는 기능 손실과 연관된다는 임상 지식을 모델이 학습했음을 시사합니다.',
+    noteEn: '"Disrupts" (34%) ranks first, suggesting the model has learned the clinical knowledge that BRCA1 missense variants are associated with loss of function.',
+  }
+};
+
+function renderMask() {
+  const key = document.getElementById('mask-select').value;
+  const d = MASK_DATA[key];
+  const preds = lang==='ko' ? d.predsKo : d.predsEn;
+  const sentHtml = (lang==='ko'?d.sentKo:d.sentEn).replace('[MASK]','<span class="mask-token">[MASK]</span>');
+  document.getElementById('mask-sentence').innerHTML = sentHtml;
+
+  const colors = d.probs.map((_,i) => i===0 ? '#c4a35a' : '#38bdf8');
+
+  Plotly.newPlot('plot-mask', [{
+    type:'bar',
+    orientation:'h',
+    y:[...preds].reverse(),
+    x:[...d.probs].reverse(),
+    marker:{color:[...colors].reverse(), opacity:0.8},
+    text:[...d.probs].map(p=>`${(p*100).toFixed(0)}%`).reverse(),
+    textposition:'outside',
+    textfont:{color:'#e4e0d8',size:12},
+    hovertemplate:'<b>%{y}</b><br>'+(lang==='ko'?'확률':'Probability')+': %{x:.0%}<extra></extra>'
+  }], {
+    ...PBASE,
+    title:{text:lang==='ko'?'[MASK] 토큰의 상위 5개 예측':'Top 5 Predictions for [MASK] Token',font:{size:13,color:'#e4e0d8'}},
+    xaxis:{...PBASE.xaxis,range:[0,0.6],title:{text:lang==='ko'?'예측 확률':'Predicted probability',font:{color:'#7a756d',size:11}},tickformat:'.0%'},
+    yaxis:{...PBASE.yaxis,tickfont:{size:12,color:'#e4e0d8'}},
+    margin:{t:50,r:80,b:65,l:160},
+    showlegend:false
+  }, CFG);
+
+  document.getElementById('mask-note').textContent = lang==='ko' ? d.noteKo : d.noteEn;
+}
+
+// ─── SECTION 3: TRANSFER LEARNING PIPELINE ────────────────
+function renderTransfer() {
+  const stagesKo = [
+    '무작위 분류기\n(기준선)',
+    '사전 훈련\n(1000만 서열)',
+    '파인튜닝\n(5,000 레이블 변이)',
+    '최종 모델\n(배포)'
+  ];
+  const stagesEn = [
+    'Random classifier\n(baseline)',
+    'Pre-training\n(10M sequences)',
+    'Fine-tuning\n(5,000 labeled variants)',
+    'Final model\n(deployed)'
+  ];
+  const stages = lang==='ko' ? stagesKo : stagesEn;
+  const accuracies = [50, 65, 92, 92];
+  const deltas    = [50, 15, 27,  0]; // waterfall increments
+
+  // Waterfall: measure, delta, measure, delta...
+  const colors = ['#7a756d','#4ade80','#4ade80','rgba(196,163,90,0.8)'];
+  const base   = [0, 50, 65, 0];
+
+  const traceBars = {
+    type:'bar',
+    x: stages,
+    y: deltas,
+    base: base,
+    marker:{color:colors, opacity:0.85, line:{color:'rgba(255,255,255,0.12)',width:1}},
+    text: accuracies.map((a,i) => i===3 ? `${a}%` : `${a}%`),
+    textposition:'outside',
+    textfont:{color:'#e4e0d8',size:13},
+    hovertemplate: stages.map((s,i)=>`<b>${s.replace('\n',' ')}</b><br>${lang==='ko'?'정확도':'Accuracy'}: ${accuracies[i]}%<extra></extra>`)
+  };
+
+  // Connector lines
+  const shapes = [0,1,2].map(i=>({
+    type:'line',
+    x0:i+0.45, x1:i+0.55,
+    y0:accuracies[i], y1:accuracies[i],
+    line:{color:'rgba(255,255,255,0.3)',width:1.5,dash:'dot'}
+  }));
+
+  const gainAnnotations = [
+    {x:1,y:65+8,text:`+15pp`,font:{color:'#4ade80',size:12},showarrow:false,xanchor:'center'},
+    {x:2,y:92+8,text:`+27pp`,font:{color:'#4ade80',size:12},showarrow:false,xanchor:'center'},
+  ];
+
+  Plotly.newPlot('plot-transfer', [traceBars], {
+    ...PBASE,
+    title:{text:lang==='ko'?'전이 학습 단계별 변이 분류 정확도':'Variant Classification Accuracy Across Transfer Learning Stages',font:{size:13,color:'#e4e0d8'}},
+    yaxis:{...PBASE.yaxis,range:[0,110],title:{text:lang==='ko'?'분류 정확도 (%)':'Classification accuracy (%)',font:{color:'#7a756d',size:11}},
+      tickvals:[0,25,50,75,92,100],ticktext:['0%','25%','50%','75%','92%','100%']},
+    xaxis:{...PBASE.xaxis,tickfont:{size:11,color:'#e4e0d8'}},
+    shapes,
+    annotations:[
+      ...gainAnnotations,
+      {x:0,y:57,text:lang==='ko'?'기준선 50%':'Baseline 50%',font:{color:'#7a756d',size:10},showarrow:false},
+      {x:1,y:72,text:lang==='ko'?'사전 훈련 완료':'Post pre-train',font:{color:'#4ade80',size:10},showarrow:false},
+      {x:2,y:99,text:lang==='ko'?'파인튜닝 후 배포':'Fine-tuned & deployed',font:{color:'#c4a35a',size:10},showarrow:false},
+    ],
+    margin:{t:55,r:20,b:90,l:70},
+    showlegend:false
+  }, CFG);
+}
+
+function renderAll() {
+  renderEmbed3D();
+  renderMask();
+  renderTransfer();
+}
+document.addEventListener('DOMContentLoaded', () => { setLang('ko'); });
+</script>
+</body>
+</html>

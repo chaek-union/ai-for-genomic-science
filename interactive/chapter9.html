@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 9 — CNN-Based Regulatory Sequence Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.4rem,6.5vw,5rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:580px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+#hero-canvas{position:absolute;inset:0;opacity:.35;pointer-events:none}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:700px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 auto;max-width:960px}
+.plot-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2rem;margin-bottom:2rem;overflow:hidden}
+.plot-card-title{font:.78rem/1 'SF Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:1.2rem}
+.ctrl-row{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+.styled-select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.55rem 1rem;color:var(--text);font:.9rem/1 system-ui;cursor:pointer}
+.styled-select:focus{outline:none;border-color:var(--gold)}
+.insight-box{margin-top:1.5rem;padding:1rem 1.2rem;background:rgba(255,255,255,.03);border-left:2px solid var(--gold);border-radius:0 6px 6px 0;font:.88rem/1.6 system-ui;color:var(--muted)}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+.page-footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-ch">Chapter 9</div>
+  <h1 class="t" data-ko="CNN 기반 조절 서열 분석" data-en="CNN-Based Regulatory Sequence Analysis"></h1>
+  <p class="hero-sub t"
+     data-ko="DeepSEA 아키텍처를 레이어별로 탐색하고, 변이 효과를 예측하며, 두 모델을 직접 비교해보세요."
+     data-en="Explore the DeepSEA architecture layer by layer, predict variant effects, and compare two landmark models head to head."></p>
+  <div class="hero-scroll" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+    <div class="t" data-ko="스크롤하여 탐색" data-en="scroll to explore">scroll to explore</div>
+    <div style="font-size:1.4rem;margin-top:.4rem">↓</div>
+  </div>
+</section>
+
+<!-- SECTION 1: DeepSEA Architecture -->
+<div class="section" id="s1">
+  <div class="section-label t" data-ko="아키텍처 해부" data-en="Architecture Anatomy">Architecture Anatomy</div>
+  <h2 class="section-title t" data-ko="DeepSEA — 레이어별 정보 흐름" data-en="DeepSEA — Information Flow Layer by Layer"></h2>
+  <p class="section-body t"
+     data-ko="DeepSEA는 1,000bp DNA 서열을 입력받아 세 개의 합성곱 블록과 완전 연결 레이어를 통해 919개의 크로마틴 특성을 예측합니다. 각 레이어에서 특성 수가 어떻게 변하는지 확인해보세요."
+     data-en="DeepSEA takes a 1,000bp DNA sequence and passes it through three convolutional blocks and a fully connected layer to predict 919 chromatin features. See how the number of features transforms at each layer."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="DeepSEA 레이어 특성 수 (로그 스케일)" data-en="DeepSEA Layer Feature Count (log scale)">DeepSEA Layer Feature Count</div>
+    <div id="plot-arch" style="height:400px"></div>
+    <div class="insight-box t"
+         data-ko="입력 레이어는 4×1000 원-핫 행렬입니다. 합성곱 레이어(파란색)는 모티프를 탐지합니다. 풀링 레이어(금색)는 공간 해상도를 줄여 계산 비용을 낮춥니다. 완전 연결 레이어(보라색)가 최종 예측을 생성합니다."
+         data-en="The input layer is a 4×1000 one-hot matrix. Convolutional layers (blue) detect motifs. Pooling layers (gold) reduce spatial resolution and computational cost. The fully connected layer (purple) generates final predictions.">
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: Variant Effect Prediction -->
+<div class="section" id="s2">
+  <div class="section-label t" data-ko="변이 효과 예측" data-en="Variant Effect Prediction">Variant Effect Prediction</div>
+  <h2 class="section-title t" data-ko="참조 대립 유전자 vs 변이 대립 유전자" data-en="Reference Allele vs Variant Allele"></h2>
+  <p class="section-body t"
+     data-ko="단일 뉴클레오타이드 변이(SNV)가 여러 크로마틴 특성에 미치는 영향을 DeepSEA가 어떻게 예측하는지 확인해보세요. Δ = 변이 예측값 − 참조 예측값으로, 양수는 증가, 음수는 감소를 의미합니다."
+     data-en="See how DeepSEA predicts the impact of a single nucleotide variant (SNV) across multiple chromatin features. Δ = alt prediction − ref prediction; positive means gain, negative means loss."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="크로마틴 특성 변화 예측" data-en="Predicted Chromatin Feature Changes">Predicted Chromatin Feature Changes</div>
+    <div class="ctrl-row">
+      <select class="styled-select" id="variant-select" onchange="renderVariant()">
+        <option value="gata1">rs745112 — TAL1 인핸서 (C→T, K562 세포)</option>
+        <option value="hbb">rs334 — HBB 프로모터 TATA box (A→T, β-지중해빈혈)</option>
+        <option value="cftr">rs75527207 — CFTR 인핸서 (G→A, HepG2 간세포)</option>
+      </select>
+    </div>
+    <div id="plot-variant" style="height:420px"></div>
+    <div class="insight-box t" id="variant-note"
+         data-ko="TAL1 인핸서 변이는 K562 적혈구 세포에서만 크로마틴 변화를 예측합니다 — 세포 유형 특이적 조절 변이의 특징입니다."
+         data-en="The TAL1 enhancer variant predicts chromatin changes specifically in K562 erythroid cells — characteristic of a cell-type-specific regulatory variant.">
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: DeepSEA vs Basenji -->
+<div class="section" id="s3">
+  <div class="section-label t" data-ko="모델 비교" data-en="Model Comparison">Model Comparison</div>
+  <h2 class="section-title t" data-ko="DeepSEA vs Basenji — 변이 예측 일치도" data-en="DeepSEA vs Basenji — Variant Prediction Concordance"></h2>
+  <p class="section-body t"
+     data-ko="두 모델이 같은 변이에 대해 항상 동의하지는 않습니다. 색상은 실험적 검증 결과를 나타냅니다. 대각선에서 벗어난 점들은 흥미로운 불일치입니다 — 어느 모델이 더 옳을까요?"
+     data-en="The two models don't always agree on the same variant. Colors show experimental validation results. Points off the diagonal are interesting discordances — which model is more right?"></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="DeepSEA 예측 vs Basenji 예측 (~100 변이)" data-en="DeepSEA Prediction vs Basenji Prediction (~100 variants)">DeepSEA vs Basenji Scatter</div>
+    <div id="plot-scatter" style="height:450px"></div>
+    <div class="insight-box t"
+         data-ko="초록색(실험 확인): 두 모델 모두 높은 예측값 → 실제 효과 있음. 빨간색(효과 없음): 두 모델이 낮게 예측했지만 실험에서 효과가 없음. 회색은 미확인. 대각선 위쪽 점들은 Basenji가 더 강하게 예측한 경우입니다."
+         data-en="Green (confirmed effect): Both models predict high → real effect exists. Red (no effect): Both predict low, experiment confirms no effect. Gray = unknown. Points above the diagonal are cases where Basenji predicts a stronger effect than DeepSEA.">
+    </div>
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p class="t" data-ko="AI for Genomic Science — 챕터 9 인터랙티브" data-en="AI for Genomic Science — Chapter 9 Interactive">AI for Genomic Science — Chapter 9 Interactive</p>
+  <p style="margin-top:.5rem"><a href="../chapters/chapter9.md" class="t" data-ko="← 챕터 9 본문으로" data-en="← Back to Chapter 9">← 챕터 9 본문으로</a></p>
+</footer>
+
+<script>
+// ─── LANGUAGE ─────────────────────────────────────────────
+let lang = 'ko';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  document.querySelectorAll('[data-' + l + ']').forEach(el => { el.textContent = el.dataset[l]; });
+  renderAll();
+}
+
+// ─── HERO PARTICLES ───────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, dots;
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    dots = Array.from({length:180}, () => ({
+      x:Math.random()*W, y:Math.random()*H,
+      r:Math.random()*1.4+.4,
+      vx:(Math.random()-.5)*.28, vy:(Math.random()-.5)*.28,
+      a:Math.random()
+    }));
+  }
+  window.addEventListener('resize', resize); resize();
+  (function draw() {
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d=>{
+      d.x+=d.vx; d.y+=d.vy;
+      if(d.x<0)d.x=W; if(d.x>W)d.x=0;
+      if(d.y<0)d.y=H; if(d.y>H)d.y=0;
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(196,163,90,${d.a*.55})`; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  })();
+})();
+
+// ─── PLOTLY DEFAULTS ──────────────────────────────────────
+const PBASE = {
+  paper_bgcolor:'rgba(0,0,0,0)',
+  plot_bgcolor:'rgba(20,20,31,1)',
+  font:{color:'#e4e0d8',family:'Georgia,serif'},
+  xaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  yaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  margin:{t:40,r:20,b:60,l:60}
+};
+const CFG = {displayModeBar:false,responsive:true};
+
+// ─── SECTION 1: DeepSEA ARCHITECTURE ─────────────────────
+function renderArch() {
+  const labelsKo = ['입력\n1000bp DNA','Conv1\n320 필터','Pool1\n×4 다운샘플','Conv2\n480 필터','Pool2\n×4 다운샘플','Conv3\n960 필터','완전연결\n925 뉴런','출력\n919 특성'];
+  const labelsEn = ['Input\n1000bp DNA','Conv1\n320 filters','Pool1\n×4 downsample','Conv2\n480 filters','Pool2\n×4 downsample','Conv3\n960 filters','FC\n925 neurons','Output\n919 features'];
+  const labels = lang==='ko' ? labelsKo : labelsEn;
+  const values = [4000, 320, 80, 480, 120, 960, 925, 919];
+  const colors = ['#e4e0d8','#38bdf8','#c4a35a','#38bdf8','#c4a35a','#38bdf8','#a78bfa','#4ade80'];
+  const typeLabels = lang==='ko'
+    ? ['원-핫 입력','합성곱','풀링','합성곱','풀링','합성곱','완전연결','출력']
+    : ['One-hot input','Convolutional','Pooling','Convolutional','Pooling','Convolutional','Fully connected','Output'];
+
+  Plotly.newPlot('plot-arch', [{
+    type:'bar',
+    x: labels,
+    y: values,
+    marker:{color:colors, opacity:0.85, line:{color:'rgba(255,255,255,0.1)',width:1}},
+    text: values.map(v=>v.toLocaleString()),
+    textposition:'outside',
+    textfont:{color:'#e4e0d8',size:11},
+    hovertemplate: labels.map((l,i)=>`<b>${typeLabels[i]}</b><br>${lang==='ko'?'특성/뉴런 수':'Features/Neurons'}: ${values[i].toLocaleString()}<extra></extra>`),
+  }], {
+    ...PBASE,
+    title:{text:lang==='ko'?'DeepSEA 레이어별 특성 수':'DeepSEA Feature Count per Layer',font:{size:13,color:'#e4e0d8'}},
+    yaxis:{...PBASE.yaxis,type:'log',title:{text:lang==='ko'?'특성/뉴런 수 (로그 스케일)':'Feature/Neuron Count (log scale)',font:{color:'#7a756d',size:11}}},
+    xaxis:{...PBASE.xaxis,tickfont:{size:10,color:'#e4e0d8'}},
+    margin:{t:50,r:20,b:80,l:70},
+    showlegend:false,
+    annotations:[
+      {x:1,y:Math.log10(320)+0.1,text:lang==='ko'?'합성곱':'Conv',showarrow:false,font:{color:'#38bdf8',size:10}},
+      {x:3,y:Math.log10(480)+0.1,text:lang==='ko'?'합성곱':'Conv',showarrow:false,font:{color:'#38bdf8',size:10}},
+      {x:5,y:Math.log10(960)+0.1,text:lang==='ko'?'합성곱':'Conv',showarrow:false,font:{color:'#38bdf8',size:10}},
+    ]
+  }, CFG);
+}
+
+// ─── SECTION 2: VARIANT EFFECT ────────────────────────────
+const VARIANTS = {
+  gata1:{
+    features:['GATA1 결합','GATA2 결합','H3K27ac','DNase I','H3K4me1','RNA Pol II'],
+    featuresEn:['GATA1 binding','GATA2 binding','H3K27ac','DNase I','H3K4me1','RNA Pol II'],
+    cells:['K562 (적혈구)','K562 (적혈구)','K562 (적혈구)','K562 (적혈구)','K562 (적혈구)','K562 (적혈구)'],
+    cellsEn:['K562 (erythroid)','K562 (erythroid)','K562 (erythroid)','K562 (erythroid)','K562 (erythroid)','K562 (erythroid)'],
+    ref:[0.88,0.82,0.79,0.85,0.72,0.68],
+    alt:[0.17,0.21,0.27,0.28,0.31,0.19],
+    noteKo:'TAL1 인핸서 변이(C→T): K562 적혈구 세포에서 GATA1/GATA2 결합 및 인핸서 활성이 크게 감소합니다. 이 변이는 세포 유형 특이적 조절 효과를 가집니다.',
+    noteEn:'TAL1 enhancer variant (C→T): Large decreases in GATA1/GATA2 binding and enhancer activity specifically in K562 erythroid cells — a cell-type-specific regulatory effect.',
+  },
+  hbb:{
+    features:['TATA-BP 결합','H3K4me3','H3K27ac','DNase I','RNA Pol II','H3K36me3'],
+    featuresEn:['TATA-BP binding','H3K4me3','H3K27ac','DNase I','RNA Pol II','H3K36me3'],
+    cells:['K562 (적혈구)','K562 (적혈구)','K562 (적혈구)','K562 (적혈구)','K562 (적혈구)','K562 (적혈구)'],
+    cellsEn:['K562 (erythroid)','K562 (erythroid)','K562 (erythroid)','K562 (erythroid)','K562 (erythroid)','K562 (erythroid)'],
+    ref:[0.92,0.87,0.75,0.88,0.91,0.65],
+    alt:[0.08,0.31,0.29,0.42,0.15,0.58],
+    noteKo:'HBB TATA box 변이(A→T, β-지중해빈혈): TATA-BP 결합이 거의 완전히 사라지고 RNA Pol II 점유율이 급감합니다. 활성 프로모터 마커 전체가 감소하는 패턴입니다.',
+    noteEn:'HBB TATA box variant (A→T, β-thalassemia): Near-complete loss of TATA-BP binding and sharp drop in RNA Pol II occupancy. All active promoter markers decrease together.',
+  },
+  cftr:{
+    features:['HNF4A 결합','H3K27ac','DNase I','H3K4me1','FOXA1 결합','H3K4me3'],
+    featuresEn:['HNF4A binding','H3K27ac','DNase I','H3K4me1','FOXA1 binding','H3K4me3'],
+    cells:['HepG2 (간세포)','HepG2 (간세포)','HepG2 (간세포)','HepG2 (간세포)','HepG2 (간세포)','HepG2 (간세포)'],
+    cellsEn:['HepG2 (liver)','HepG2 (liver)','HepG2 (liver)','HepG2 (liver)','HepG2 (liver)','HepG2 (liver)'],
+    ref:[0.78,0.71,0.83,0.69,0.74,0.15],
+    alt:[0.14,0.18,0.22,0.35,0.19,0.13],
+    noteKo:'CFTR 인핸서 변이(G→A): HepG2 간세포에서 HNF4A 결합 및 인핸서 활성이 크게 감소합니다. H3K4me1이 부분적으로 유지되어 인핸서가 활성→포이즈드 상태로 전환됨을 시사합니다.',
+    noteEn:'CFTR enhancer variant (G→A): Large decreases in HNF4A binding and enhancer activity specifically in HepG2 liver cells. H3K4me1 partially maintained, suggesting a shift from active to poised enhancer state.',
+  }
+};
+
+function renderVariant() {
+  const key = document.getElementById('variant-select').value;
+  const v = VARIANTS[key];
+  const features = lang==='ko' ? v.features : v.featuresEn;
+  const cells = lang==='ko' ? v.cells : v.cellsEn;
+  const xLabels = features.map((f,i) => `${f}<br><span style="font-size:10px">${cells[i]}</span>`);
+
+  const delta = v.ref.map((r,i) => +(v.alt[i]-r).toFixed(2));
+  const deltaColors = delta.map(d => d < -0.1 ? '#f87171' : d > 0.1 ? '#4ade80' : '#7a756d');
+
+  const traceRef = {
+    type:'bar', name:lang==='ko'?'참조 대립 유전자 (Ref)':'Reference allele (Ref)',
+    x:xLabels, y:v.ref,
+    marker:{color:'#38bdf8',opacity:0.75},
+    hovertemplate:`<b>${lang==='ko'?'참조':'Ref'}</b>: %{y:.2f}<extra></extra>`
+  };
+  const traceAlt = {
+    type:'bar', name:lang==='ko'?'변이 대립 유전자 (Alt)':'Variant allele (Alt)',
+    x:xLabels, y:v.alt,
+    marker:{color:'#f87171',opacity:0.75},
+    hovertemplate:`<b>${lang==='ko'?'변이':'Alt'}</b>: %{y:.2f}<extra></extra>`
+  };
+
+  const annotations = delta.map((d,i) => ({
+    x:xLabels[i], y:Math.max(v.ref[i],v.alt[i])+0.06,
+    text:`Δ${d>=0?'+':''}${d}`,
+    showarrow:false,
+    font:{color:deltaColors[i],size:11,family:'SF Mono,monospace'},
+    xanchor:'center'
+  }));
+
+  Plotly.newPlot('plot-variant', [traceRef,traceAlt], {
+    ...PBASE,
+    title:{text:lang==='ko'?'참조 vs 변이 크로마틴 특성 예측':'Reference vs Variant Chromatin Feature Predictions',font:{size:13,color:'#e4e0d8'}},
+    barmode:'group',
+    yaxis:{...PBASE.yaxis,range:[0,1.25],title:{text:lang==='ko'?'예측 확률':'Predicted probability',font:{color:'#7a756d',size:11}}},
+    xaxis:{...PBASE.xaxis,tickfont:{size:11,color:'#e4e0d8'}},
+    legend:{bgcolor:'rgba(0,0,0,0)',font:{color:'#e4e0d8',size:11}},
+    annotations,
+    margin:{t:50,r:20,b:90,l:65}
+  }, CFG);
+
+  document.getElementById('variant-note').textContent = lang==='ko' ? v.noteKo : v.noteEn;
+}
+
+// ─── SECTION 3: DeepSEA vs BASENJI SCATTER ────────────────
+function renderScatter() {
+  const n = 100;
+  const rng = (seed) => { let s=seed; return ()=>{s=(s*1664525+1013904223)&0xffffffff;return(s>>>0)/0xffffffff;}; };
+  const r1=rng(42), r2=rng(137), r3=rng(99);
+
+  const deepsea=[], basenji=[], colors=[], texts=[], sizes=[];
+  const statusLabels=[
+    lang==='ko'?'실험 확인 (효과 있음)':'Confirmed effect',
+    lang==='ko'?'효과 없음 확인':'Confirmed no effect',
+    lang==='ko'?'미확인':'Unknown'
+  ];
+  const statusColors=['#4ade80','#f87171','#7a756d'];
+
+  for(let i=0;i<n;i++){
+    const base=r1()*0.8;
+    const ds=Math.min(1,Math.max(0,base+(r2()-.5)*0.35));
+    const bj=Math.min(1,Math.max(0,base+(r3()-.5)*0.35));
+    deepsea.push(+ds.toFixed(3));
+    basenji.push(+bj.toFixed(3));
+    const status = ds>0.5&&bj>0.5 ? 0 : ds<0.3&&bj<0.3 ? 1 : 2;
+    colors.push(statusColors[status]);
+    texts.push(statusLabels[status]);
+    sizes.push(status===2?6:8);
+  }
+
+  // Add some notable discordant points
+  const discordant=[
+    {ds:0.82,bj:0.22,label:lang==='ko'?'DeepSEA만 고예측':'DeepSEA only high',col:'#c4a35a'},
+    {ds:0.18,bj:0.79,label:lang==='ko'?'Basenji만 고예측':'Basenji only high',col:'#a78bfa'},
+    {ds:0.75,bj:0.77,label:lang==='ko'?'두 모델 일치':'Both agree (high)',col:'#4ade80'},
+  ];
+
+  const traces = [
+    {
+      type:'scatter',mode:'markers',name:lang==='ko'?'변이들':'Variants',
+      x:deepsea,y:basenji,
+      marker:{color:colors,size:sizes,opacity:0.7,line:{color:'rgba(255,255,255,0.1)',width:0.5}},
+      hovertemplate:texts.map((t,i)=>`<b>${t}</b><br>DeepSEA: ${deepsea[i]}<br>Basenji: ${basenji[i]}<extra></extra>`),
+    },
+    {
+      type:'scatter',mode:'lines',name:lang==='ko'?'완전 일치선':'Perfect agreement',
+      x:[0,1],y:[0,1],
+      line:{color:'rgba(255,255,255,0.2)',dash:'dash',width:1.5},
+      hoverinfo:'skip'
+    },
+    ...discordant.map(d=>({
+      type:'scatter',mode:'markers+text',
+      x:[d.ds],y:[d.bj],
+      marker:{color:d.col,size:12,symbol:'star',line:{color:'#fff',width:1}},
+      text:[d.label],textposition:'top center',
+      textfont:{color:d.col,size:10},
+      name:d.label,
+      hovertemplate:`<b>${d.label}</b><br>DeepSEA: ${d.ds}<br>Basenji: ${d.bj}<extra></extra>`
+    }))
+  ];
+
+  // Legend items for colors
+  ['#4ade80','#f87171','#7a756d'].forEach((c,i)=>{
+    traces.push({
+      type:'scatter',mode:'markers',
+      x:[null],y:[null],
+      marker:{color:c,size:8},
+      name:statusLabels[i],
+      showlegend:true
+    });
+  });
+
+  Plotly.newPlot('plot-scatter', traces, {
+    ...PBASE,
+    title:{text:lang==='ko'?'DeepSEA vs Basenji 변이 효과 예측 비교':'DeepSEA vs Basenji Variant Effect Prediction Comparison',font:{size:13,color:'#e4e0d8'}},
+    xaxis:{...PBASE.xaxis,title:{text:'DeepSEA '+(lang==='ko'?'예측값':'prediction'),font:{color:'#7a756d',size:11}},range:[-0.05,1.05]},
+    yaxis:{...PBASE.yaxis,title:{text:'Basenji '+(lang==='ko'?'예측값':'prediction'),font:{color:'#7a756d',size:11}},range:[-0.05,1.05]},
+    legend:{bgcolor:'rgba(0,0,0,0)',font:{color:'#e4e0d8',size:11}},
+    margin:{t:50,r:20,b:70,l:70}
+  }, CFG);
+}
+
+function renderAll() {
+  renderArch();
+  renderVariant();
+  renderScatter();
+}
+document.addEventListener('DOMContentLoaded', () => { setLang('ko'); });
+</script>
+</body>
+</html>

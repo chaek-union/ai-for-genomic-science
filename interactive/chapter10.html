@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 10 — Transformer-Based Models for Genomics</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+:root{--bg:#0b0b11;--card:#14141f;--text:#e4e0d8;--muted:#7a756d;--gold:#c4a35a;--gold-dim:rgba(196,163,90,.12);--green:#4ade80;--red:#f87171;--blue:#38bdf8;--purple:#a78bfa;--line:#22222e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Noto Serif KR',serif;line-height:1.7;overflow-x:hidden}
+.lang-toggle{position:fixed;top:1rem;right:1.5rem;z-index:100;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);background:rgba(11,11,17,.7)}
+.lang-btn{background:0;color:rgba(255,255,255,.4);border:0;padding:.35rem .8rem;cursor:pointer;font:700 .78rem/1 system-ui;transition:.2s}
+.lang-btn.active{color:#fff;background:rgba(255,255,255,.1)}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero-ch{font:700 .82rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.4rem,6.5vw,5rem);line-height:1.05;letter-spacing:-.02em;color:#fff;max-width:900px;margin-bottom:1.5rem}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:580px;line-height:1.6}
+.hero-scroll{position:absolute;bottom:2.5rem;color:var(--muted);font:.8rem/1.2 system-ui;animation:bob 2s ease-in-out infinite;cursor:pointer;text-align:center}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+#hero-canvas{position:absolute;inset:0;opacity:.35;pointer-events:none}
+.section{padding:6rem 2rem;max-width:960px;margin:0 auto}
+.section-label{font:700 .78rem/1 'SF Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.1;color:#fff;margin-bottom:1.2rem}
+.section-body{font-size:1rem;color:var(--muted);line-height:1.8;max-width:700px;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--line);margin:0 auto;max-width:960px}
+.plot-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2rem;margin-bottom:2rem;overflow:hidden}
+.plot-card-title{font:.78rem/1 'SF Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:1.2rem}
+.ctrl-row{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+.styled-select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.55rem 1rem;color:var(--text);font:.9rem/1 system-ui;cursor:pointer}
+.styled-select:focus{outline:none;border-color:var(--gold)}
+.insight-box{margin-top:1.5rem;padding:1rem 1.2rem;background:rgba(255,255,255,.03);border-left:2px solid var(--gold);border-radius:0 6px 6px 0;font:.88rem/1.6 system-ui;color:var(--muted)}
+.page-footer{text-align:center;padding:4rem 2rem;border-top:1px solid var(--line);color:var(--muted);font:.85rem/1.6 system-ui}
+.page-footer a{color:var(--gold);text-decoration:none}
+.page-footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ko')">KO</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-ch">Chapter 10</div>
+  <h1 class="t" data-ko="유전체학을 위한 트랜스포머 모델" data-en="Transformer-Based Models for Genomics"></h1>
+  <p class="hero-sub t"
+     data-ko="어텐션 메커니즘이 어떻게 장거리 게놈 상호작용을 포착하는지, 그리고 Enformer가 어떻게 유전자 발현을 예측하는지 시각화합니다."
+     data-en="Visualize how attention mechanisms capture long-range genomic interactions and how Enformer predicts gene expression from sequence alone."></p>
+  <div class="hero-scroll" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+    <div class="t" data-ko="스크롤하여 탐색" data-en="scroll to explore">scroll to explore</div>
+    <div style="font-size:1.4rem;margin-top:.4rem">↓</div>
+  </div>
+</section>
+
+<!-- SECTION 1: Attention Mechanism -->
+<div class="section" id="s1">
+  <div class="section-label t" data-ko="어텐션 메커니즘" data-en="Attention Mechanism">Attention Mechanism</div>
+  <h2 class="section-title t" data-ko="어텐션 맵 — 무엇이 무엇을 보는가" data-en="Attention Map — What Sees What"></h2>
+  <p class="section-body t"
+     data-ko="트랜스포머의 어텐션 헤드는 각 뉴클레오타이드 위치가 다른 위치에 얼마나 '주목'하는지를 학습합니다. 색이 진할수록 두 위치 간의 어텐션 가중치가 높습니다. 아래에서 다양한 조절 맥락의 어텐션 패턴을 선택해보세요."
+     data-en="Transformer attention heads learn how much each nucleotide position 'attends' to every other position. Darker colors indicate higher attention weight between two positions. Select different regulatory contexts below."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="20-위치 DNA 서열에 대한 어텐션 행렬" data-en="Attention Matrix for a 20-Position DNA Sequence">Attention Matrix</div>
+    <div class="ctrl-row">
+      <select class="styled-select" id="attn-select" onchange="renderAttention()">
+        <option value="enhancer">인핸서 어텐션 — 활성 인핸서 / Enhancer attention — active enhancer</option>
+        <option value="promoter">프로모터 어텐션 — 코어 프로모터 / Promoter attention — core promoter</option>
+        <option value="ctcf">CTCF 경계 어텐션 — 장거리 상호작용 / CTCF boundary attention — long-range</option>
+      </select>
+    </div>
+    <div id="plot-attention" style="height:420px"></div>
+    <div class="insight-box t" id="attn-note"
+         data-ko="인핸서 어텐션: 중심 모티프 위치들이 서로 강하게 연결됩니다. 이는 트랜스포머가 인핸서 모티프 클러스터를 인식하고 있음을 시사합니다."
+         data-en="Enhancer attention: Central motif positions attend strongly to each other, suggesting the transformer has learned to recognize enhancer motif clusters.">
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: Context Window Comparison -->
+<div class="section" id="s2">
+  <div class="section-label t" data-ko="컨텍스트 창 비교" data-en="Context Window Comparison">Context Window Comparison</div>
+  <h2 class="section-title t" data-ko="모델별 게놈 시야 범위" data-en="Genomic Field of View Across Models"></h2>
+  <p class="section-body t"
+     data-ko="각 모델이 한 번에 볼 수 있는 게놈 범위는 예측 품질에 직접적인 영향을 미칩니다. 인핸서-프로모터 거리(평균 100kb)보다 작은 창을 가진 모델은 장거리 조절을 놓칩니다."
+     data-en="The genomic range each model can see at once directly impacts prediction quality. Models with context windows smaller than typical enhancer-promoter distances (~100kb) miss long-range regulation."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="딥러닝 게놈 모델의 컨텍스트 창 크기 (로그 스케일)" data-en="Context Window Sizes of Deep Learning Genomics Models (log scale)">Context Window Comparison</div>
+    <div id="plot-context" style="height:380px"></div>
+    <div class="insight-box t"
+         data-ko="DeepSEA(1kb)는 인핸서-프로모터 상호작용의 대부분을 포착하지 못합니다. Enformer(196kb)는 전형적인 TAD 크기에 가까워 장거리 조절 예측이 가능합니다."
+         data-en="DeepSEA (1kb) misses most enhancer-promoter interactions. Enformer (196kb) approaches typical TAD size, enabling long-range regulatory predictions.">
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: Enformer Gene Expression -->
+<div class="section" id="s3">
+  <div class="section-label t" data-ko="유전자 발현 예측" data-en="Gene Expression Prediction">Gene Expression Prediction</div>
+  <h2 class="section-title t" data-ko="Enformer 예측 vs 실험 데이터 (CAGE-seq)" data-en="Enformer Prediction vs Experimental Data (CAGE-seq)"></h2>
+  <p class="section-body t"
+     data-ko="Enformer는 196kb DNA 서열에서 5kb 빈 단위로 CAGE-seq(활성 전사 시작점 신호)를 예측합니다. 아래에서 세 가지 유전자 좌위를 비교해보세요."
+     data-en="Enformer predicts CAGE-seq signal (active transcription start sites) at 5kb bins from a 196kb DNA sequence. Compare predictions versus experimental measurements at three gene loci."></p>
+  <div class="plot-card">
+    <div class="plot-card-title t" data-ko="Enformer 예측 vs CAGE-seq 실험값" data-en="Enformer Prediction vs CAGE-seq Experiment">Enformer vs CAGE-seq</div>
+    <div class="ctrl-row">
+      <select class="styled-select" id="gene-select" onchange="renderEnformer()">
+        <option value="gata1">GATA1 — 적혈구 전사인자</option>
+        <option value="hbb">HBB — β-글로빈 유전자</option>
+        <option value="tp53">TP53 — 종양 억제 유전자</option>
+      </select>
+    </div>
+    <div id="plot-enformer" style="height:400px"></div>
+    <div class="insight-box t" id="enformer-note"
+         data-ko="GATA1: Enformer는 전사 시작 부위(TSS)와 인근 조절 요소의 신호 피크를 정확하게 예측합니다. r² = 0.89"
+         data-en="GATA1: Enformer accurately predicts the signal peak at the transcription start site (TSS) and nearby regulatory elements. r² = 0.89">
+    </div>
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p class="t" data-ko="AI for Genomic Science — 챕터 10 인터랙티브" data-en="AI for Genomic Science — Chapter 10 Interactive">AI for Genomic Science — Chapter 10 Interactive</p>
+  <p style="margin-top:.5rem"><a href="../chapters/chapter10.md" class="t" data-ko="← 챕터 10 본문으로" data-en="← Back to Chapter 10">← 챕터 10 본문으로</a></p>
+</footer>
+
+<script>
+// ─── LANGUAGE ─────────────────────────────────────────────
+let lang = 'ko';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  document.querySelectorAll('[data-' + l + ']').forEach(el => { el.textContent = el.dataset[l]; });
+  renderAll();
+}
+
+// ─── HERO PARTICLES ───────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, dots;
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    dots = Array.from({length:180}, () => ({
+      x:Math.random()*W, y:Math.random()*H,
+      r:Math.random()*1.4+.4,
+      vx:(Math.random()-.5)*.28, vy:(Math.random()-.5)*.28,
+      a:Math.random()
+    }));
+  }
+  window.addEventListener('resize', resize); resize();
+  (function draw() {
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d=>{
+      d.x+=d.vx; d.y+=d.vy;
+      if(d.x<0)d.x=W; if(d.x>W)d.x=0;
+      if(d.y<0)d.y=H; if(d.y>H)d.y=0;
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(196,163,90,${d.a*.55})`; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  })();
+})();
+
+// ─── PLOTLY DEFAULTS ──────────────────────────────────────
+const PBASE = {
+  paper_bgcolor:'rgba(0,0,0,0)',
+  plot_bgcolor:'rgba(20,20,31,1)',
+  font:{color:'#e4e0d8',family:'Georgia,serif'},
+  xaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  yaxis:{gridcolor:'#22222e',zerolinecolor:'#22222e'},
+  margin:{t:40,r:20,b:60,l:60}
+};
+const CFG = {displayModeBar:false,responsive:true};
+
+// ─── SECTION 1: ATTENTION HEATMAP ─────────────────────────
+const SEQ20 = 'GATAAGGGCGCCTCFCTGAG'; // 20-char labels
+
+function makeAttnMatrix(pattern) {
+  const n = 20;
+  const Z = Array.from({length:n},()=>new Array(n).fill(0));
+
+  if (pattern === 'enhancer') {
+    // Enhancer: GATA motif (pos 0-3) strongly attends to AP-1 motif (pos 8-11)
+    // Core cluster 0-3 and 8-11 are mutually attending
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++) {
+      let w = 0.08 + Math.random()*0.05;
+      if(i===j) w=1.0;
+      // GATA site cluster (0-3)
+      if(i<=3&&j<=3) w=0.6+Math.random()*0.3;
+      // AP-1 site cluster (8-11)
+      if(i>=8&&i<=11&&j>=8&&j<=11) w=0.55+Math.random()*0.3;
+      // Cross-attention: GATA <-> AP-1
+      if((i<=3&&j>=8&&j<=11)||(i>=8&&i<=11&&j<=3)) w=0.45+Math.random()*0.2;
+      Z[i][j] = Math.min(1, w);
+    }
+  } else if (pattern === 'promoter') {
+    // Promoter: TATA box (5-8) attends to Inr element (12-14)
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++) {
+      let w = 0.06 + Math.random()*0.04;
+      if(i===j) w=1.0;
+      if(i>=5&&i<=8&&j>=5&&j<=8) w=0.7+Math.random()*0.25;
+      if(i>=12&&i<=14&&j>=12&&j<=14) w=0.65+Math.random()*0.25;
+      if((i>=5&&i<=8&&j>=12&&j<=14)||(i>=12&&i<=14&&j>=5&&j<=8)) w=0.5+Math.random()*0.25;
+      Z[i][j] = Math.min(1, w);
+    }
+  } else if (pattern === 'ctcf') {
+    // CTCF: sharp binding site (9-11) with long-range contacts at edges
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++) {
+      let w = 0.05 + Math.random()*0.04;
+      if(i===j) w=1.0;
+      if(i>=9&&i<=11&&j>=9&&j<=11) w=0.85+Math.random()*0.15;
+      // Long-range: edges attend to CTCF
+      if((i<=2&&j>=9&&j<=11)||(i>=9&&i<=11&&j<=2)) w=0.55+Math.random()*0.2;
+      if((i>=17&&j>=9&&j<=11)||(i>=9&&i<=11&&j>=17)) w=0.50+Math.random()*0.2;
+      Z[i][j] = Math.min(1, w);
+    }
+  }
+  return Z;
+}
+
+const ATTN_NOTES = {
+  enhancer:{
+    ko:'인핸서 어텐션: GATA 모티프(위치 1-4)와 AP-1 모티프(위치 9-12) 클러스터가 서로 강하게 연결됩니다. 이 교차-어텐션은 트랜스포머가 co-operative 전사인자 결합을 인식했음을 시사합니다.',
+    en:'Enhancer attention: GATA motif (positions 1-4) and AP-1 motif (positions 9-12) clusters attend strongly to each other. This cross-attention suggests the transformer has learned cooperative transcription factor binding.',
+  },
+  promoter:{
+    ko:'프로모터 어텐션: TATA box(위치 6-9)와 Inr 요소(위치 13-15)가 서로 높은 어텐션을 가집니다. 이는 핵심 프로모터 아키텍처의 기능적 관계를 반영합니다.',
+    en:'Promoter attention: TATA box (positions 6-9) and the Inr element (positions 13-15) show high mutual attention — reflecting the functional relationship of core promoter architecture.',
+  },
+  ctcf:{
+    ko:'CTCF 경계 어텐션: 좁은 CTCF 결합 부위(위치 10-12)가 서열 양 끝 위치들과 강한 어텐션을 형성합니다. 이는 장거리 게놈 조직화(TAD 경계)를 위한 CTCF의 역할을 반영합니다.',
+    en:'CTCF boundary attention: The narrow CTCF binding site (positions 10-12) forms strong attention with positions at both ends of the sequence — reflecting CTCF\'s role in long-range genomic organization (TAD boundaries).',
+  }
+};
+
+function renderAttention() {
+  const key = document.getElementById('attn-select').value;
+  const Z = makeAttnMatrix(key);
+  const labels = Array.from({length:20},(_,i)=>`P${i+1}`);
+
+  Plotly.newPlot('plot-attention', [{
+    type:'heatmap', z:Z, x:labels, y:labels,
+    colorscale:[
+      [0,'rgba(20,20,31,1)'],
+      [0.3,'#1e3a6e'],
+      [0.6,'#8b6914'],
+      [1,'#c4a35a']
+    ],
+    showscale:true,
+    colorbar:{thickness:12,len:0.8,tickfont:{color:'#7a756d',size:10},
+      title:{text:lang==='ko'?'어텐션 가중치':'Attention weight',font:{color:'#7a756d',size:10}}},
+    hovertemplate:(lang==='ko'?'쿼리 위치':'Query pos')+': %{y}<br>'+(lang==='ko'?'키 위치':'Key pos')+': %{x}<br>'+(lang==='ko'?'어텐션 가중치':'Attention weight')+': %{z:.2f}<extra></extra>'
+  }], {
+    ...PBASE,
+    title:{text:lang==='ko'?'어텐션 행렬 (20-위치 서열)':'Attention Matrix (20-position sequence)',font:{size:13,color:'#e4e0d8'}},
+    xaxis:{...PBASE.xaxis,title:{text:lang==='ko'?'키 위치 (Key position)':'Key position',font:{color:'#7a756d',size:11}},tickfont:{size:10}},
+    yaxis:{...PBASE.yaxis,title:{text:lang==='ko'?'쿼리 위치 (Query position)':'Query position',font:{color:'#7a756d',size:11}},autorange:'reversed',tickfont:{size:10}},
+    margin:{t:50,r:80,b:65,l:75}
+  }, CFG);
+
+  document.getElementById('attn-note').textContent = lang==='ko' ? ATTN_NOTES[key].ko : ATTN_NOTES[key].en;
+}
+
+// ─── SECTION 2: CONTEXT WINDOW ────────────────────────────
+function renderContext() {
+  const modelsKo = ['DeepSEA\n(CNN)','SpliceAI\n(CNN)','Basenji2\n(CNN)','Enformer\n(트랜스포머)'];
+  const modelsEn = ['DeepSEA\n(CNN)','SpliceAI\n(CNN)','Basenji2\n(CNN)','Enformer\n(Transformer)'];
+  const models = lang==='ko' ? modelsKo : modelsEn;
+  const contexts = [1000, 10000, 131072, 196608]; // bp
+  const colors = ['#38bdf8','#38bdf8','#38bdf8','#a78bfa'];
+  const typeLabels = lang==='ko'
+    ? ['CNN 기반','CNN 기반','CNN 기반','트랜스포머 기반']
+    : ['CNN-based','CNN-based','CNN-based','Transformer-based'];
+
+  const trace = {
+    type:'bar',
+    orientation:'h',
+    y:models,
+    x:contexts,
+    marker:{color:colors, opacity:0.8, line:{color:'rgba(255,255,255,0.1)',width:1}},
+    text:contexts.map(v => v>=1000000 ? (v/1000000).toFixed(2)+'Mb' : v>=1000 ? (v/1000).toFixed(0)+'kb' : v+'bp'),
+    textposition:'outside',
+    textfont:{color:'#e4e0d8',size:12},
+    hovertemplate:models.map((m,i)=>
+      `<b>${m.replace('\n',' ')}</b><br>${lang==='ko'?'컨텍스트 창':'Context window'}: ${contexts[i].toLocaleString()}bp<br>${typeLabels[i]}<extra></extra>`)
+  };
+
+  // Reference lines for biological structures
+  const shapes = [
+    {type:'line',x0:50000,x1:50000,y0:-0.5,y1:3.5,line:{color:'#4ade80',dash:'dot',width:1.5}},
+    {type:'line',x0:500000,x1:500000,y0:-0.5,y1:3.5,line:{color:'#f87171',dash:'dot',width:1.5}},
+  ];
+  const refAnnotations = [
+    {x:50000,y:3.7,text:lang==='ko'?'전형적 유전자 (~50kb)':'Typical gene (~50kb)',showarrow:false,font:{color:'#4ade80',size:10},xanchor:'center'},
+    {x:500000,y:3.7,text:lang==='ko'?'TAD (~500kb)':'TAD (~500kb)',showarrow:false,font:{color:'#f87171',size:10},xanchor:'center'},
+  ];
+
+  Plotly.newPlot('plot-context', [trace], {
+    ...PBASE,
+    title:{text:lang==='ko'?'딥러닝 모델 컨텍스트 창 크기 비교':'Deep Learning Model Context Window Comparison',font:{size:13,color:'#e4e0d8'}},
+    xaxis:{...PBASE.xaxis,type:'log',
+      title:{text:lang==='ko'?'컨텍스트 창 크기 (bp, 로그 스케일)':'Context window size (bp, log scale)',font:{color:'#7a756d',size:11}},
+      range:[2.5,6.5]},
+    yaxis:{...PBASE.yaxis,tickfont:{size:11,color:'#e4e0d8'}},
+    shapes,
+    annotations:refAnnotations,
+    margin:{t:60,r:80,b:70,l:130},
+    showlegend:false
+  }, CFG);
+}
+
+// ─── SECTION 3: ENFORMER PREDICTION ───────────────────────
+function gpeak(n,c,h,s){return Array.from({length:n},(_,i)=>h*Math.exp(-0.5*((i-c)/s)**2));}
+function noise(arr,amp=0.08){return arr.map(v=>Math.max(0,v+(Math.random()-.5)*amp));}
+
+const ENFORMER_DATA = {
+  gata1:{
+    r2:'0.89',
+    noteKo:'GATA1 (K562 세포): Enformer는 TSS(~빈 20)의 주요 피크와 업스트림 인핸서(~빈 8)의 보조 피크를 정확히 예측합니다. r² = 0.89',
+    noteEn:'GATA1 (K562 cells): Enformer accurately predicts the major peak at the TSS (~bin 20) and a secondary upstream enhancer peak (~bin 8). r² = 0.89',
+    predPeaks:[{c:20,h:0.95,s:2},{c:8,h:0.45,s:1.5},{c:28,h:0.20,s:1.5}],
+    expPeaks:[{c:20,h:0.92,s:2.2},{c:8,h:0.48,s:1.8},{c:28,h:0.18,s:1.8}]
+  },
+  hbb:{
+    r2:'0.85',
+    noteKo:'HBB (K562 세포): β-글로빈 TSS(~빈 22)와 LCR(Locus Control Region, ~빈 5) 피크를 예측합니다. r² = 0.85',
+    noteEn:'HBB (K562 cells): Predicts β-globin TSS (~bin 22) and LCR (Locus Control Region, ~bin 5) peaks. r² = 0.85',
+    predPeaks:[{c:22,h:0.88,s:2},{c:5,h:0.72,s:2.5},{c:30,h:0.15,s:1.2}],
+    expPeaks:[{c:22,h:0.85,s:2.3},{c:5,h:0.68,s:2.8},{c:30,h:0.20,s:1.5}]
+  },
+  tp53:{
+    r2:'0.81',
+    noteKo:'TP53 (일반 세포): 종양 억제 유전자의 TSS(~빈 19)가 잘 예측됩니다. 다수의 p53 결합 요소에 해당하는 소규모 피크들이 분산됩니다. r² = 0.81',
+    noteEn:'TP53 (general cells): TSS of this tumor suppressor gene (~bin 19) is well predicted. Multiple smaller peaks corresponding to p53 response elements are scattered. r² = 0.81',
+    predPeaks:[{c:19,h:0.82,s:2.5},{c:10,h:0.30,s:2},{c:32,h:0.25,s:1.8},{c:26,h:0.18,s:1.5}],
+    expPeaks:[{c:19,h:0.78,s:2.8},{c:10,h:0.35,s:2.2},{c:32,h:0.22,s:2},{c:26,h:0.20,s:1.8}]
+  }
+};
+
+function renderEnformer() {
+  const key = document.getElementById('gene-select').value;
+  const d = ENFORMER_DATA[key];
+  const N=40;
+  const xs=Array.from({length:N},(_,i)=>i*5); // 0–195kb in 5kb bins
+
+  function buildSignal(peaks) {
+    let ys=new Array(N).fill(0);
+    peaks.forEach(p=>{ys=ys.map((v,i)=>v+gpeak(N,p.c,p.h,p.s)[i]);});
+    return noise(ys,0.04);
+  }
+
+  const predY = buildSignal(d.predPeaks);
+  const expY  = buildSignal(d.expPeaks);
+
+  const traces = [
+    {
+      type:'scatter',mode:'lines',name:lang==='ko'?'Enformer 예측':'Enformer prediction',
+      x:xs,y:predY,
+      line:{color:'#c4a35a',width:2.5,shape:'spline',smoothing:0.7},
+      fill:'tozeroy',fillcolor:'rgba(196,163,90,0.08)',
+      hovertemplate:`<b>${lang==='ko'?'Enformer 예측':'Enformer prediction'}</b><br>${lang==='ko'?'위치':'Position'}: %{x}kb<br>CAGE: %{y:.3f}<extra></extra>`
+    },
+    {
+      type:'scatter',mode:'lines',name:lang==='ko'?'실험 (CAGE-seq)':'Experimental (CAGE-seq)',
+      x:xs,y:expY,
+      line:{color:'#38bdf8',width:2.5,shape:'spline',smoothing:0.7},
+      fill:'tozeroy',fillcolor:'rgba(56,189,248,0.05)',
+      hovertemplate:`<b>${lang==='ko'?'실험 CAGE-seq':'Experimental CAGE-seq'}</b><br>${lang==='ko'?'위치':'Position'}: %{x}kb<br>CAGE: %{y:.3f}<extra></extra>`
+    }
+  ];
+
+  Plotly.newPlot('plot-enformer', traces, {
+    ...PBASE,
+    title:{text:lang==='ko'?`Enformer 예측 vs CAGE-seq (r² = ${d.r2})`:`Enformer Prediction vs CAGE-seq (r² = ${d.r2})`,font:{size:13,color:'#e4e0d8'}},
+    xaxis:{...PBASE.xaxis,title:{text:lang==='ko'?'게놈 위치 (kb)':'Genomic position (kb)',font:{color:'#7a756d',size:11}}},
+    yaxis:{...PBASE.yaxis,title:{text:lang==='ko'?'CAGE 신호 (정규화)':'CAGE signal (normalized)',font:{color:'#7a756d',size:11}},range:[0,1.2]},
+    legend:{bgcolor:'rgba(0,0,0,0)',font:{color:'#e4e0d8',size:12}},
+    annotations:[{
+      x:xs[Math.round(d.predPeaks[0].c)],y:1.12,
+      text:lang==='ko'?'TSS':'TSS',
+      showarrow:true,arrowcolor:'rgba(255,255,255,0.4)',arrowhead:2,arrowsize:0.8,
+      font:{color:'rgba(255,255,255,0.7)',size:11}
+    }],
+    margin:{t:55,r:20,b:65,l:70}
+  }, CFG);
+
+  document.getElementById('enformer-note').textContent = lang==='ko' ? d.noteKo : d.noteEn;
+}
+
+function renderAll() {
+  renderAttention();
+  renderContext();
+  renderEnformer();
+}
+document.addEventListener('DOMContentLoaded', () => { setLang('ko'); });
+</script>
+</body>
+</html>
