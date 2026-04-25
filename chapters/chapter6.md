@@ -646,7 +646,7 @@ The key insight: **Genes under strong constraint are more likely to cause disord
   - Observed LoF variants: 12
   - Interpretation: LoF variants are tolerated → gene is not essential
 
-**Clinical application**: If a patient has a de novo LoF variant in a gene with pLI = 1.0, that's strong evidence the variant is causative.
+**Clinical application**: If a patient has a de novo LoF variant in a gene with pLI = 1.0, that variant deserves high priority. But pLI alone does not establish causality; interpretation still requires phenotype match, gene-disease validity, inheritance pattern, population frequency, and other ACMG-style evidence.
 
 ### LOEUF (Loss-of-Function Observed/Expected Upper Bound Fraction)
 

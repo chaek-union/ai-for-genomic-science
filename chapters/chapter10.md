@@ -2,11 +2,11 @@
 
 **[Interactive: Chapter 10](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter10.html)**
 
-Something puzzling is happening in the β-globin locus. A noncoding variant sits 500,000 base pairs from the *GATA1* gene — half a million bases of seemingly irrelevant DNA in between. Yet somehow, this distant variant causes beta-thalassemia. No local gene is disrupted. No protein is directly altered. The variant is whispering instructions across an enormous genomic distance, and the gene on the other end is listening.
+Something puzzling is happening in the β-globin locus. Regulatory sequences such as the locus control region can sit tens of kilobases from the globin genes they control. A variant in one of these noncoding elements may alter gene expression even though no protein-coding exon is changed. The variant is whispering instructions across a long genomic distance, and the gene on the other end is listening.
 
-How? The convolutional networks we've studied so far can't answer that question. Their receptive field — the genomic window they can "see" at once — maxes out at roughly 20,000 base pairs, even with many stacked layers. This variant is 25 times beyond that horizon. CNN-based tools like DeepSEA faithfully report the local chromatin state at the variant site, but they're blind to what lies downstream. Asking them about long-range regulation is like asking someone to describe a conversation they can only hear every 25th word of.
+How? The convolutional networks we've studied so far struggle with that question. Their effective receptive field — the genomic window they can use for one prediction — can be much smaller than the distances over which enhancers, silencers, and insulators act. CNN-based tools like DeepSEA faithfully report the local chromatin state at the variant site, but they have limited ability to connect that site to a distant target gene.
 
-Across a dataset of 127 chromatin loops identified by Hi-C in erythroid cells, 83% involve enhancer-promoter pairs separated by more than 100,000 base pairs. Some stretch beyond 1 million bases. These long-range interactions are not edge cases — they are fundamental to how gene regulation works, especially in development and tissue-specific contexts. A model that cannot see across these distances will always be missing half the story.
+Many enhancer-promoter interactions span tens to hundreds of kilobases, and some stretch beyond 1 million bases. These long-range interactions are not edge cases — they are fundamental to how gene regulation works, especially in development and tissue-specific contexts. A model that cannot see across these distances will always be missing part of the story.
 
 The answer involves an architectural innovation borrowed from machine translation: a mechanism called *attention* that lets a model look at every position in a sequence simultaneously and learn which distant positions talk to each other. This is exactly the problem transformers were designed to solve — not in genomics initially, but in natural language processing. Welcome to transformers.
 
@@ -42,7 +42,7 @@ By the end of this chapter, you will be able to:
 - [ ] Explain why CNNs struggle with long-range genomic interactions and what limits their receptive field
 - [ ] Describe how the attention mechanism works and why it enables modeling arbitrary distances
 - [ ] Understand the transformer architecture and its key components (self-attention, positional encoding, feedforward layers)
-- [ ] Compare transformer-based genomic models (Enformer, Sei) with CNN predecessors in terms of architecture and capabilities
+- [ ] Compare transformer-based genomic models such as Enformer with related sequence-to-chromatin models such as Sei
 - [ ] Explain how SpliceAI uses dilated convolutions to achieve long-range predictions for splicing
 - [ ] Interpret attention weights to understand which genomic positions influence predictions
 - [ ] Apply transformer-based models to predict variant effects on gene expression and splicing
@@ -235,7 +235,7 @@ Position 1's representation now incorporates strong information from Position 3 
 - Transformer-based architecture  
 - Input: 196,608 bp (~197 kb)
 - **Key innovation**: Attention mechanism for long-range interactions
-- **Result**: 50% better correlation with experimental data than Basenji
+- **Result**: higher prediction accuracy than Basenji2, especially for CAGE-based gene expression, with a larger effective receptive field for distal regulatory elements
 
 ### 10.3.2 Enformer Architecture
 
@@ -286,26 +286,21 @@ Input: 196,608 bp DNA sequence
 
 **Example: Enhancer variant analysis**
 
-Variant rs1234567 is 85 kb upstream of *FOXP2* gene. Enformer predicts the variant reduces *FOXP2* expression by 2.3-fold in brain tissue. This long-range effect would be invisible to DeepSEA or standard Basenji, but Enformer's attention mechanism can integrate the enhancer-promoter connection across 85 kb.
+Hypothetical example: a variant 85 kb upstream of *FOXP2* lies in a brain-active enhancer. Enformer can compare reference and alternate sequences across a ~200 kb window and predict whether the alternate allele changes CAGE or chromatin-track outputs near *FOXP2*. Such a prediction would prioritize the variant for follow-up, but it would still need eQTL, reporter, CRISPRi, or other functional evidence.
 
 ### 10.3.4 Enformer Performance
 
-Performance metrics (Avsec et al., 2021):
+Performance metrics (Avsec et al., 2021) depend on the assay and evaluation split. For CAGE gene-expression prediction at human protein-coding genes, the reported mean correlation increased from 0.81 for Basenji2 to 0.85 for Enformer. Across genome-wide tracks, Enformer also improved prediction of CAGE, histone marks, transcription factor binding, and DNA accessibility on held-out genomic regions.
 
-Correlation with experimental data:
-- Basenji: 0.62 (Pearson correlation)
-- Enformer: 0.81 (Pearson correlation)
-- **Improvement: 31% better correlation**
+By visualizing attention weights and contribution scores, researchers found evidence that Enformer uses biologically meaningful sequence context:
 
-By visualizing attention weights, researchers discovered Enformer learned:
+1. **Promoter-enhancer grammar:** contribution scores highlight distal enhancer-like sequences, often agreeing with H3K27ac and CRISPRi enhancer data
 
-1. **Promoter-enhancer grammar:** Strong attention between enhancer marks (H3K27ac) and promoters, matching known chromatin loops from Hi-C
+2. **CTCF-associated boundaries:** attention and contribution patterns can reflect CTCF/TAD-boundary sequence features
 
-2. **CTCF-mediated loops:** Attention between convergent CTCF sites, matching known chromatin domain boundaries
+3. **Splicing regulatory elements:** sequence models can highlight exons and intronic elements that may influence splice-site choice
 
-3. **Splicing regulatory elements:** Attention between exons and distant intronic elements
-
-**This is remarkable:** Enformer learned 3D chromatin organization from linear DNA sequence alone, without any Hi-C data during training.
+**This is remarkable, but subtle:** Enformer learned sequence features associated with distal regulation and TAD boundaries from linear DNA sequence alone. This is not the same as measuring 3D chromatin contacts directly.
 
 ---
 
@@ -322,19 +317,20 @@ Chromatin states represent distinct functional categories of genomic regions:
 
 **The Sei approach:**
 - Predicts chromatin states directly from sequence
-- No experimental data needed for new cell types
-- Uses deep learning with attention
+- Learns from large collections of experimental chromatin and TF-binding profiles
+- Provides sequence-class scores that can be compared between reference and alternate alleles
+- Is best viewed as a related sequence-to-function model rather than a full transformer model
 
 ### 10.4.2 Sei Architecture
 
-**Sei (Chen et al., 2022)** combines CNN encoding with attention pooling:
+**Sei (Chen et al., 2022)** uses a deep sequence model to predict regulatory profiles and summarize them into sequence classes:
 
 ```
 Input: 4,096 bp DNA sequence
    ↓
 [CNN Encoder] — extracts local sequence features
    ↓
-[Attention Pooling] — integrates information across sequence
+[Sequence representation layers] — integrate information across the 4 kb window
    ↓
 [Prediction Heads]
 - Predicts 21,907 TF binding profiles
@@ -470,7 +466,7 @@ Patient with cystic fibrosis:
 - Functional studies: confirmed exon 11 skipping
 - **Reclassified as having functional impact**
 
-ClinVar now includes SpliceAI scores for all variants, helping prioritize candidates and identify splicing as a mechanism.
+Precomputed SpliceAI annotations are commonly used through tools such as VEP plugins, dbNSFP-style annotation resources, and clinical analysis pipelines. ClinVar itself should not be described as containing SpliceAI scores for all variants.
 
 ---
 
@@ -498,20 +494,21 @@ Attention weights from promoter position:
 - Intergenic: 0.02
 - Downstream: 0.05
 
-Interpretation: Model learned enhancer-promoter 
-interaction between LCR and HBB promoter.
+Interpretation: Model assigns high relevance to a distal regulatory region.
+This is a hypothesis about enhancer-promoter regulation, not proof of a
+physical loop by itself.
 ```
 
-**Comparing with Hi-C data:**
-- Enformer attention correlates with chromatin loops (Pearson r = 0.73)
-- High attention = predicted physical interaction
-- **No Hi-C data used in training—emerged from sequence!**
+**Comparing with chromatin data:**
+- Enformer contribution scores can prioritize distal enhancers validated by CRISPRi
+- Attention around TAD boundaries shows patterns consistent with reduced cross-boundary information flow
+- High attention is not the same as a measured Hi-C contact
 
 ### 10.6.2 Attention Patterns Reveal Regulatory Grammar
 
 **Discovered patterns:**
 
-1. **Promoter-Enhancer Syntax:** Enhancers with H3K27ac marks attend to nearest promoters; attention blocked by CTCF insulators, matching topologically associating domains (TADs)
+1. **Promoter-Enhancer Syntax:** distal regulatory sequences can contribute to promoter predictions; CTCF/TAD-boundary patterns can shape how information flows across the input window
 
 2. **Splice Site Recognition:** Attention between donor and acceptor sites; strong attention within exons (exon definition); attention to regulatory elements (ESEs, ISSs)
 
@@ -531,33 +528,28 @@ interaction between LCR and HBB promoter.
 
 ---
 
-## Case Study 1: Enformer Predicts Enhancer-Promoter Interactions
+## Case Study 1: Enformer Prioritizes Enhancer-Promoter Links
 
 ### Background
 
-Avsec et al. (2021) tested whether Enformer could predict enhancer-promoter interactions without explicit Hi-C training data.
+Avsec et al. (2021) tested whether Enformer contribution scores could prioritize candidate enhancer-gene links without requiring new cell-type-specific Hi-C data for every prediction.
 
 **Experimental setup:**
-- Selected 1,000 known enhancer-promoter pairs from Hi-C
-- Pairs span 10 kb to 500 kb distances
-- Across multiple cell types (GM12878, K562, HepG2)
+- Compared Enformer-derived scores against large CRISPRi enhancer perturbation datasets
+- Evaluated whether candidate enhancers that affect gene expression receive higher model-derived scores
+- Compared sequence-only predictions with methods that use biochemical annotations such as H3K27ac and contact-frequency information
 
 ### Results
 
-**Correlation with Hi-C:** Pearson r = 0.73 between attention and loop strength. Stronger loops → higher attention weights. Tissue-specific: attention matches cell-type-specific loops.
+**Enhancer prioritization:** Enformer contribution scores ranked validated enhancer-gene pairs above many nonvalidated candidates across CRISPRi datasets. The model was competitive with some annotation-based enhancer prioritization approaches, even though its input was DNA sequence.
 
-**Validation with CRISPR:**
-- Selected 10 predicted interactions
-- Used CRISPRi to silence enhancers
-- Measured target gene expression
-- 9/10 showed expected expression changes
-- **Computational predictions validated experimentally**
+**TAD-boundary signal:** Attention analyses showed patterns around TAD boundaries that were consistent with reduced information flow across boundaries. This supports the idea that the model learned sequence features associated with genome organization, but it should not be read as a direct Hi-C substitute.
 
 ### Biological Insights
 
 **Discovered regulatory grammar:**
-1. **Orientation matters:** Convergent CTCF sites show high attention, matching known loop extrusion model—learned without explicit CTCF training
-2. **Enhancer strength predicts attention:** H3K27ac signal correlates with attention; strong enhancers attend more to promoters
+1. **Distal context matters:** enhancer-like sequences beyond the reach of older CNN receptive fields can influence promoter-level predictions
+2. **Boundary features matter:** CTCF-associated boundary sequence can affect how information is integrated across a locus
 3. **Promoter competition:** Enhancers between two promoters split attention, matching models of enhancer sharing
 
 ---
@@ -638,7 +630,7 @@ Variant sequence:
 
 ### Model Applications
 
-- **Enformer** predicts gene expression and chromatin states from 197 kb sequences, achieving 50% better performance than CNN-based Basenji
+- **Enformer** predicts gene expression and chromatin states from ~200 kb sequences, improving over CNN-based Basenji2 especially for distal regulatory effects
 - **Sei** classifies chromatin states from 4 kb sequences, enabling noncoding variant interpretation
 - **SpliceAI** predicts splicing effects with 98% accuracy using dilated convolutions and 10 kb context
 - **Attention weights** provide interpretability, revealing learned regulatory grammar
@@ -647,7 +639,7 @@ Variant sequence:
 
 - **Long-range regulation is pervasive**: enhancers regulate genes 50-500 kb away, critical for tissue-specific expression
 - **Splicing depends on distant elements**: regulatory sequences >1 kb from splice sites commonly affect splicing
-- **Models learn regulatory grammar**: attention patterns match chromatin loops, CTCF boundaries, and TF cooperativity
+- **Models learn regulatory grammar**: contribution and attention patterns can highlight enhancers, CTCF boundaries, and TF motif combinations, but they require biological validation
 
 ### Limitations to Remember
 
@@ -667,14 +659,14 @@ Variant sequence:
 | **Chromatin loop** | Physical interaction between distant genomic regions mediated by protein complexes; often brings enhancers and promoters into proximity. |
 | **Cryptic splice site** | Sequence resembling a splice site (GT-AG) that is normally not used but can be activated by variants or regulatory changes. |
 | **Dilated convolution** | Convolutional operation with gaps between kernel positions, enabling larger receptive fields without increasing parameters. |
-| **Enformer** | Transformer-based model predicting gene expression and chromatin features from 197 kb DNA sequences; achieves 50% improvement over CNN-based methods. |
+| **Enformer** | Transformer-based model predicting gene expression and chromatin features from ~200 kb DNA sequences; improves over CNN-based Basenji2 by better using distal regulatory sequence. |
 | **Exonic splicing enhancer (ESE)** | Sequence element in exons that promotes exon inclusion through binding of SR proteins. |
 | **Intronic splicing silencer (ISS)** | Sequence element in introns that suppresses splice site recognition, preventing cryptic splicing. |
 | **Multi-head attention** | Parallel attention mechanisms (heads) that can learn different types of relationships; outputs are combined for final representation. |
 | **Positional encoding** | Mathematical representation of sequence position added to input embeddings, preserving order information in transformers. |
 | **Query-Key-Value (QKV)** | Framework for attention computation where queries search for relevant keys to retrieve corresponding values. |
 | **Receptive field** | Span of input sequence that can influence a single output position; larger receptive fields capture longer-range dependencies. |
-| **Sei** | Sequence-based chromatin state prediction model using attention mechanisms; predicts 40 chromatin states from 4 kb sequences. |
+| **Sei** | Sequence-based chromatin profile model that uses deep learning to assign sequence classes and support noncoding variant interpretation. |
 | **Self-attention** | Attention mechanism where a sequence attends to itself, computing relationships between all position pairs within the same sequence. |
 | **SpliceAI** | Deep learning model predicting splicing effects using dilated convolutions; achieves 10 kb receptive field for splice site prediction. |
 | **Transformer** | Neural network architecture based on self-attention mechanisms, originally developed for natural language processing, now applied to genomics. |

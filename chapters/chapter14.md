@@ -139,7 +139,7 @@ Input sequence X → Three parallel projections (similar to Q, K, V in attention
 **Step 2: Long Convolution**
 Instead of attention scores, use learned convolutional filters:
 - Filters can have length up to 1 million positions
-- Capture patterns like "enhancer 200kb upstream"
+- Can in principle capture sequence patterns separated by hundreds of kilobases
 - Computed efficiently using FFT
 
 **Step 3: Gating**
@@ -150,26 +150,25 @@ Combine projections with element-wise operations:
 
 ### Training HyenaDNA
 
-HyenaDNA was pretrained on the human reference genome (hg38) using:
-- **Context length:** Up to 1 million bp (450× longer than DNABERT)
-- **Training objective:** Masked language modeling (same as BERT)
-- **Masking strategy:** 15% of tokens masked
-- **Vocabulary:** 6-mer tokenization (4096 tokens)
-- **Model sizes:** 1.5M to 1.6M parameters (various sizes)
+HyenaDNA was pretrained on the human reference genome using:
+- **Context length:** up to 1 million tokens/base positions in the long-context setting
+- **Training objective:** nucleotide-level language modeling rather than BERT-style 6-mer masked-token prediction
+- **Tokenization:** single-nucleotide resolution, preserving SNP-level changes
+- **Model sizes:** multiple checkpoints, from small models to larger long-context variants
 
 The key advantage: training on megabase-scale sequences allows the model to learn truly long-range genomic patterns.
 
 ### What HyenaDNA Learned
 
-Analysis of the trained model revealed it captures:
+Analysis of the trained model and downstream tasks suggests it can capture sequence patterns across much longer windows than standard attention models:
 
-**Long-range chromatin structure:**
-- TAD boundaries at 1 Mb scale
-- Compartment A/B organization
-- Histone mark patterns across large regions
+**Long-range sequence context:**
+- regulatory motifs separated by long distances
+- repetitive-element structure across large regions
+- sequence composition and motif organization at scales beyond typical transformer windows
 
 **Regulatory element interactions:**
-- Enhancer-promoter pairs separated by 100-500 kb
+- candidate enhancer-promoter pairs separated by long genomic distances
 - CTCF binding site relationships
 - Locus control regions and gene clusters
 
@@ -329,31 +328,30 @@ output = h_fwd + h_rev  # or learnable combination
 
 ### Caduceus Training
 
-Caduceus was pretrained on the human genome using:
-- **Architecture:** BiMamba blocks
-- **Context length:** Up to 1 million bp
-- **Training data:** hg38 reference genome + 7 other vertebrate genomes
-- **Objective:** Next nucleotide prediction (like GPT)
-- **Parameter count:** 6M, 40M, 118M (various sizes)
+Caduceus uses a family of bidirectional and reverse-complement-aware MambaDNA blocks. Reported checkpoints vary in size and context length, so the safest description is architectural rather than a single fixed recipe:
+- **Architecture:** bidirectional Mamba-style blocks with reverse-complement equivariance in the DNA-specific variants
+- **Context length:** designed for long-range DNA sequence modeling
+- **Objective:** sequence language modeling and downstream fine-tuning
+- **Key design goal:** treat forward and reverse-complement DNA consistently
 
 ### Performance Comparison
 
-On genomic benchmarks, Caduceus shows:
+On genomic benchmarks, Caduceus-style models are designed to test whether bidirectionality and reverse-complement equivariance improve long-range DNA modeling. Reported gains are benchmark-dependent, so use the points below as qualitative expectations:
 
 **Regulatory element prediction:**
-- Matches Transformer performance
-- 10× faster inference
-- 100× longer context window
+- Can match or exceed transformer baselines on some tasks
+- Can use longer contexts with lower memory pressure than full attention
+- Is especially relevant when strand symmetry matters
 
 **Variant effect prediction:**
-- Better than DNABERT on promoter variants
-- Captures enhancer-promoter interactions
-- Improves with longer context (up to 1M bp)
+- Can be applied to promoter and regulatory variants
+- Can test whether distal sequence context improves variant-effect prediction
+- Still requires task-specific validation
 
 **Downstream fine-tuning:**
-- Faster training than Transformers
-- Less prone to overfitting on small datasets
-- Better transfer learning across tasks
+- Potentially cheaper than full-attention transformers for long windows
+- Useful for comparing architecture choices on the same genomic benchmark
+- Requires careful train/test splits to avoid sequence leakage
 
 ---
 
@@ -470,10 +468,10 @@ Genome-wide association studies (GWAS) identify variants associated with traits.
 
 ---
 
-## Case Study: Analyzing Noncoding Variants in Neurodevelopmental Disorders
+## Teaching Scenario: Analyzing Noncoding Variants in Neurodevelopmental Disorders
 
 **Background:**
-Dr. Martinez's team studies autism spectrum disorder (ASD) and has whole-genome sequencing data from 5,000 affected individuals and 10,000 unaffected controls. Previous analyses focused on coding variants, but ~98% of the genome is noncoding. Many noncoding variants with functional impact were likely missed due to limited analytical context.
+Dr. Martinez's team studies autism spectrum disorder (ASD) and has whole-genome sequencing data from affected individuals and unaffected controls. Previous analyses focused on coding variants, but ~98% of the genome is noncoding. Many noncoding variants with functional impact may be missed due to limited analytical context.
 
 **Research Question:**
 Can long-context models identify noncoding variants affecting neurodevelopment by analyzing regulatory regions in their full genomic context?
@@ -497,20 +495,20 @@ Can long-context models identify noncoding variants affecting neurodevelopment b
    - Considered gene targets expressed in brain
    - Evaluated enrichment in ASD cases vs. controls
 
-**Results:**
+**Illustrative results:**
 - Identified 47 high-confidence noncoding variants enriched in ASD cases
 - 23 variants located in enhancers >100 kb from target genes
 - Would have been missed by standard 5-10 kb context windows
 - Top hit: Enhancer 380 kb from SHANK3 gene
 
-**Experimental Validation:**
+**Example validation plan:**
 Selected top 10 variants for CRISPR-based validation:
 - Created deletions of enhancer regions in neural progenitor cells
 - Measured target gene expression changes
 - 7/10 showed significant expression changes (70% validation rate)
 - Much higher than previous noncoding validation rates (20-30%)
 
-**Biological Insight:**
+**Biological insight in the teaching scenario:**
 The SHANK3 enhancer variant disrupts a binding site for MEF2C, a transcription factor crucial for synapse development. The variant reduces SHANK3 expression by 40% in neurons. This mechanism was only discoverable by analyzing the enhancer in its full chromosomal context.
 
 **Impact:**
@@ -519,19 +517,19 @@ The SHANK3 enhancer variant disrupts a binding site for MEF2C, a transcription f
 - Provides new therapeutic targets (MEF2C pathway)
 - Demonstrates importance of analyzing full genomic context
 
-**Reference:** This case study is based on principles from:
+**Reference note:** This case study is a hypothetical synthesis based on principles from:
 - Morrow et al. (2021) "Noncoding variants in neurodevelopmental disorders" (hypothetical synthesis)
 - Real SHANK3 biology from Leblond et al. (2014) Nature Genetics
 
 ---
 
-## Case Study: Predicting Chromatin Structure at Megabase Scale
+## Teaching Scenario: Predicting Chromatin Structure at Megabase Scale
 
 **Background:**
 Chromatin is organized into topologically associating domains (TADs)—megabase-scale regions where DNA interactions are enriched. TAD boundaries are marked by CTCF binding sites and often disrupted in cancer. However, predicting TAD structure from sequence alone has been challenging because TADs span 0.5-2 Mb.
 
 **Research Question:**
-Can HyenaDNA predict TAD boundaries and chromatin compartments using only DNA sequence across megabase-scale regions?
+Can a long-context sequence model be paired with a contact-prediction head to predict TAD boundaries and chromatin compartments from megabase-scale regions?
 
 **Approach:**
 1. **Training data:**
@@ -542,7 +540,7 @@ Can HyenaDNA predict TAD boundaries and chromatin compartments using only DNA se
 2. **Model training:**
    - Input: 1 Mb DNA sequence
    - Output: Predicted contact probability for all pairs
-   - Architecture: HyenaDNA with contact prediction head
+   - Architecture: long-context sequence encoder with contact prediction head
    - Loss: Mean squared error on contact frequencies
 
 3. **Validation:**
@@ -550,7 +548,7 @@ Can HyenaDNA predict TAD boundaries and chromatin compartments using only DNA se
    - Compared to experimental Hi-C
    - Measured TAD boundary prediction accuracy
 
-**Results:**
+**Illustrative results:**
 - Achieved 0.82 correlation with experimental Hi-C
 - Correctly identified 76% of TAD boundaries
 - Predicted tissue-specific chromatin organization
@@ -582,7 +580,7 @@ Applied model to analyze structural variants:
 - Cell-type specificity not fully captured
 - Some long-range interactions still missed
 
-**Reference:** Based on approaches from:
+**Reference note:** This scenario is inspired by approaches from:
 - Schwessinger et al. (2020) Nat Commun - "DeepC predicts chromatin interactions"
 - Zhou et al. (2022) Nat Methods - "Deep learning predicts DNA structure"
 
@@ -667,15 +665,15 @@ Learning from comparative genomics:
 
 - **Transformer models face quadratic complexity (O(L²))** that limits them to analyzing sequences of a few thousand base pairs, missing important long-range genomic interactions.
 
-- **HyenaDNA uses long convolutions computed via FFT** to achieve O(L log L) complexity, enabling analysis of sequences up to 1 million bp while capturing patterns like distant enhancer-promoter pairs.
+- **HyenaDNA uses long convolutions computed via FFT** to achieve O(L log L) complexity, enabling analysis of sequences up to 1 million bp while preserving nucleotide-level resolution across long windows.
 
 - **Mamba introduces state space models with O(L) complexity** that maintain a hidden state as they process sequences, allowing even faster processing of megabase-scale DNA.
 
 - **Caduceus extends Mamba with bidirectional processing** to handle both DNA strands symmetrically, important for tasks like transcription factor binding site prediction.
 
-- **Long-context models enable new biological applications** including structural variant analysis, enhancer-promoter prediction, haplotype analysis, and TAD structure prediction.
+- **Long-context models enable new biological applications** including structural variant analysis, enhancer-promoter hypothesis generation, haplotype analysis, and contact-map prediction when paired with appropriate functional or 3D genome data.
 
-- **Real-world applications demonstrate 70% validation rates** for noncoding variant predictions when using full genomic context, compared to 20-30% with limited context.
+- **Long-context models enable new validation strategies** for noncoding variants, but reported validation rates depend strongly on the disease, assay, model, and candidate-selection procedure.
 
 - **Each architecture has specific advantages:** HyenaDNA for patterns, Mamba for speed, Caduceus for strand-aware tasks, and Transformers still valuable for shorter sequences.
 

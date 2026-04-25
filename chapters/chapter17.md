@@ -2,11 +2,11 @@
 
 **[Interactive: Chapter 17](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter17.html)**
 
-You press "Run." On your screen, a virtual *E. coli* cell begins its life cycle. DNA replicates — you watch the replisome fork advance along the circular chromosome in real time. Ribosomes translate mRNA into proteins at rates governed by codon usage and elongation factors. Metabolic enzymes convert glucose into energy, shifting flux through glycolysis as nutrient concentrations change. The cell grows, elongates, and after 45 minutes, divides into two daughter cells. None of this happened in a petri dish. Every molecule, every reaction, every stochastic fluctuation was computed — 28 interconnected mathematical models running simultaneously, passing information to each other at every time step.
+You press "Run." On your screen, a virtual *Mycoplasma genitalium* cell begins its life cycle. DNA replication initiates on a compact bacterial chromosome. Ribosomes translate mRNA into proteins at rates constrained by available amino acids and ribosome abundance. Metabolic reactions convert imported nutrients into energy and cellular building blocks. Hours later, after the simulated cell has grown enough to divide, the model produces two daughter cells. None of this happened in a petri dish. Every molecule, every reaction, every stochastic fluctuation was computed — 28 interconnected mathematical models running simultaneously, passing information to each other at every time step.
 
 This is the whole-cell model: biology's equivalent of a flight simulator. And just like a flight simulator lets engineers test "what if the left engine fails?" without crashing a real plane, the whole-cell model lets biologists ask "what if we knock out this gene?" without touching a real cell. The answer isn't just "expression of these 237 genes changes" — it's a mechanistic account of *why* they change. Reduced expression of Gene A causes metabolite X to accumulate. Metabolite X allosterically inhibits enzyme Y. Enzyme Y's reduced activity triggers the SOS stress response. The SOS response upregulates the 50 ribosomal genes you see in your RNA-seq data. The whole-cell model traces every link in that chain.
 
-We are not there yet for human cells. The *E. coli* whole-cell model, published in 2012, required a decade of work and comprehensive data on nearly every molecular process in a single bacterium. Human cells are three orders of magnitude more complex. But the trajectory is clear: as AI methods become more capable of integrating heterogeneous biological data — sequences, structures, expression profiles, interaction networks — the distance between today's modular pathway models and tomorrow's whole-cell simulations is shrinking.
+We are not there yet for human cells. The landmark *M. genitalium* whole-cell model, published in 2012, required years of work and unusually comprehensive data on nearly every annotated gene product in a very small bacterium. Human cells are vastly more complex. But the trajectory is clear: as AI methods become more capable of integrating heterogeneous biological data — sequences, structures, expression profiles, interaction networks — the distance between today's modular pathway models and tomorrow's whole-cell simulations is shrinking.
 
 This final chapter surveys where that frontier stands today: the existing whole-cell models, the AI methods being developed to extend them, and what it would mean for biology if we could eventually press "Run" on a human cell.
 
@@ -40,7 +40,7 @@ This is why we need whole-cell computational models: frameworks that integrate m
 After completing this chapter, you will be able to:
 
 - [ ] Explain why whole-cell modeling requires integrating multiple omics data types rather than studying individual pathways
-- [ ] Describe how the whole-cell *E. coli* model combines genomics, transcriptomics, proteomics, and metabolomics into a unified simulation
+- [ ] Describe how the whole-cell *Mycoplasma genitalium* model combines genomics, transcriptomics, proteomics, and metabolomics into a unified simulation
 - [ ] Understand the Human Cell Atlas initiative and how single-cell omics data enables cell-type-specific modeling
 - [ ] Evaluate trade-offs between mechanistic models (detailed but limited in scope) and data-driven models (comprehensive but less interpretable)
 - [ ] Recognize current limitations in whole-cell modeling and major challenges that remain unsolved
@@ -48,49 +48,49 @@ After completing this chapter, you will be able to:
 
 ---
 
-## 17.1 The First Whole-Cell Model: *E. coli*
+## 17.1 The First Whole-Cell Model: *Mycoplasma genitalium*
 
 ### Why Start with Bacteria?
 
-When building the first comprehensive model of a living cell, researchers chose *Escherichia coli* for good reasons. This bacterium has:
+When building the first comprehensive model of a living cell, researchers did not begin with a human cell or even with the laboratory workhorse *E. coli*. They chose *Mycoplasma genitalium*, a bacterium with one of the smallest known genomes among free-living organisms. It offered a tractable starting point:
 
-- A compact genome: 4,300 genes compared to human's 20,000
-- Well-characterized molecular biology: decades of experimental data
-- Fast growth: 20-minute doubling time enables rapid validation experiments
-- Genetic tractability: easy to modify and measure
-- Essential processes: DNA replication, transcription, translation, and metabolism are fundamentally similar to human cells
+- A compact genome: about 580,000 base pairs
+- A small gene set: roughly 525 genes rather than thousands
+- A relatively simple bacterial cell plan with no nucleus or membrane-bound organelles
+- Enough experimental data to constrain many core processes
+- Essential processes: DNA replication, transcription, translation, metabolism, and cell division
 
-But even for this "simple" bacterium, whole-cell modeling proved extraordinarily challenging.
+This choice mattered. *E. coli* is better characterized and grows faster, but it has a much larger genome and richer regulatory biology. Even for the smaller *M. genitalium*, whole-cell modeling proved extraordinarily challenging.
 
 ### The 2012 Karr Model: A Landmark Achievement
 
-In 2012, Markus Covert's group at Stanford published the first complete computational model of a living organism. Their *E. coli* model integrated:
+In 2012, Markus Covert's group at Stanford published the first complete computational model of the life cycle of a living organism. Their *M. genitalium* model integrated:
 
 **Genomic Layer:**
-- Complete genome sequence (4.6 million base pairs)
-- 4,405 genes with known or predicted functions
+- Complete genome sequence (~580 kb)
+- Approximately 525 annotated genes with known or predicted functions
 - Regulatory sequences and transcription factor binding sites
 
 **Transcriptomic Layer:**
 - Expression levels of all mRNAs
 - Transcription rates dependent on promoter strength, transcription factor availability, and RNA polymerase abundance
-- mRNA degradation rates (half-lives of 2–8 minutes)
+- mRNA degradation rates and RNA processing
 
 **Proteomic Layer:**
 - Translation rates based on ribosome availability and codon usage
-- 2,077 proteins with known functions
+- Protein abundance, maturation, modification, and degradation
 - Protein complex formation (many proteins work as multi-subunit complexes)
 - Protein degradation and dilution through cell division
 
 **Metabolomic Layer:**
-- 1,261 metabolic reactions
+- Metabolic reactions constrained by stoichiometry and enzyme availability
 - Nutrient uptake from growth medium
-- Energy production through glycolysis and respiration
+- Energy production and biosynthesis
 - Biosynthesis of all cellular building blocks (amino acids, nucleotides, lipids)
 
 **Cell Cycle:**
-- DNA replication with 5–8 replication forks
-- Cell division when mass doubles and DNA replication completes
+- DNA replication and chromosome maintenance
+- Cell division when growth and replication constraints are satisfied
 - Chromosome segregation mechanics
 
 The model divided these processes into 28 submodels, each handling specific aspects of cellular function. These submodels communicated through shared pools of molecules—for example, amino acid availability links protein synthesis to metabolism.
@@ -110,13 +110,12 @@ This creates a dynamic simulation where changing one component (say, deleting a 
 
 ### Validation Against Experimental Data
 
-The model wasn't built to simply recapitulate training data—it made testable predictions. The authors validated it against 1,900+ experimental measurements, including:
+The model wasn't built to simply recapitulate training data; it made testable predictions. The authors validated it against diverse experimental observations, including:
 
-- **Growth rate:** Predicted 19.8 minute doubling time vs. observed 20 minutes
-- **Cell cycle timing:** Accurate predictions of when DNA replication initiates and completes
-- **Gene essentiality:** Correct predictions for 79% of gene knockouts (essential vs. non-essential)
-- **Growth on different nutrients:** Accurate predictions for 10 different carbon sources
-- **Metabolic fluxes:** Close matches to measured reaction rates using 13C isotope tracing
+- **Growth and cell-cycle behavior:** whether simulated cells could complete a full life cycle
+- **DNA replication timing:** how replication initiation and completion depended on cellular state
+- **Gene disruption phenotypes:** whether simulated gene disruptions were compatible with growth
+- **Molecular composition:** whether predicted RNA, protein, and metabolite levels stayed within plausible biological ranges
 
 Where predictions failed, discrepancies revealed gaps in biological knowledge—suggesting missing reactions or incorrectly annotated gene functions.
 
@@ -150,7 +149,7 @@ Building the model required 10 person-years of effort, highlighting why whole-ce
 
 ### The Challenge of Cellular Heterogeneity
 
-Unlike the *E. coli* model, which represents one cell type, human biology involves hundreds of distinct cell types. Even cells of the same type show variation:
+Unlike the *M. genitalium* model, which represents one simple bacterial cell type, human biology involves hundreds of distinct cell types. Even cells of the same type show variation:
 
 - **Cell state heterogeneity:** T cells can be naive, activated, exhausted, or memory cells
 - **Developmental stages:** Neural progenitors gradually differentiate into specific neuron subtypes
@@ -161,9 +160,9 @@ This is where single-cell omics becomes essential for whole-cell modeling.
 
 ### The Human Cell Atlas Initiative
 
-Launched in 2016, the Human Cell Atlas (HCA) is an international collaboration to create comprehensive reference maps of all human cell types. As of 2024, the HCA includes:
+Launched in 2016, the Human Cell Atlas (HCA) is an international collaboration to create comprehensive reference maps of human cell types. Because the portal is continually updated, exact counts should always be date-stamped. As of recent public portal snapshots, HCA-scale resources contain tens of millions of profiled cells across many organs and tissues, including:
 
-- **33+ million cells** profiled using single-cell RNA-seq
+- **Tens of millions of cells** profiled using single-cell RNA-seq and related assays
 - **~37 organs and tissues** including brain, lung, heart, liver, immune system, and developmental samples
 - **Multiple omics modalities:** scRNA-seq, scATAC-seq, spatial transcriptomics, CITE-seq
 - **Developmental time series:** Cells from early embryonic development through adult stages
@@ -353,11 +352,11 @@ No current model spans all scales simultaneously. Instead, researchers use scale
 >
 > Solution: v2 = 20, v3 = 0, v4 = 20 — predicts purely oxidative metabolism maximizes growth, matching what cells do in oxygen-rich conditions!
 >
-> This is exactly what happens in cancer cells (Warburg effect) — high lactate dehydrogenase expression diverts pyruvate to lactate, reducing oxidative metabolism and growth efficiency.
+> A related idea appears in cancer metabolism: many tumors show aerobic glycolysis (the Warburg effect), where carbon is diverted toward lactate and biosynthetic pathways even when oxygen is available. Real tumor metabolism is more complex than this toy FBA example, but the example shows how constraints can redirect flux.
 
 ---
 
-## Case Study 17.1: Predicting Antibiotic Resistance Evolution
+## Teaching Scenario 17.1: Predicting Antibiotic Resistance Evolution
 
 ### The Biological Question
 
@@ -365,7 +364,7 @@ When bacteria are treated with antibiotics, resistant mutants eventually emerge.
 
 ### The Computational Approach
 
-Researchers combined the whole-cell *E. coli* model with evolutionary simulation:
+This teaching example combines a mechanistic bacterial cell model with evolutionary simulation:
 
 **Step 1: Enumerate possible resistance mutations**
 - Known resistance genes: efflux pumps, target modifications, drug-degrading enzymes
@@ -386,9 +385,9 @@ Researchers combined the whole-cell *E. coli* model with evolutionary simulation
 - Whether second mutations compound resistance
 - Time to evolve high-level resistance
 
-### Experimental Validation
+### Illustrative Experimental Validation
 
-The team evolved actual *E. coli* populations under antibiotic selection for 500 generations:
+The validation design would compare model predictions against laboratory evolution of bacterial populations under antibiotic selection:
 
 **Prediction 1:** *marA* mutations appear first
 - **Model:** 78% of simulated populations show *marA* mutations by generation 100
@@ -411,7 +410,7 @@ The model revealed why certain evolutionary paths dominate:
 
 ---
 
-## Case Study 17.2: Integrating the Human Cell Atlas to Model Diabetes
+## Teaching Scenario 17.2: Integrating Single-Cell Atlases to Model Diabetes
 
 ### The Clinical Challenge
 
@@ -423,7 +422,7 @@ Type 2 diabetes involves dysfunction in multiple cell types:
 
 ### Using HCA Data
 
-Researchers used Human Cell Atlas pancreas data from 20 individuals (8 controls, 12 T2D):
+In a realistic analysis, researchers might combine public single-cell pancreas atlases with a smaller disease cohort, for example samples from controls and individuals with type 2 diabetes:
 
 **Key finding in β-cells:**
 
@@ -434,7 +433,7 @@ Researchers used Human Cell Atlas pancreas data from 20 individuals (8 controls,
 | ER stress genes | ↑ 2.8-fold | Protein misfolding response |
 | Inflammatory markers | ↑ 3.2-fold | Immune activation |
 
-### Model Predictions for Diabetes β-cells
+### Illustrative Model Predictions for Diabetes β-cells
 
 Using the altered expression profile from patients with diabetes:
 - **Reduced mitochondrial genes** → 32% lower ATP production capacity
@@ -442,7 +441,7 @@ Using the altered expression profile from patients with diabetes:
 - **ER stress activation** → reduced insulin synthesis
 - **Net effect:** 58% reduction in glucose-stimulated insulin secretion
 
-This matched experimental measurements: islets from patients with diabetes show ~60% reduced insulin secretion at high glucose.
+In a real study, this prediction would need to be compared with independent islet physiology measurements under matched glucose conditions.
 
 ### Multi-Cell-Type Integration
 
@@ -461,7 +460,7 @@ The model predicted that:
 2. Reducing ER stress could prevent β-cell death
 3. Targeting muscle inflammation might restore insulin sensitivity better than targeting adipose inflammation
 
-These predictions guide drug development: companies now focus on mitochondrial enhancers and ER stress reducers for diabetes treatment.
+These predictions would guide experimental prioritization: test mitochondrial support, ER-stress reduction, and anti-inflammatory interventions in cell-type-specific assays before making therapeutic claims.
 
 ---
 
@@ -552,15 +551,15 @@ The ultimate goal: **in silico cell lines** that accurately simulate any perturb
 
 - **Whole-cell modeling integrates multiple omics layers** (genomics, transcriptomics, proteomics, metabolomics) to simulate the dynamic, interconnected behavior of living cells rather than studying pathways in isolation
 
-- **The 2012 *E. coli* whole-cell model** demonstrated that comprehensive cellular simulation is possible, combining 28 submodels to predict growth rate, gene essentiality, and cellular responses with remarkable accuracy
+- **The 2012 *M. genitalium* whole-cell model** demonstrated that comprehensive cellular simulation is possible, combining 28 submodels to simulate a full bacterial life cycle and predict phenotypes from genotype
 
-- **The Human Cell Atlas provides cell-type-specific data** from 33+ million human cells, enabling construction of specialized models that capture how different cells use the same genome to perform distinct functions
+- **Human Cell Atlas-scale resources provide cell-type-specific data** from tens of millions of human cells, enabling construction of specialized models that capture how different cells use the same genome to perform distinct functions
 
 - **Integration strategies include hierarchical modeling** (separating fast and slow processes), constraint-based methods like Flux Balance Analysis (using omics data as constraints), and machine learning bridges (predicting one omics layer from another)
 
 - **Multi-scale modeling extends from molecules to tissues** using approaches like agent-based modeling where individual cell behaviors create emergent tissue-level organization
 
-- **Whole-cell models make testable predictions** about antibiotic resistance evolution, diabetes pathophysiology, and drug responses that guide experimental validation and therapeutic development
+- **Whole-cell and cell-state models can make testable predictions** about antibiotic resistance evolution, diabetes pathophysiology, and drug responses that guide experimental validation and therapeutic development
 
 - **Current limitations include incomplete spatial organization**, stochastic effects, regulatory networks, parameter uncertainty, and evolutionary dynamics—but foundation models trained on comprehensive biological data offer promising solutions
 
@@ -579,7 +578,7 @@ The ultimate goal: **in silico cell lines** that accurately simulate any perturb
 | **Emergent Behavior** | Tissue- or system-level patterns that arise from interactions among individual components (cells) without being explicitly programmed, such as spatial organization or collective responses |
 | **Flux Balance Analysis (FBA)** | Mathematical method for predicting metabolic fluxes in cellular networks by optimizing an objective (typically growth) subject to mass balance constraints and reaction capacity limits |
 | **Hierarchical Modeling** | Approach that separates cellular processes into layers operating at different timescales (epigenetic, transcriptional, metabolic) with upper layers constraining lower layers |
-| **Human Cell Atlas (HCA)** | International collaboration to create comprehensive reference maps of all human cell types using single-cell omics, currently containing 33+ million profiled cells across 37+ organs |
+| **Human Cell Atlas (HCA)** | International collaboration to create comprehensive reference maps of human cell types using single-cell and spatial omics; portal counts change over time and should be cited with an access date |
 | **Metabolic Flux** | The rate at which metabolites flow through a specific reaction or pathway in a metabolic network, typically measured in mmol per hour per gram of cells |
 | **Multi-Modal Foundation Model** | Machine learning model trained on multiple types of biological data (genomics, transcriptomics, proteomics, etc.) simultaneously to learn comprehensive relationships among cellular components |
 | **Multi-Scale Modeling** | Integration of models spanning different biological scales (molecular, subcellular, cellular, tissue, organism) to capture phenomena that emerge from cross-scale interactions |
@@ -596,9 +595,9 @@ The ultimate goal: **in silico cell lines** that accurately simulate any perturb
 
 1. **Explain why whole-cell modeling requires integration of multiple omics types rather than just transcriptomics.** Consider a scenario where you have complete transcriptomic data showing all gene expression levels. What cellular information would you still be missing that affects cell behavior?
 
-2. **The 2012 *E. coli* whole-cell model divided cellular processes into 28 submodels. Why is this subdivision necessary?** Think about computational complexity, biological causality, and different timescales.
+2. **The 2012 *M. genitalium* whole-cell model divided cellular processes into 28 submodels. Why is this subdivision necessary?** Think about computational complexity, biological causality, and different timescales.
 
-3. **Compare mechanistic models (like the *E. coli* whole-cell model) versus data-driven foundation models.** What are the advantages and limitations of each approach? When would you choose one over the other for a biological question?
+3. **Compare mechanistic models (like the *M. genitalium* whole-cell model) versus data-driven foundation models.** What are the advantages and limitations of each approach? When would you choose one over the other for a biological question?
 
 4. **The Human Cell Atlas reveals that cells of the same type show considerable variation in their molecular profiles.** How does this heterogeneity complicate whole-cell modeling? How might you account for it in your model design?
 
@@ -617,7 +616,7 @@ The ultimate goal: **in silico cell lines** that accurately simulate any perturb
 ### Foundational Papers
 
 1. **Karr, J. R., et al. (2012).** "A whole-cell computational model predicts phenotype from genotype." *Cell*, 150(2), 389–401.
-   - The landmark paper describing the first whole-cell model of *E. coli*
+   - The landmark paper describing the first whole-cell model of *Mycoplasma genitalium*
 
 2. **Thiele, I., et al. (2013).** "A community-driven global reconstruction of human metabolism." *Nature Biotechnology*, 31(5), 419–425.
 

@@ -330,7 +330,7 @@ The protein constantly fluctuates! It:
 - Rarely unfolds completely
 - The distribution changes with temperature, pH, mutations, binding partners
 
-**AlphaFold doesn't predict "the" structure**—it predicts the **most probable** structure (the peak of the distribution). The pLDDT score tells you how confident AlphaFold is, which relates to how sharp that distribution is.
+**AlphaFold doesn't predict the full conformational ensemble**. It predicts a highly plausible static structure for many folded proteins, which you can think of as a MAP-like point estimate for teaching purposes. The pLDDT score is a per-residue confidence estimate; low pLDDT often flags flexible or disordered regions, but it is not a full posterior distribution over conformations.
 
 ```
 High pLDDT (>90): Sharp peak → protein is rigid, well-defined structure
@@ -609,11 +609,11 @@ Let's continue tossing!
 
 ![The Power of More Data - Posterior after 100 tosses](../assets/figures/chapter2_map_100tosses.png)
 
-**Figure: Posterior distribution sharpens dramatically with more data**. *After 100 tosses (71W, 29L), the posterior distribution becomes much narrower and taller. The MAP estimate shifts slightly to 0.71, and the 95% confidence interval shrinks from (0.45-0.85) with 9 tosses to (0.62-0.79) with 100 tosses. This demonstrates a fundamental principle: more data reduces uncertainty, giving us sharper, more confident predictions.*
+**Figure: Posterior distribution sharpens dramatically with more data**. *After 100 tosses (71W, 29L), the posterior distribution becomes much narrower and taller. The MAP estimate shifts slightly to 0.71, and the 95% credible interval shrinks from (0.45-0.85) with 9 tosses to (0.62-0.79) with 100 tosses. This demonstrates a fundamental principle: more data reduces uncertainty, giving us sharper, more confident predictions.*
 
 **With 100 tosses:**
 - Best estimate: p ≈ 0.71 (71%)
-- 95% confidence interval: 0.62 - 0.79
+- 95% credible interval: 0.62 - 0.79
 - Much sharper than with 9 tosses!
 
 More data doesn't just change your point estimate—it **reduces uncertainty**. The posterior distribution becomes tighter, narrower, more confident.
@@ -1423,4 +1423,3 @@ But your protein is OUT-OF-DISTRIBUTION:
 **Key principle:** Deep learning gives MAP estimates based on training data priors. Always check if your biological question matches what the model was trained on!
 
 </details>
-

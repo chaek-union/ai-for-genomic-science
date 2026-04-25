@@ -237,13 +237,12 @@ BPE keeps separate:    GG GG GG (or G G G G G G)
 - Rare sequences broken into smaller pieces
 - Reduces vocabulary size while maintaining information
 
-**2. Longer context windows**
+**2. More efficient context use**
 
-DNABERT: 512 nucleotides maximum
-DNABERT-2: Up to 10,000 nucleotides
+DNABERT used fixed overlapping k-mers, so a 512-token input covered a fixed nucleotide span. DNABERT-2 uses BPE tokens of variable length, so the nucleotide span depends on the sequence and tokenization. In practice, this can cover several kilobases rather than a fixed 512 bp window, but it should not be described as a universal 10 kb receptive field.
 
 This captures:
-- Long-range enhancer-promoter interactions
+- More local regulatory context than fixed k-mer tokenization
 - Multiple regulatory elements in one sequence
 - Broader genomic context
 
@@ -267,9 +266,9 @@ This helps the model learn:
 **Nucleotide Transformer** (2023) takes a different approach: scale up model size and training data.
 
 **Architecture:**
-- Up to 2.5 billion parameters (DNABERT: 110 million)
-- Trained on 850 species and 3,200 genomes
-- 300 billion nucleotides total
+- Reported model family scales up to billions of parameters
+- Trained on diverse genomes across many species
+- Uses large-scale unlabeled DNA sequence for self-supervised learning
 
 **Key insight:** Larger models trained on more diverse data capture more nuanced patterns.
 
@@ -324,15 +323,15 @@ Input sequence → LOGO encoder
 - Better transfer learning across tasks
 - More interpretable representations
 
-## 13.4 GROVER: Genomes as Language Requires Context
+## 13.4 GROVER: Learning a Genomic Vocabulary from Sequence
 
-**GROVER** (Genomic Representation with Optimized Vector Embeddings, 2024) takes yet another approach: explicitly model genomic context at multiple scales.
+**GROVER** (Genome Rules Obtained Via Extracted Representations, 2024) takes yet another approach: instead of starting from fixed k-mers, it learns a frequency-balanced vocabulary for the human genome using byte-pair encoding (BPE).
 
 ### The Context Problem
 
-All previous models had a fixed context window:
+Many previous models had a fixed token window:
 - DNABERT: 512 nucleotides
-- DNABERT-2: up to 10,000 nucleotides
+- DNABERT-2: variable nucleotide span because BPE tokens have variable length
 
 But biological context works at multiple scales:
 - **Local** (10-100bp): TF binding site patterns
@@ -340,36 +339,20 @@ But biological context works at multiple scales:
 - **Long-range** (10-100kb): Enhancer-promoter loops
 - **Chromosomal** (>1Mb): Topologically associated domains (TADs)
 
-### GROVER's Multi-Scale Architecture
+### GROVER's Sequence-Only Strategy
 
-GROVER uses a hierarchical approach:
+GROVER trains a BERT-style model on human genome sequence using a BPE vocabulary selected by next-k-mer prediction. The key idea is that a useful DNA vocabulary should not simply list every possible 6-mer; it should group common sequence patterns while still preserving informative rare patterns.
 
-**Level 1: Local patterns (100bp windows)**
-```
-Process fine-grained sequence motifs
-Learn TF binding preferences
-```
+What the paper reports:
+- GROVER uses the human genome sequence as its pretraining source
+- The selected BPE vocabulary has variable-length DNA tokens
+- Token embeddings encode sequence content, frequency, token length, and repeat-related patterns
+- Region-level embeddings relate to functional genomic annotations after training
 
-**Level 2: Regional context (1kb windows)**
-```
-Aggregate local information
-Learn promoter/enhancer structure
-```
-
-**Level 3: Long-range interactions (10kb+ windows)**
-```
-Model regulatory element combinations
-Learn enhancer-promoter compatibility
-```
-
-Each level processes information from the level below, building up from nucleotides to broader genomic organization.
-
-### Integration with 3D Genome Structure
-
-GROVER incorporates Hi-C data during pre-training:
-- Sequences that physically interact (high Hi-C contact) get similar embeddings
-- Model learns which distant elements work together
-- Better prediction of long-range regulatory effects
+What GROVER does **not** do in its core pretraining setup:
+- It does not use Hi-C contact maps as a pretraining signal
+- It should not be described as a direct 3D genome model
+- It does not by itself prove enhancer-promoter physical interactions
 
 **Example application: Variant effect in 3D context**
 
@@ -380,8 +363,10 @@ GROVER embedding of enhancer
     ↓
 Compare to embeddings of potential target promoters
     ↓
-Predict which genes are affected (based on 3D proximity and sequence compatibility)
+Prioritize hypotheses about which regulatory grammar changed
 ```
+
+To make this a 3D genome analysis, GROVER embeddings would need to be combined with external chromatin-contact or perturbation data.
 
 > **[Optional: The Math]**
 > ## Math Box: Attention Mechanisms in DNA Language Models
@@ -428,9 +413,9 @@ Predict which genes are affected (based on 3D proximity and sequence compatibili
 > ```
 >
 > **Biological interpretation:**
-> - High attention between positions means they're functionally related
-> - Attention patterns often match known regulatory interactions
-> - Model automatically learns which context is relevant
+> - High attention between positions suggests the model is using information from both positions
+> - Attention patterns can generate hypotheses about regulatory interactions
+> - Attention alone does not prove a functional or physical interaction
 >
 > **Example: Splice site prediction**
 >
@@ -469,50 +454,38 @@ Predict which genes are affected (based on 3D proximity and sequence compatibili
 
 Let's compare the major DNA language models:
 
-| Model | Year | Parameters | Training Data | Context Length | Key Feature |
-|-------|------|-----------|---------------|----------------|-------------|
-| DNABERT | 2021 | 110M | Human genome | 512bp | First DNA BERT |
-| DNABERT-2 | 2023 | 117M | Multi-species | 10kb | BPE tokenization |
-| Nucleotide Transformer | 2023 | 2.5B | 850 species | varies | Massive scale |
-| LOGO | 2024 | 150M | Human + annotations | 1kb | Multi-task learning |
-| GROVER | 2024 | 300M | Human + Hi-C | 100kb | Hierarchical context |
+| Model | Year | Scale | Training Data | Context | Key Feature |
+|-------|------|-------|---------------|---------|-------------|
+| DNABERT | 2021 | BERT-scale | Human genome | fixed k-mer window | Early DNA BERT model |
+| DNABERT-2 | 2023 | 117M reported | Multi-species genomes | variable BPE span | Efficient BPE tokenization |
+| Nucleotide Transformer | 2023/2024 | up to billions of parameters | Many genomes across species | varies by checkpoint | Scaling and cross-species training |
+| LOGO | 2024 | model-specific | Sequence plus functional annotations | task-dependent | Multi-task sequence learning |
+| GROVER | 2024 | 12-layer BERT-style | Human genome sequence | BPE token window | Frequency-balanced genomic vocabulary |
 
 ### Performance on Standard Tasks
 
-**Task 1: Promoter identification** (accuracy %)
-- Conservation baseline: 75%
-- DNABERT: 88%
-- DNABERT-2: 91%
-- Nucleotide Transformer: 92%
-
-**Task 2: Transcription factor binding (AUROC)**
-- PWM baseline: 0.72
-- DNABERT: 0.84
-- DNABERT-2: 0.87
-- LOGO: 0.89
-
-**Task 3: Splice site prediction (F1 score)**
-- MaxEntScan: 0.81
-- DNABERT: 0.88
-- DNABERT-2: 0.91
-- GROVER: 0.93
+There is no single leaderboard that ranks all DNA language models across all genomic tasks. Performance depends on:
+- The downstream task (promoter detection, TF binding, variant effect prediction, splice site prediction)
+- The benchmark split and species
+- Whether the model is used zero-shot, with probing, or after fine-tuning
+- Whether task-specific experimental annotations are included
 
 **General trends:**
-- All DNA language models outperform traditional methods
-- Larger models generally perform better (more parameters = more capacity)
-- Multi-task and multi-species training helps
-- Longer context improves long-range predictions
+- DNA language models often outperform simple motif or conservation baselines after task-specific fine-tuning
+- Larger and more diverse pretraining can help, but architecture and data quality matter as much as parameter count
+- Multi-species training can improve generalization for some tasks
+- Longer context helps only when the biological signal actually depends on distal sequence
 
 ### Computational Requirements
 
 Training these models from scratch is expensive:
 
-| Model | Training Cost | Fine-tuning Cost | Inference Cost |
-|-------|---------------|------------------|----------------|
-| DNABERT | ~$1,000 | ~$10-50 | Low |
-| DNABERT-2 | ~$500 | ~$5-20 | Low |
-| Nucleotide Transformer | ~$50,000 | ~$100-500 | Moderate |
-| GROVER | ~$5,000 | ~$50-200 | Moderate |
+| Model type | Pretraining cost | Fine-tuning cost | Inference cost |
+|------------|------------------|------------------|----------------|
+| Small BERT-style DNA model | Moderate | Low to moderate | Low |
+| Efficient BPE model | Moderate | Low to moderate | Low |
+| Billion-parameter model | Very high | Moderate to high | Moderate |
+| Long-context model | High, especially for long windows | Task-dependent | Moderate to high |
 
 **Good news:** You don't need to train from scratch! Pre-trained models are publicly available. You only pay for fine-tuning on your specific task.
 
@@ -611,12 +584,14 @@ predictions = model(**tokens)
 - Can compare reference vs alternate allele
 - Attention weights show which parts of sequence are important
 
-## Case Study 13.1: Identifying Causal Variants in Autism Spectrum Disorder
+## Case Study 13.1: Teaching Scenario - Prioritizing Noncoding Variants in Autism
 
 **Background:**
 GWAS studies of autism spectrum disorder identified 102 genomic regions associated with the condition. But each region contains dozens to hundreds of variants. Which ones are actually functional?
 
-**Approach (Zhou et al., 2023):**
+**Important note:** The workflow below is a teaching scenario showing how a DNA language model could be used. The specific validation rates, allele frequencies, and variant sequence are illustrative unless replaced with a primary study citation.
+
+**Approach:**
 
 Researchers used DNABERT-2 to prioritize candidate variants:
 
@@ -647,19 +622,19 @@ Alternate:  ...ACGTAACG[A]TACGTA...  (predicted: 0.23 active enhancer)
 This single nucleotide change disrupts a predicted *CTCF* binding site, reducing enhancer activity by 60% in MPRA validation.
 
 **Clinical significance:**
-The variant is found in 2.3% of individuals with autism spectrum disorder vs 0.8% in unaffected controls (p < 0.001). DNABERT-2 helped identify this needle in a haystack of 15,000+ variants.
+In a real study, this final step would require independent genetic association, segregation or de novo evidence where appropriate, phenotype matching, and functional validation. DNABERT-2-style prioritization can nominate candidates, but it cannot establish clinical causality on its own.
 
 ## Case Study 13.2: Pan-Species Regulatory Element Discovery
 
 **Background:**
 Many species lack extensive epigenomic data. Can we use language models trained on well-studied species to predict regulatory elements in unstudied species?
 
-**Approach (Dalla-Torre et al., 2023):**
+**Approach:**
 
-Researchers used Nucleotide Transformer to predict regulatory elements across 50 vertebrate species:
+Researchers can use Nucleotide Transformer-style embeddings to predict regulatory elements across species with limited annotations:
 
 **Step 1: Train on multi-species data**
-- Human, mouse, and 848 other species
+- Human, mouse, and many other species
 - No specific regulatory annotations
 - Just masked language modeling on raw sequences
 
@@ -673,7 +648,7 @@ Researchers used Nucleotide Transformer to predict regulatory elements across 50
 - Cluster embeddings from different species
 - Sequences that cluster with known human enhancers → predicted enhancers
 
-**Results:**
+**Illustrative results:**
 
 **Zebrafish predictions:**
 - 1,200 novel enhancer predictions
@@ -691,7 +666,7 @@ All three have similar Nucleotide Transformer embeddings
 ```
 
 **Impact:**
-This approach enabled regulatory element discovery in 23 species with no prior epigenomic data, accelerating comparative genomics research.
+This approach illustrates why multi-species pretraining is useful: embeddings can nominate candidate regulatory elements in species where epigenomic assays are sparse. Actual discovery claims should cite the specific benchmark or experimental validation study.
 
 ## 13.7 Limitations and Challenges
 
@@ -705,9 +680,10 @@ Most models still can't capture very long-range interactions:
 - Some regulatory effects depend on entire chromosomal context
 
 **Current limits:**
-- DNABERT: 512bp
-- DNABERT-2: 10kb
-- GROVER: 100kb (best, but still limited)
+- DNABERT: fixed k-mer windows
+- DNABERT-2: variable BPE spans, often several kilobases depending on sequence
+- GROVER: BPE token windows learned from human genome sequence, not a direct 100 kb 3D-context model
+- Long-context models such as HyenaDNA and Caduceus are needed for megabase-scale sequence windows
 
 **Biological reality:**
 - Many enhancer-promoter loops: >100kb
@@ -730,7 +706,7 @@ DNA language model only sees sequence → Can't distinguish
 
 **Partial solutions:**
 - LOGO incorporates chromatin state annotations
-- GROVER uses Hi-C data (cell-type specific)
+- Combine sequence models with external Hi-C, ATAC-seq, ChIP-seq, MPRA, or perturbation data
 - But still limited compared to experimental data
 
 ### Challenge 3: Structural Variants
@@ -781,7 +757,7 @@ Where are DNA language models heading?
 
 **Approaches in development:**
 - Sparse attention (only attend to subset of positions)
-- Hierarchical models (GROVER-style)
+- Hierarchical and long-context architectures
 - Memory-augmented transformers
 
 **Goal:** Handle entire chromosomes (100+ million bp) in single model
@@ -848,8 +824,8 @@ Validate in MPRA
 - K-mer tokenization (3-mers to 6-mers) captures biologically relevant motifs while keeping vocabulary manageable
 - Pre-training on large genomic datasets creates embeddings that capture regulatory context, promoter identity, splice sites, and conservation patterns
 - DNABERT (2021) pioneered DNA language models; DNABERT-2 improved efficiency with BPE tokenization and multi-species training
-- Nucleotide Transformer scaled to 2.5B parameters across 850 species for cross-species regulatory element discovery
-- LOGO uses multi-task learning to integrate sequence and functional annotations; GROVER incorporates 3D genome structure
+- Nucleotide Transformer scaled DNA language modeling to very large, multi-species training corpora for cross-species regulatory element discovery
+- LOGO uses multi-task learning to integrate sequence and functional annotations; GROVER learns a frequency-balanced genomic vocabulary from sequence
 - Fine-tuning pre-trained models requires relatively little task-specific data (hundreds to thousands of examples vs millions for training from scratch)
 - DNA language models consistently outperform traditional conservation and motif-based methods for variant effect prediction
 - Major limitations include context length constraints, cell-type specificity, structural variant handling, and mechanistic interpretability
@@ -863,7 +839,7 @@ Validate in MPRA
 | **Attention mechanism** | Method for the model to weight important sequence context, computing how much each position should "attend to" every other position |
 | **BERT (Bidirectional Encoder Representations from Transformers)** | Model architecture that processes sequences in both directions simultaneously |
 | **Byte Pair Encoding (BPE)** | Tokenization method that learns optimal "words" from data based on frequency |
-| **Context window** | Maximum sequence length a model can process at once (e.g., 512bp for DNABERT) |
+| **Context window** | Maximum input span a model can process at once; depending on tokenization, this may be measured in tokens rather than directly in base pairs |
 | **Embedding** | Numerical vector representation of a sequence that captures its biological properties |
 | **Fine-tuning** | Adapting a pre-trained model to a specific task with limited task-specific data |
 | **Foundation model** | Large pre-trained model that can be adapted to many downstream tasks |
@@ -884,7 +860,7 @@ Validate in MPRA
 
 2. **DNABERT learns that promoter sequences cluster together (have similar embeddings) without being explicitly told which sequences are promoters. Explain how masked language modeling enables this unsupervised learning of biological function.**
 
-3. **Compare the trade-offs between DNABERT (small model, human genome only) and Nucleotide Transformer (large model, 850 species). In what scenarios would you choose each?**
+3. **Compare the trade-offs between DNABERT (smaller, human-genome-focused model) and Nucleotide Transformer (larger, multi-species model family). In what scenarios would you choose each?**
 
 4. **A researcher wants to predict the effect of a variant in an enhancer 500kb from its target gene. Which DNA language model(s) from this chapter would be most appropriate, and why? What are the limitations?**
 
@@ -907,7 +883,7 @@ Validate in MPRA
 
 3. **Mechanistic understanding vs. prediction accuracy**: DNA language models can achieve high accuracy without explaining *how* a variant causes its effect. Is this acceptable for clinical use? When is mechanistic understanding essential vs. when is accurate prediction sufficient?
 
-4. **Resource allocation**: Training large DNA language models like Nucleotide Transformer costs $50,000+. Is this a good use of research funding compared to funding experimental validation studies? How should the field balance computational vs. experimental approaches?
+4. **Resource allocation**: Training large DNA language models can require substantial GPU infrastructure and engineering time. Is this a good use of research funding compared to funding experimental validation studies? How should the field balance computational vs. experimental approaches?
 
 5. **Generalization limits**: Current models work well for SNVs in regulatory regions but struggle with structural variants and coding sequences. Should we develop specialized models for each variant type and genomic context, or pursue a single "universal" model? What are the trade-offs?
 
@@ -922,7 +898,7 @@ Ji, Y., Zhou, Z., Liu, H., & Davuluri, R. V. (2021). DNABERT: pre-trained Bidire
 - Shows pre-training + fine-tuning paradigm works for DNA
 
 **Nucleotide Transformer (2023)**
-Dalla-Torre, H., Gonzalez, L., Mendoza-Revilla, J., et al. (2023). The Nucleotide Transformer: Building and Evaluating Robust Foundation Models for Human Genomics. *bioRxiv*.
+Dalla-Torre, H., Gonzalez, L., Mendoza-Revilla, J., et al. (2024). The Nucleotide Transformer: building and evaluating robust foundation models for human genomics. *Nature Methods*.
 - Massive multi-species model
 - Demonstrates value of scale
 - Cross-species regulatory element prediction
@@ -931,21 +907,24 @@ Dalla-Torre, H., Gonzalez, L., Mendoza-Revilla, J., et al. (2023). The Nucleotid
 Zhou, Z., Ji, Y., Li, W., et al. (2023). DNABERT-2: Efficient Foundation Model and Benchmark for Multi-Species Genome. *arXiv preprint*.
 - Improves efficiency with BPE tokenization
 - Multi-species pre-training
-- Longer context windows
+- More efficient tokenization and benchmarking
+
+**GROVER (2024)**
+Sanabria, M., Hirsch, J., Joubert, P. M., et al. (2024). DNA language model GROVER learns sequence context in the human genome. *Nature Machine Intelligence*.
+- Uses BPE to learn a genomic vocabulary
+- Shows that sequence-only pretraining captures token and region-level structure
 
 ### Recent Reviews
 
-**Language Models for Genomics (2024)**
-Benegas, G., Ye, C., & Song, Y. S. (2024). The Future of Genomic Language Models. *Nature Methods* (in press).
-- Comprehensive review of DNA language models
-- Comparison of architectures
-- Discussion of limitations and future directions
+**DNA Language Models for Variant Effects (2023)**
+Benegas, G., Batra, S. S., & Song, Y. S. (2023). DNA language models are powerful predictors of genome-wide variant effects. *PNAS*, 120(44), e2311219120.
+- Demonstrates genome-wide variant-effect prediction with sequence language models
+- Useful for understanding zero-shot scoring
 
-**Foundation Models in Biology (2023)**
-Jumper, J., Evans, R., Pritzel, A., et al. (2023). Applying Language Models to Biology. *Nature Reviews Genetics*, 24, 1-15.
+**Language Models for Biological Research (2024)**
+Simon, E., Swanson, K., & Zou, J. (2024). Language models for biological research: a primer. *Nature Methods*, 21, 1422-1429.
 - Broader view of language models in biology
-- Covers protein, RNA, and DNA applications
-- Discusses transfer learning strategies
+- Covers adaptation strategies and limitations
 
 ### Online Resources
 
@@ -982,7 +961,7 @@ Durbin, R., Eddy, S. R., Krogh, A., & Mitchison, G. (1998). *Biological Sequence
 
 In **Chapter 14: Next-Generation DNA Models**, we'll explore even more advanced architectures that push beyond the transformer paradigm:
 
-- **HyenaDNA**: Sub-quadratic attention for million-nucleotide contexts
+- **HyenaDNA**: Long-convolution architecture for million-nucleotide contexts
 - **Mamba**: State space models for efficient long-range dependencies
 - **Caduceus**: Bidirectional state space models specifically for DNA
 
@@ -991,7 +970,7 @@ These models address key limitations of current transformers:
 - ✅ More efficient training and inference
 - ✅ Better capture of long-range regulatory interactions
 
-**Prerequisites for Chapter 13:**
+**Prerequisites for Chapter 14:**
 - [ ] Understand transformer self-attention (Chapter 10)
 - [ ] Familiar with DNA language model applications (this chapter)
 - [ ] Comfortable with trade-offs between model complexity and performance

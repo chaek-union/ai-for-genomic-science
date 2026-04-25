@@ -36,9 +36,9 @@ By the end of this chapter, you will be able to:
 
 Modern biology faces two unprecedented explosions.
 
-**Data Explosion**: Whole genome sequencing can easily read a single human genome of approximately 3 billion nucleotides, with each person having 3-5 million variants that differ from one another. Single-cell RNA-seq experiments generate data from millions of cells, while various epigenome sequencing techniques can provide information for chromatin accessibility maps across millions of genomic regions. Proteomics technologies can identify hundreds of millions of peptide sequences from a single experiment.
+**Data Explosion**: Whole genome sequencing can easily read a single human genome of approximately 3 billion nucleotides, with each person having 3-5 million variants that differ from one another. Single-cell RNA-seq experiments generate data from millions of cells, while various epigenome sequencing techniques can provide information for chromatin accessibility maps across millions of genomic regions. Proteomics experiments can generate millions of spectra and identify thousands to tens of thousands of peptides and proteins, depending on the technology and study design.
 
-**Many Hypothesis to be explored**: Large-scale genomics studies don't just generate data but they also generate thousands of testable hypotheses. GWAS studies identify hundreds of loci associated with each complex trait, but most are in noncoding regions with unknown mechanisms. Genome sequencing in rare disease cohorts reveals dozens of candidate genes per patient, each requiring functional validation. Cancer genomics finds hundreds of somatic mutations per tumor, but only a subset are "driver" mutations versus neutral "passengers." Single-cell atlases reveal thousands of cell type-specific gene expression patterns, each suggesting regulatory hypotheses. Spatial transcriptomics shows genes co-expressed in tissue neighborhoods, implicating thousands of potential cell-cell interactions.
+**Many Hypotheses to Explore**: Large-scale genomics studies don't just generate data but they also generate thousands of testable hypotheses. GWAS studies identify hundreds of loci associated with each complex trait, but most are in noncoding regions with unknown mechanisms. Genome sequencing in rare disease cohorts reveals dozens of candidate genes per patient, each requiring functional validation. Cancer genomics finds hundreds of somatic mutations per tumor, but only a subset are "driver" mutations versus neutral "passengers." Single-cell atlases reveal thousands of cell type-specific gene expression patterns, each suggesting regulatory hypotheses. Spatial transcriptomics shows genes co-expressed in tissue neighborhoods, implicating thousands of potential cell-cell interactions.
 
 **Systems-Level Complexity**: The challenge isn't just quantity but the complexity inherent in our cells and tissues. Genes operate in networks, not isolation, and a single phenotype often involves dozens to hundreds of genes working together. Context matters profoundly: the same variant can be benign in one genetic background but pathogenic in another, and gene function depends on cell type, developmental stage, and environmental conditions. Combinatorial interactions add another layer of complexity, where two variants individually benign might be harmful together, causing the number of possible combinations to explode exponentially. Pleiotropic effects further complicate the picture: one gene affects multiple phenotypes while one phenotype is affected by multiple genes, creating a many-to-many mapping rather than a simple one-to-one relationship.
 
@@ -229,11 +229,11 @@ DeepVariant treats sequencing as image recognition, reducing error rates by 50% 
 
 ### Single-Cell Analysis: Foundation Models (2022-2024)
 
-Models like scGPT and Geneformer treat genes as words in language, learning universal cellular representations ([Cui et al 2024, Nature Methods](https://www.nature.com/articles/s41592-024-02201-0); [Theodoris et al 2023, Nature](https://www.nature.com/articles/s41586-023-06139-9)). This enabled the Human Cell Atlas and reduced cell type annotation from weeks to hours.
+Models like scGPT and Geneformer treat genes as words in language, learning reusable cellular representations ([Cui et al 2024, Nature Methods](https://www.nature.com/articles/s41592-024-02201-0); [Theodoris et al 2023, Nature](https://www.nature.com/articles/s41586-023-06139-9)). These models build on Human Cell Atlas-scale datasets and can reduce cell type annotation from weeks to hours.
 
 ### Drug Discovery: Virtual Screening (2020-present)
 
-Deep learning screens 100+ million molecules virtually in days. Halicin—a novel antibiotic effective against drug-resistant bacteria—was discovered this way ([Stokes et al 2020, Cell](https://doi.org/10.1016/j.cell.2020.01.021)). A major regulatory milestone came in 2024 when the FDA accepted Recursion Pharmaceuticals' AI-based models as a replacement for animal testing in certain toxicology studies. This represents the first time AI predictions were formally approved to substitute traditional animal experiments in drug development, potentially accelerating timelines while reducing costs and ethical concerns.
+Deep learning screens 100+ million molecules virtually in days. Halicin—a novel antibiotic effective against drug-resistant bacteria—was discovered this way ([Stokes et al 2020, Cell](https://doi.org/10.1016/j.cell.2020.01.021)). Regulatory agencies are also developing frameworks for AI/ML models and other New Approach Methodologies in drug development. These tools may reduce, refine, or supplement some animal studies, but they should not be described as a blanket replacement for animal testing unless a specific FDA qualification or guidance document is cited.
 
 ### Common Success Patterns
 
@@ -451,5 +451,3 @@ AI cannot distinguish between these scenarios. Only **controlled experiments** (
 </details>
 
 ---
-
-

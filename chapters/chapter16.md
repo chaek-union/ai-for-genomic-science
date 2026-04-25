@@ -2,9 +2,9 @@
 
 **[Interactive: Chapter 16](https://chaek-union.github.io/ai-for-genomic-science/interactive/chapter16.html)**
 
-The download progress bar reads: 2.3 terabytes. 33 million cells. 20,000 genes per cell. The Human Cell Atlas consortium has measured gene expression in every major cell type across the human body, and the dataset has just become publicly available. If you printed each cell's expression profile on a single sheet of paper, the stack would reach from Seoul to Busan.
+The download progress bar reads: terabytes of data. Tens of millions of cells. About 20,000 genes per cell. Human Cell Atlas-scale efforts and related public atlases are steadily mapping cell types across the body, and the datasets keep growing. If you printed each cell's expression profile on a single sheet of paper, the stack would stretch across cities.
 
-The scale is not just logistically staggering — it breaks traditional analysis pipelines. No graduate student can manually annotate 33 million cells. No standard clustering algorithm scales elegantly to this size. Batch correction across dozens of labs, protocols, and patient cohorts becomes a combinatorial nightmare. And yet, buried somewhere in those 33 million expression profiles are undiscovered cell states, rare populations that appear in disease but not in health, and regulatory programs that no one has described. The data contains answers. The question is how to ask it.
+The scale is not just logistically staggering — it breaks traditional analysis pipelines. No graduate student can manually annotate tens of millions of cells. No standard clustering algorithm scales elegantly to this size. Batch correction across dozens of labs, protocols, and patient cohorts becomes a combinatorial nightmare. And yet, buried somewhere in those expression profiles are undiscovered cell states, rare populations that appear in disease but not in health, and regulatory programs that no one has described. The data contains answers. The question is how to ask it.
 
 The solution mirrors what happened in natural language processing when the internet became too large for human curation: stop annotating everything manually, and instead train a model large enough to learn the structure of the data itself. GPT didn't need humans to label every sentence as grammatical or ungrammatical — it learned grammar by reading enough text. A single-cell foundation model doesn't need humans to annotate every cell — it learns what "normal" cell states look like by reading enough expression profiles, so it can spot what's abnormal, incomplete, or novel.
 
@@ -14,7 +14,7 @@ This is the shift this chapter describes: from analysis pipelines that require l
 
 ## The Biological Challenge
 
-Single-cell RNA-sequencing has generated an unprecedented explosion of data. As of 2024, public repositories contain gene expression measurements from over 100 million individual cells. The Human Cell Atlas alone aims to profile every cell type in the human body—an estimated 37 trillion cells across 200+ major cell types.
+Single-cell RNA-sequencing has generated an unprecedented explosion of data. By the mid-2020s, public repositories and atlas projects contained gene expression measurements from well over 100 million individual cells. The Human Cell Atlas aims to create reference maps of human cell types across tissues, while related portals such as CELLxGENE aggregate standardized datasets at even larger scale.
 
 But this wealth of data creates new challenges:
 
@@ -99,12 +99,8 @@ Gene Embedding = Gene Identity Embedding + Expression Value Embedding
 
 The gene identity tells the model "this is the BRCA1 gene," while the expression value indicates "it's highly expressed" or "barely detectable." This dual embedding captures both what genes are present and how active they are.
 
-**Architecture specifications**:
-- 12 transformer layers
-- 128-dimensional embeddings
-- 8 attention heads per layer
-- Trained on 10 million cells from 66 datasets
-- Pre-training took ~200 GPU hours
+**Architecture note**:
+scBERT follows the BERT pretraining/fine-tuning idea for scRNA-seq and uses attention-efficient transformer components to handle thousands of genes per cell. Exact layer counts, embedding sizes, and training sets depend on the implementation and should be cited from the model paper or repository when used in a methods section.
 
 ### How scBERT Processes Cells
 
@@ -120,7 +116,7 @@ Let's walk through what happens when scBERT sees a T cell:
 
 ### Practical Applications
 
-**Cell type annotation**: After pre-training, scBERT can be fine-tuned on labeled cells from one dataset and achieve >95% accuracy on held-out test cells. When applied to completely new datasets (zero-shot), it still achieves ~85% accuracy.
+**Cell type annotation**: After pre-training, scBERT can be fine-tuned on labeled cells from one dataset and achieve strong performance on held-out cells. Performance on completely new datasets depends on tissue, batch effects, annotation granularity, and how closely the new data match the pretraining and fine-tuning data.
 
 **Batch effect correction**: Because scBERT learned gene expression patterns across many studies, it naturally learns to separate biological variation (real differences between cell types) from technical variation (differences between sequencing runs).
 
@@ -138,7 +134,7 @@ Additionally, scBERT operates on processed count data, losing information about 
 
 ### A Network-Aware Design
 
-Geneformer (2023) took a different approach by incorporating prior knowledge about gene function. Instead of treating all genes as equal tokens, Geneformer ranks genes by their importance in each cell.
+Geneformer (2023) took a different approach by representing each cell as a ranked list of expressed genes. Instead of relying on absolute count values, it asks which genes are unusually high or low within a cell relative to a large reference corpus.
 
 **Rank-value encoding**: Genes are sorted by expression level within each cell:
 - Rank 1: Highest expressed gene
@@ -153,28 +149,27 @@ This rank-based approach makes the model robust to technical variation in absolu
 ### The Geneformer Architecture
 
 **Model specifications**:
-- 6 transformer layers (smaller than scBERT)
-- Pre-trained on 30 million cells from 250+ datasets
-- Considers top 2,048 genes per cell
-- Uses gene embeddings from Gene Ontology annotations
-- Can process cells in ~10 milliseconds
+- Pre-trained on about 30 million single-cell transcriptomes
+- Represents each cell using rank-value encoding of expressed genes
+- Learns gene and cell representations through self-supervised masked-gene prediction
+- Can be fine-tuned for downstream network-biology tasks with limited labeled data
 
-**Integration with biological knowledge**: Geneformer initializes gene embeddings using Gene Ontology (GO) annotations. Genes with similar functions (e.g., all DNA repair genes) start with similar embeddings. This gives the model a "head start" based on decades of biological knowledge.
+**Integration with biological knowledge**: Geneformer does not need to initialize gene embeddings from Gene Ontology annotations. Instead, it learns gene-gene relationships from large-scale single-cell expression context. Biological structure emerges from the self-supervised task and can then be probed through attention, perturbation, and fine-tuning analyses.
 
-### In-Context Learning
+### Transfer Learning and In Silico Perturbation
 
-Perhaps Geneformer's most impressive capability is **in-context learning**—the model can perform tasks without any fine-tuning, just by seeing examples.
+Perhaps Geneformer's most impressive capability is transfer learning for network biology. After pretraining, the model can be fine-tuned for tasks such as gene dosage sensitivity, chromatin dynamics, and disease-state modeling with much less task-specific data than would be needed to train from scratch.
 
-**Example**: Identifying cardiomyocytes
-1. Show Geneformer 10 example cardiomyocyte cells
-2. Give it a new unlabeled cell
-3. The model predicts whether the new cell is also a cardiomyocyte
+**Example**: Prioritizing cardiomyopathy targets
+1. Pretrain Geneformer on a large corpus of single-cell transcriptomes
+2. Fine-tune or adapt the model to cardiomyocyte disease data
+3. Perform in silico perturbations to nominate genes whose simulated changes shift cells toward a healthier state
 
-The model accomplishes this by comparing the new cell's gene expression pattern to the examples, using patterns learned during pre-training. This is analogous to how GPT-3 can translate languages it wasn't explicitly trained to translate—it learned general principles that transfer.
+These predictions are hypotheses for experimental follow-up, not direct proof of therapeutic efficacy.
 
 ### Mechanistic Interpretations
 
-Because Geneformer uses attention mechanisms, we can examine which genes the model focuses on when making predictions. When classifying heart cells, the model attends most strongly to cardiac transcription factors (GATA4, NKX2-5, MEF2C)—exactly the genes a human expert would look at.
+Because Geneformer uses attention mechanisms, we can examine which genes the model focuses on when making predictions. In heart-cell analyses, attention and perturbation patterns can highlight cardiac transcription factors such as GATA4, NKX2-5, and MEF2C, which gives researchers hypotheses to compare with known biology.
 
 This interpretability is crucial for biological applications. We don't just want a "black box" that makes good predictions; we want to understand why it makes those predictions and whether its reasoning aligns with biological mechanisms.
 
@@ -203,12 +198,12 @@ scGPT (2023) asks a different question: instead of just predicting masked genes,
 This multi-task approach forces the model to learn different aspects of cellular biology:
 - Task 1: Gene co-expression patterns
 - Task 2: Spatial and temporal relationships
-- Task 3: Causal structure (what causes what)
+- Task 3: Statistical co-expression and generative structure; causal claims require perturbation experiments
 
 **Model specifications**:
 - 12 transformer layers
 - 512-dimensional embeddings
-- Pre-trained on 33 million cells
+- Pre-trained on a large public single-cell corpus
 - Can condition on cell type, tissue, and perturbation information
 - Processes ~100 cells per second
 
@@ -238,7 +233,7 @@ The model approaches this by:
 
 For example, knocking out a transcription factor might cause downstream target genes to decrease, while stress response genes increase to compensate. The model predicts these cascade effects.
 
-**Validation**: When tested on CRISPR knockout experiments, scGPT's predictions correlated 0.7–0.8 with actual measured expression changes—not perfect, but remarkably good considering the complexity of cellular responses.
+**Validation**: Perturbation prediction must be evaluated against CRISPR, drug-treatment, or other perturbation datasets in the relevant cell type. Reported correlations vary by benchmark and should not be treated as a universal performance guarantee.
 
 ---
 
@@ -246,13 +241,13 @@ For example, knocking out a transcription factor might cause downstream target g
 
 ### Architectural Differences
 
-| Model | Released | Cells | Parameters | Key Innovation | Best For |
-|-------|----------|-------|------------|----------------|----------|
-| **scBERT** | 2022 | 10M | 15M | First BERT for scRNA-seq | Cell type annotation |
-| **Geneformer** | 2023 | 30M | 10M | Rank-value encoding | Zero-shot learning |
-| **scGPT** | 2023 | 33M | 52M | Generative modeling | Perturbation prediction |
-| **scFoundation** | 2024 | 50M | 100M | Multi-modal (RNA+ATAC) | Integration tasks |
-| **CellPatch** | 2024 | 45M | 80M | Spatial context | Tissue architecture |
+| Model family | Released | Main input | Key Innovation | Best For |
+|--------------|----------|------------|----------------|----------|
+| **scBERT** | 2022 | scRNA-seq | BERT-style pretraining for cell annotation | Cell type annotation |
+| **Geneformer** | 2023 | scRNA-seq | Rank-value encoding and transfer learning | Network biology and in silico perturbation |
+| **scGPT** | 2024 | single-cell multi-omics-style inputs | Generative pretraining and perturbation modeling | Perturbation prediction and integration |
+| **scFoundation** | 2024 | large-scale transcriptomics | Large-scale transcriptomic representation learning | General transcriptomic transfer tasks |
+| **Multimodal/spatial models** | emerging | RNA, ATAC, spatial, protein | Incorporate additional measurements | Tissue context and regulatory mechanisms |
 
 ### When to Use Each Model
 
@@ -274,19 +269,14 @@ For example, knocking out a transcription factor might cause downstream target g
 - You're studying cellular dynamics
 - You have paired perturbation datasets
 
-**Use multi-modal models (scFoundation) when**:
+**Use multimodal or spatial models when**:
 - You have both RNA and chromatin accessibility data
 - You're studying gene regulation
 - You need to integrate across data modalities
 
 ### Performance Benchmarks
 
-On standard cell type annotation tasks across 20 datasets:
-- scBERT: 94.2% accuracy (±2.1%)
-- Geneformer: 93.8% accuracy (±2.4%)
-- scGPT: 95.1% accuracy (±1.8%)
-
-But these numbers don't tell the full story. Geneformer excels in zero-shot scenarios (new cell types), while scGPT is best for perturbation prediction. Choose based on your biological question, not just overall accuracy.
+Benchmark numbers depend heavily on train/test split, tissue, cell ontology, preprocessing, and whether a model is fine-tuned. A model that performs well for cell type annotation may not be best for perturbation prediction, batch integration, or rare-state discovery. Choose based on your biological question, not just overall accuracy.
 
 ---
 
@@ -406,16 +396,16 @@ This is powerful for studying human disorders where we can't do experiments dire
 
 ---
 
-## Case Study: Identifying Disease-Associated Cell States in Type 2 Diabetes
+## Teaching Scenario: Identifying Disease-Associated Cell States in Type 2 Diabetes
 
 **Background**: Type 2 diabetes involves dysfunction of pancreatic beta cells, but the molecular mechanisms remain unclear. Different patients show different patterns of beta cell stress and failure.
 
-**The Challenge**: Researchers collected pancreatic islet samples from 50 patients with type 2 diabetes and 20 unaffected controls. After scRNA-seq, they had expression data from 200,000 cells. But which specific beta cell states associate with the disorder?
+**The Challenge**: Researchers collect pancreatic islet samples from individuals with type 2 diabetes and unaffected controls. After scRNA-seq, they have expression data from many thousands of cells. But which specific beta cell states associate with the disorder?
 
 **Foundation Model Approach**:
 
 **Step 1: Transfer learning**
-- Used scGPT pre-trained on 33 million cells
+- Used a scGPT-style model pre-trained on a large public single-cell corpus
 - Fine-tuned on 5,000 labeled beta cells from published studies
 - Model learned "typical" beta cell expression patterns
 
@@ -461,29 +451,29 @@ This is powerful for studying human disorders where we can't do experiments dire
 
 The newest generation of foundation models extends beyond scRNA-seq to integrate multiple data types:
 
-**scFoundation** (2024): Combines scRNA-seq and scATAC-seq
-- RNA tells us what genes are expressed
-- ATAC tells us which chromatin regions are accessible
-- Together: predict gene regulation mechanisms
+**scFoundation** (2024): A large-scale single-cell transcriptomics foundation model
+- Learns reusable representations from scRNA-seq expression profiles
+- Supports downstream tasks such as perturbation response and drug-response prediction
+- Multimodal models, including scGPT-style approaches, extend this idea by incorporating ATAC-seq, spatial context, or other measurements
 
-**CellPatch** (2024): Incorporates spatial information from spatial transcriptomics
+**Spatial foundation models**: Incorporate spatial information from spatial transcriptomics
 
 Traditional scRNA-seq loses spatial context—we don't know where cells were in the tissue. Spatial transcriptomics preserves this, but generates different data types.
 
-CellPatch learns:
+These models learn:
 - How cell types are spatially organized
 - Which cells communicate with neighbors
 - How spatial position affects gene expression
 
-**EpiAgent** (2024): Predicts cellular differentiation trajectories
+**Trajectory and perturbation models**: Predict cellular differentiation trajectories
 
-During development, cells transition through intermediate states. EpiAgent learns these temporal relationships.
+During development, cells transition through intermediate states. Trajectory-aware models learn these temporal relationships from time-course, perturbation, or RNA velocity-style data.
 
 **Example**: Reprogramming fibroblasts to neurons
 1. Start with fibroblast gene expression
-2. EpiAgent predicts effects of adding transcription factors
+2. A trajectory-aware model predicts effects of adding transcription factors
 3. Suggests optimal factor combinations
-4. Tested experimentally: 3× more efficient than random selection
+4. Test the top predictions experimentally against random or baseline selections
 
 ---
 
@@ -574,11 +564,11 @@ Foundation models are complex. Understanding why they make specific predictions 
 
 - **scBERT** pioneered BERT-style masked gene prediction for single cells, treating genes as tokens and cells as sequences, achieving strong performance on cell type annotation
 
-- **Geneformer** introduced rank-value encoding and incorporated biological knowledge from Gene Ontology, enabling effective zero-shot learning for new cell types
+- **Geneformer** introduced rank-value encoding and self-supervised transfer learning, enabling network-biology predictions and in silico perturbation analysis with limited task-specific data
 
 - **scGPT** added generative capabilities, allowing prediction of cellular responses to perturbations and simulation of drug treatments or genetic modifications
 
-- **Multi-modal models** (scFoundation, CellPatch, EpiAgent) integrate RNA-seq with chromatin accessibility, spatial position, or temporal dynamics to capture additional biological complexity
+- **Multimodal and spatial models** integrate RNA-seq with chromatin accessibility, spatial position, protein abundance, or temporal dynamics to capture additional biological complexity
 
 - **Transfer learning** dramatically reduces data requirements: fine-tuning on 100–1,000 labeled cells often achieves performance that would require 10,000+ cells when training from scratch
 
@@ -648,7 +638,7 @@ Foundation models are complex. Understanding why they make specific predictions 
 
 ### Recent Reviews
 
-- Benegas, G., Batra, S.S., & Song, Y.S. (2024). "DNA language models are powerful predictors of genome-wide variant effects." *PNAS*, 121(15), e2311219121.
+- Baek, S., Song, K., & Lee, I. (2025). "Single-cell foundation models: bringing artificial intelligence into cell biology." *Experimental & Molecular Medicine*, 57, 2169-2181.
 - Lähnemann, D., Köster, J., Szczurek, E., et al. (2020). "Eleven grand challenges in single-cell data science." *Genome Biology*, 21, 31.
 
 ### Online Resources
@@ -666,7 +656,7 @@ In **Chapter 17: Toward Whole-Cell Modeling**, we'll explore how foundation mode
 - Multiple data modalities (RNA, chromatin, protein, metabolism) can be integrated into unified cell models
 - Dynamic models capture temporal evolution of cellular states
 - Spatial models represent tissue architecture and cell-cell interactions
-- The *E. coli* whole-cell model demonstrates feasibility of comprehensive modeling
+- The *Mycoplasma genitalium* whole-cell model demonstrates feasibility of comprehensive modeling
 - The Human Cell Atlas aims to create a reference map of all human cell types
 
 Before moving on, make sure you can:

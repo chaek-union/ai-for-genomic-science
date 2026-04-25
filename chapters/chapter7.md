@@ -189,11 +189,11 @@ CADD outputs scores on a **phred-like scale**:
 
 Higher scores indicate greater predicted deleteriousness.
 
-**Clinical interpretation guidelines:**
-- CADD < 15: likely neutral
-- CADD 15-20: uncertain significance
-- CADD 20-30: likely functional impact
-- CADD > 30: very likely functional impact
+**Rough prioritization heuristics:**
+- CADD < 15: often lower priority, but not automatically neutral
+- CADD 15-20: intermediate priority
+- CADD 20-30: higher priority for follow-up
+- CADD > 30: very high predicted deleteriousness, requiring careful review
 
 **Important caveats:**
 - CADD scores are continuous—there's no hard cutoff

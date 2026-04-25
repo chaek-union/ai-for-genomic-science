@@ -12,8 +12,6 @@ This chapter opens the hood on that process. We will work through how convolutio
 
 ## The Biological Challenge
 
-## The Biological Challenge
-
 The noncoding genome represents about 98% of human DNA, yet we understand far less about it than we do about protein-coding regions. This vast regulatory landscape includes:
 
 - **Promoters**: DNA sequences where transcription begins (~20,000-30,000 in the human genome)
@@ -460,13 +458,13 @@ Input → Conv(width=4) → Concat → ...
 
 ## 9.6 Case Study: Variant in TAL1 Enhancer
 
-Let's walk through a real example of using CNN models for variant interpretation.
+Let's walk through an illustrative example of using CNN models for variant interpretation. The biology is inspired by real enhancer-variant studies around hematopoietic genes, but the specific coordinate and quantitative values below are a teaching scenario unless a primary citation is added.
 
 ### Background
 
 **TAL1** (T-cell acute lymphocytic leukemia 1) is a transcription factor critical for blood cell development. A +51 kb enhancer upstream of TAL1 is active specifically in erythroid cells (red blood cell precursors).
 
-In 2015, researchers identified a single nucleotide variant in this enhancer:
+Suppose researchers identify a single nucleotide variant in this enhancer:
 - Position: chr1:47,690,516 (hg19)
 - Reference allele: C
 - Alternative allele: T

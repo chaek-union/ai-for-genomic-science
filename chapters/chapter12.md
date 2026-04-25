@@ -38,9 +38,9 @@ What we need is a different approach: models that learn general genomic principl
 - [ ] Understand how self-supervised learning enables training on unlabeled genomic sequences
 - [ ] Evaluate the trade-offs between model size, training cost, and transfer learning performance
 
-## 1. Introduction: The Foundation Model Revolution
+## 12.1 Introduction: The Foundation Model Revolution
 
-### 1.1 What Is a Foundation Model?
+### 12.1.1 What Is a Foundation Model?
 
 The term "foundation model" emerged in 2021 to describe a new paradigm in artificial intelligence. A foundation model is a large-scale model trained on broad, unlabeled data that can be adapted to a wide range of downstream tasks with minimal task-specific training.
 
@@ -53,7 +53,7 @@ The key characteristics are:
 
 The foundation model concept originated in natural language processing (NLP) with models like BERT and GPT. These models are trained on billions of words of text to understand language structure, then can be adapted to specific tasks like sentiment analysis, question answering, or translation with relatively little task-specific data.
 
-### 1.2 Why Genomics Needs Foundation Models
+### 12.1.2 Why Genomics Needs Foundation Models
 
 Genomics is actually an ideal domain for foundation models, perhaps even more so than natural language:
 
@@ -67,7 +67,7 @@ Genomics is actually an ideal domain for foundation models, perhaps even more so
 
 **Cost of Experimental Validation:** Generating labeled training data in genomics is expensive. A single ChIP-seq experiment costs $1,000-5,000. Whole-genome sequencing with deep phenotyping for thousands of individuals costs millions. If a foundation model could reduce the labeled data requirement from 10,000 examples to 100 examples, the cost savings would be enormous.
 
-### 1.3 From Task-Specific to Foundation Models: A Paradigm Shift
+### 12.1.3 From Task-Specific to Foundation Models: A Paradigm Shift
 
 Let's contrast the old paradigm with the new:
 
@@ -87,9 +87,9 @@ The key insight: learning general genomic patterns from unlabeled data is the ex
 
 This is analogous to how humans learn. You don't learn to read from scratch every time you encounter a new book. You learned general reading skills once, and now you can read anything—scientific papers, novels, recipes—with minimal adjustment.
 
-## 2. Transfer Learning: The Core Concept
+## 12.2 Transfer Learning: The Core Concept
 
-### 2.1 What Is Transfer Learning?
+### 12.2.1 What Is Transfer Learning?
 
 Transfer learning is the ability of a model to apply knowledge learned from one task to a different but related task. Instead of starting from a blank slate (random parameters), you start from a model that already knows something useful.
 
@@ -103,7 +103,7 @@ In neural networks, transfer learning works similarly:
 
 The pretrained model's parameters encode general genomic knowledge—motif patterns, dinucleotide frequencies, splice signals, regulatory grammars. This knowledge helps even on tasks the model wasn't explicitly trained for.
 
-### 2.2 Why Transfer Learning Works in Genomics
+### 12.2.2 Why Transfer Learning Works in Genomics
 
 Transfer learning is effective when the source and target tasks share underlying structure. Genomics has abundant shared structure:
 
@@ -115,7 +115,7 @@ Transfer learning is effective when the source and target tasks share underlying
 
 **Shared Sequence Context:** The nucleotide patterns surrounding splice sites, start codons, and poly-A signals are similar across genes and tissues.
 
-### 2.3 Mathematical View of Transfer Learning
+### 12.2.3 Mathematical View of Transfer Learning
 
 Let's formalize this intuition. Suppose we have:
 
@@ -142,7 +142,7 @@ Where:
 
 The pretrained $h()$ learns features like "transcription factor motif detected at position 47" or "high GC content in this window"—features useful for many tasks, not just the source task.
 
-### 2.4 Types of Transfer Learning
+### 12.2.4 Types of Transfer Learning
 
 **Feature Extraction (Frozen Features):**
 - Use pretrained $h()$ as-is, only train task-specific head $g()$
@@ -159,9 +159,9 @@ The pretrained $h()$ learns features like "transcription factor motif detected a
 - Forces model to learn features useful across tasks
 - Common in genomics where you might predict multiple chromatin marks together
 
-## 3. Self-Supervised Learning: Training Without Labels
+## 12.3 Self-Supervised Learning: Training Without Labels
 
-### 3.1 The Labeling Problem
+### 12.3.1 The Labeling Problem
 
 Foundation models need to learn from massive datasets, but manually labeling billions of sequences is impossible. Even if you had the funding, what would you label them with? Most sequences don't have functional annotations.
 
@@ -169,7 +169,7 @@ This is where self-supervised learning comes in: using the data itself to create
 
 The key insight: you can create a supervised learning problem from unlabeled data by hiding parts of the data and asking the model to predict them.
 
-### 3.2 Language Modeling as Self-Supervised Learning
+### 12.3.2 Language Modeling as Self-Supervised Learning
 
 The most successful self-supervised approach is **language modeling**: predicting masked or future tokens.
 
@@ -193,7 +193,7 @@ To predict masked nucleotides, the model must learn:
 
 This self-supervised task doesn't require any experimental data—just raw sequences. Yet it forces the model to learn genomic grammar.
 
-### 3.3 Self-Supervised Learning Objectives for Genomics
+### 12.3.3 Self-Supervised Learning Objectives for Genomics
 
 Several self-supervised objectives have proven effective:
 
@@ -218,7 +218,7 @@ Several self-supervised objectives have proven effective:
 - Model learns what makes sequences functionally similar
 - Can incorporate evolutionary information
 
-### 3.4 Why Self-Supervised Learning Works
+### 12.3.4 Why Self-Supervised Learning Works
 
 The effectiveness of self-supervised learning might seem magical—how can predicting masked nucleotides teach a model about enhancers, splice sites, or gene expression?
 
@@ -274,9 +274,9 @@ The result: a model pretrained to predict masked nucleotides develops internal r
 > Over billions of sequences, minimizing this loss forces the model to learn predictive patterns in genomic sequences.
 >
 
-## 4. Pretraining and Fine-Tuning: The Two-Stage Paradigm
+## 12.4 Pretraining and Fine-Tuning: The Two-Stage Paradigm
 
-### 4.1 Stage 1: Pretraining
+### 12.4.1 Stage 1: Pretraining
 
 Pretraining is the computationally expensive stage where the model learns general genomic knowledge from massive unlabeled data.
 
@@ -299,7 +299,7 @@ Pretraining is the computationally expensive stage where the model learns genera
 
 > **Biological Analogy:** Like a medical residency program: after years of seeing diverse patients and building broad clinical experience, you then choose a specialty. The model reads millions of unlabeled sequences, developing general biological intuition.
 
-### 4.2 Stage 2: Fine-Tuning
+### 12.4.2 Stage 2: Fine-Tuning
 
 Fine-tuning is the task-specific stage where the pretrained model adapts to your biological question using a small amount of labeled data.
 
@@ -323,7 +323,7 @@ Fine-tuning is the task-specific stage where the pretrained model adapts to your
 
 > **Biological Analogy:** Like choosing a residency specialty: building on foundational knowledge, you can specialize for a specific task (e.g., variant effect prediction) with relatively few labeled examples.
 
-### 4.3 Fine-Tuning Strategies
+### 12.4.3 Fine-Tuning Strategies
 
 There are several approaches to fine-tuning, trading off between computation and adaptation:
 
@@ -350,7 +350,7 @@ There are several approaches to fine-tuning, trading off between computation and
 - Very parameter-efficient
 - Emerging approach for very large foundation models
 
-### 4.4 Case Study: Enhancer Prediction with Fine-Tuning
+### 12.4.4 Case Study: Enhancer Prediction with Fine-Tuning
 
 Let's walk through a concrete example.
 
@@ -377,9 +377,9 @@ Studies comparing these approaches on ENCODE enhancer prediction tasks found:
 
 This demonstrates the power of transfer learning: pretrained knowledge dramatically reduces labeled data requirements.
 
-## 5. Zero-Shot and Few-Shot Learning
+## 12.5 Zero-Shot and Few-Shot Learning
 
-### 5.1 The Few-Shot Learning Spectrum
+### 12.5.1 The Few-Shot Learning Spectrum
 
 Fine-tuning requires some labeled examples. But what if you have almost no labeled data? Foundation models enable a spectrum of learning paradigms:
 
@@ -408,7 +408,7 @@ Fine-tuning requires some labeled examples. But what if you have almost no label
 - How it works: generalize to new tasks without any task-specific training
 - Genomics example: predicting function of sequences for which no experimental data exists
 
-### 5.2 Zero-Shot Learning: Using Models Without Fine-Tuning
+### 12.5.2 Zero-Shot Learning: Using Models Without Fine-Tuning
 
 > **Biological Analogy:** Like a trained immunologist recognizing a pathogen they have never seen before. Prior knowledge generalizes to new situations.
 
@@ -445,7 +445,7 @@ This works because the model learned during pretraining that promoters have cert
 - Comparing sequences across contexts where labels don't transfer
 - Generating candidate predictions to guide experimental validation
 
-### 5.3 Few-Shot Learning: Learning from Minimal Examples
+### 12.5.3 Few-Shot Learning: Learning from Minimal Examples
 
 Few-shot learning extends zero-shot by allowing a handful of examples. The goal is to adapt to a new task with 5-100 examples instead of thousands.
 
@@ -479,7 +479,7 @@ Suppose you're studying a transcription factor with only 10 known binding sites 
 
 Research has shown this can achieve ~70% recall at 5% false positive rate with just 10 examples—far better than motif-based methods.
 
-### 5.4 Case Study: Zero-Shot Variant Effect Prediction
+### 12.5.4 Case Study: Zero-Shot Variant Effect Prediction
 
 Let's examine a practical case study from recent research.
 
@@ -509,9 +509,9 @@ Researchers used a genomic foundation model (similar to models we'll discuss in 
 - Validate experimentally ($$)
 - Much more efficient than validating all 1000
 
-## 6. The Architecture and Training of Foundation Models
+## 12.6 The Architecture and Training of Foundation Models
 
-### 6.1 Model Architecture Choices
+### 12.6.1 Model Architecture Choices
 
 Foundation models for genomics are typically based on transformer architectures (which we introduced in Chapter 10). Key design decisions:
 
@@ -541,7 +541,7 @@ Foundation models for genomics are typically based on transformer architectures 
 - Relative: encode distances between positions
 - Important because position matters in genomics (promoters are upstream of genes)
 
-### 6.2 Pretraining Data and Compute Requirements
+### 12.6.2 Pretraining Data and Compute Requirements
 
 Training a genomic foundation model requires substantial resources:
 
@@ -567,7 +567,7 @@ Training a genomic foundation model requires substantial resources:
 - Data augmentation: reverse complement, random crops
 - Creating training batches: millions of sequence chunks
 
-### 6.3 Evaluation of Foundation Models
+### 12.6.3 Evaluation of Foundation Models
 
 How do we know if a foundation model is good? Unlike task-specific models, we can't evaluate on a single task.
 
@@ -591,7 +591,7 @@ How do we know if a foundation model is good? Unlike task-specific models, we ca
 - Better foundation models need fewer examples
 - Measure accuracy vs. training set size curves
 
-### 6.4 The Scaling Laws of Foundation Models
+### 12.6.4 The Scaling Laws of Foundation Models
 
 Research on language models has revealed "scaling laws": predictable relationships between model size, data size, and performance.
 
@@ -618,9 +618,9 @@ Similar patterns emerge in genomic foundation models:
 - Model developers should focus on good data diversity and moderate model sizes
 - Community benefits from a few well-trained foundation models shared widely
 
-## 7. Transfer Learning Across Species and Conditions
+## 12.7 Transfer Learning Across Species and Conditions
 
-### 7.1 Cross-Species Transfer Learning
+### 12.7.1 Cross-Species Transfer Learning
 
 One of the most exciting applications of genomic foundation models is transferring knowledge across species.
 
@@ -650,7 +650,7 @@ Studies show impressive cross-species transfer:
 - Model learns these conserved patterns during pretraining
 - Only needs to learn species-specific details during fine-tuning
 
-### 7.2 Cross-Tissue and Cross-Condition Transfer
+### 12.7.2 Cross-Tissue and Cross-Condition Transfer
 
 Similar benefits apply within a species across tissues or conditions:
 
@@ -666,7 +666,7 @@ Similar benefits apply within a species across tissues or conditions:
 - Fine-tune on specific condition (rare disorder) with few samples
 - Can predict expression changes from limited patient data
 
-### 7.3 Domain Adaptation: Handling Distribution Shift
+### 12.7.3 Domain Adaptation: Handling Distribution Shift
 
 A challenge in transfer learning is **domain shift**: when test data differs systematically from training data.
 
@@ -693,9 +693,9 @@ A challenge in transfer learning is **domain shift**: when test data differs sys
 - Adjust prediction thresholds based on target domain
 - Simple but often effective
 
-## 8. Practical Considerations for Using Foundation Models
+## 12.8 Practical Considerations for Using Foundation Models
 
-### 8.1 When to Use Foundation Models
+### 12.8.1 When to Use Foundation Models
 
 Foundation models aren't always the best choice. Use them when:
 
@@ -712,7 +712,7 @@ Foundation models aren't always the best choice. Use them when:
 - Strict computational constraints (foundation models are large)
 - Need fully interpretable models (complex models harder to interpret)
 
-### 8.2 Choosing a Pretrained Model
+### 12.8.2 Choosing a Pretrained Model
 
 Many genomic foundation models are now publicly available. How to choose?
 
@@ -738,7 +738,7 @@ Many genomic foundation models are now publicly available. How to choose?
    - Is model easy to download and use?
    - Are there code examples and tutorials?
 
-### 8.3 Fine-Tuning Best Practices
+### 12.8.3 Fine-Tuning Best Practices
 
 To get best results when fine-tuning:
 
@@ -768,7 +768,7 @@ To get best results when fine-tuning:
 - Regression: linear layer
 - Sequence labeling: per-position predictions
 
-### 8.4 Interpreting Foundation Model Predictions
+### 12.8.4 Interpreting Foundation Model Predictions
 
 Foundation models are complex and can be hard to interpret. Approaches to understand them:
 
@@ -794,9 +794,9 @@ Foundation models are complex and can be hard to interpret. Approaches to unders
 - Train simple classifiers on embeddings
 - Test if embeddings capture specific properties (GC content, conservation, etc.)
 
-## 9. Current Limitations and Future Directions
+## 12.9 Current Limitations and Future Directions
 
-### 9.1 Current Limitations
+### 12.9.1 Current Limitations
 
 Despite their promise, genomic foundation models face challenges:
 
@@ -824,7 +824,7 @@ Despite their promise, genomic foundation models face challenges:
 - Pretraining on common sequences
 - May not capture rare but important events (e.g., rare variants, rare cell states)
 
-### 9.2 Emerging Solutions
+### 12.9.2 Emerging Solutions
 
 Research is addressing these limitations:
 
@@ -852,7 +852,7 @@ Research is addressing these limitations:
 - Iterative improvement: experiment → update model → new predictions
 - Reduces total experimental cost
 
-### 9.3 Future Directions
+### 12.9.3 Future Directions
 
 Exciting developments on the horizon:
 

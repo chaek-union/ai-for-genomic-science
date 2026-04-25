@@ -445,18 +445,18 @@ Output: "This AG pairs with the GT I saw earlier—it's an acceptor!"
 - **LSTM:** Gradients can flow directly through the cell state → stay strong
 - **Intuitively:** Cell state is a protected "highway" where information travels unchanged
 
-### Real Applications: SpliceAI
+### Related Application: SpliceAI as a Convolutional Alternative
 
-SpliceAI (Jaganathan et al., 2019) predicts splice sites using deep networks:
+SpliceAI (Jaganathan et al., 2019) predicts splice sites using a deep residual convolutional network rather than an LSTM. It is useful to mention here because it solves the same biological problem LSTMs were designed to address: carrying sequence context across hundreds to thousands of nucleotides.
 
 **Task:** Given a gene sequence, predict:
 - Splice donor sites (GT)
 - Splice acceptor sites (AG)
 - Neither
 
-**Challenge:** Splice sites depend on regulatory elements 100-500 nucleotides away.
+**Challenge:** Splice sites can depend on regulatory elements hundreds or thousands of nucleotides away.
 
-**Impact:** Predicts how variants affect splicing—a mutation 200bp from an exon can disrupt splicing by affecting a regulatory element.
+**Impact:** Predicts how variants affect splicing—a mutation far from the canonical GT-AG splice dinucleotides can disrupt splicing by altering regulatory sequence.
 
 ### Bidirectional LSTMs: Reading Both Directions
 
@@ -612,7 +612,7 @@ Enformer uses Transformers to predict gene expression from DNA sequence ([Avsec 
 - **Transformer blocks** (capture long-range interactions)
 - Can see relationships across entire 200kb!
 
-**Key discovery:** The model learned that enhancers 50-100kb away regulate genes—exactly matching experimental Hi-C data! This demonstrates that Transformers can discover long-range regulatory relationships directly from sequence.
+**Key discovery:** The model used sequence information from distal enhancers tens of kilobases away and prioritized enhancer-gene links that agreed with CRISPRi and chromatin evidence. This suggests that Transformer-style long-range integration can recover some regulatory relationships from sequence, but attention patterns should still be treated as hypotheses rather than direct measurements of 3D contacts.
 
 **Why it matters:** When you find a disease variant, Enformer can predict whether it affects a distant gene's expression, even without doing experiments.
 
